@@ -1,0 +1,89 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/MapPhaseStyle.uss?fileID=7433441132597879392&amp;guid=40d130f0d25139442bf9ed138c03f947&amp;type=3#MapPhaseStyle"/>
+    <ui:VisualElement class="screen-root">
+        <ui:VisualElement class="header-container">
+            <ui:VisualElement class="header-titles">
+                <ui:Label text="CLAN WARBAND" class="header-title"/>
+                <ui:Label text="Pre-Combat Oath Assessment" class="header-subtitle"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="timer-container">
+                <ui:Label text="APOCALYPSE APPROACHES" class="timer-label"/>
+                <ui:Label text="00:14:59" class="timer-value"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:ScrollView class="unit-list">
+            <ui:VisualElement class="unit-card unit-card-ready">
+                <ui:VisualElement class="unit-icon-frame">
+                    <ui:Label text="⚔" class="unit-icon"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="unit-details">
+                    <ui:VisualElement class="unit-header">
+                        <ui:Label text="Vance • Shield-Thrall" class="unit-name"/>
+                        <ui:Label text="BLOOD OATH" class="status-badge status-badge-active"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="HP" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill hp-fill" style="width: 80%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="ATK" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill atk-fill" style="width: 60%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="unit-card unit-card-ready">
+                <ui:VisualElement class="unit-icon-frame">
+                    <ui:Label text="👁" class="unit-icon"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="unit-details">
+                    <ui:VisualElement class="unit-header">
+                        <ui:Label text="Ghost • Alien Seer" class="unit-name"/>
+                        <ui:Label text="READY" class="status-badge status-badge-active"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="HP" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill hp-fill" style="width: 60%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="ATK" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill atk-fill" style="width: 80%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="unit-card unit-card-disabled">
+                <ui:VisualElement class="unit-icon-frame">
+                    <ui:Label text="🛡" class="unit-icon"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="unit-details">
+                    <ui:VisualElement class="unit-header">
+                        <ui:Label text="Bulwark • Ironclad" class="unit-name"/>
+                        <ui:Label text="EXHAUSTED" class="status-badge status-badge-inactive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="HP" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill hp-fill-dim" style="width: 100%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stat-row">
+                        <ui:Label text="ATK" class="stat-label"/>
+                        <ui:VisualElement class="stat-bar-bg">
+                            <ui:VisualElement class="stat-bar-fill atk-fill-dim" style="width: 40%;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:VisualElement class="action-container">
+            <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

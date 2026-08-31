@@ -1,0 +1,174 @@
+.screen-root {
+    flex-grow: 1;
+    background-color: #0b0d10;
+    padding: 16px;
+    justify-content: space-between;
+}
+
+/* Header */
+.header-container {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-bottom: 12px;
+    border-bottom-width: 2px;
+    border-bottom-color: #31211b;
+}
+
+.header-title {
+    font-size: 20px;
+    color: #e5d3b3;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+}
+
+.header-subtitle {
+    font-size: 11px;
+    color: #8c7b6c;
+}
+
+.timer-label {
+    font-size: 9px;
+    color: #c84b31;
+    -unity-text-align: middle-right;
+}
+
+.timer-value {
+    font-size: 18px;
+    color: #e5d3b3;
+    -unity-font-style: bold;
+}
+
+/* Unit Cards */
+.unit-list {
+    flex-grow: 1;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.unit-card {
+    flex-direction: row;
+    background-color: #15191e;
+    border-width: 1px;
+    border-color: #2a3038;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.unit-card-ready {
+    border-left-width: 4px;
+    border-left-color: #c84b31;
+}
+
+.unit-card-disabled {
+    opacity: 0.5;
+}
+
+.unit-icon-frame {
+    width: 44px;
+    height: 44px;
+    background-color: #0b0d10;
+    border-width: 1px;
+    border-color: #31211b;
+    border-radius: 4px;
+    justify-content: center;
+    align-items: center;
+    margin-right: 12px;
+}
+
+.unit-icon {
+    font-size: 22px;
+    color: #e5d3b3;
+}
+
+.unit-details {
+    flex-grow: 1;
+}
+
+.unit-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.unit-name {
+    font-size: 13px;
+    color: #e5d3b3;
+    -unity-font-style: bold;
+}
+
+.status-badge {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    -unity-font-style: bold;
+}
+
+.status-badge-active {
+    background-color: #2d1815;
+    color: #c84b31;
+    border-width: 1px;
+    border-color: #c84b31;
+}
+
+.status-badge-inactive {
+    background-color: #1a1e24;
+    color: #5c6672;
+}
+
+/* Stat Bars */
+.stat-row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.stat-label {
+    font-size: 10px;
+    color: #8c7b6c;
+    width: 32px;
+}
+
+.stat-bar-bg {
+    flex-grow: 1;
+    height: 6px;
+    background-color: #0b0d10;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.stat-bar-fill {
+    height: 100%;
+}
+
+.hp-fill { background-color: #c84b31; }
+.atk-fill { background-color: #d4a359; }
+.hp-fill-dim { background-color: #4a525d; }
+.atk-fill-dim { background-color: #313740; }
+
+/* Action Button */
+.action-container {
+    padding-top: 8px;
+}
+
+.engage-button {
+    height: 52px;
+    background-color: #c84b31;
+    color: #f7eede;
+    font-size: 16px;
+    -unity-font-style: bold;
+    border-width: 0;
+    border-radius: 4px;
+    letter-spacing: 2px;
+}
+
+.engage-button:hover {
+    background-color: #e05337;
+}
+
+.engage-button:active {
+    background-color: #a33b25;
+}
