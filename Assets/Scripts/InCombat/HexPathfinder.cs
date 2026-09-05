@@ -84,6 +84,37 @@ public static class HexPathfinder
         return result;
     }
 
+    /// Returns all tiles within attackRange steps of start, excluding start itself.
+    /// Attack range ignores walkability so occupied tiles can be valid targets.
+    public static List<HexTile> GetAttackableTiles(HexTile start, int attackRange)
+    {
+        var result = new List<HexTile>();
+        if (start == null || attackRange <= 0) return result;
+
+        var distances = new Dictionary<HexTile, int> { [start] = 0 };
+        var frontier = new Queue<HexTile>();
+        frontier.Enqueue(start);
+
+        while (frontier.Count > 0)
+        {
+            HexTile current = frontier.Dequeue();
+            int currentDistance = distances[current];
+            if (currentDistance >= attackRange) continue;
+
+            foreach (HexTile neighbor in current.neighbors)
+            {
+                if (neighbor == null || distances.ContainsKey(neighbor)) continue;
+
+                int distance = currentDistance + 1;
+                distances[neighbor] = distance;
+                result.Add(neighbor);
+                frontier.Enqueue(neighbor);
+            }
+        }
+
+        return result;
+    }
+
     private static int Heuristic(HexTile a, HexTile b)
     {
         return HexCoordinates.GetDistance(a.gridPosition, b.gridPosition);

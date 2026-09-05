@@ -16,19 +16,40 @@ public class UnitInstance : MonoBehaviour
     public int currentHealth = 10;
     public int attackPower = 2;
     public int attackRange = 1;
+    public int defensePower = 1;
     public int movementRange = 3;
+    [Tooltip("Visual height above the centre of the tile.")]
+    public float tileVisualOffset = 0.5f;
 
     [Header("State")]
     public HexTile currentTile;
     public bool IsDead => currentHealth <= 0;
 
+    public int maxActionsPerTurn = 2;
+    public int actionsRemaining = 2;
+
     public event Action<UnitInstance> OnDeath;
 
     private void Awake()
     {
+        actionsRemaining = maxActionsPerTurn;
         currentHealth = maxHealth;
     }
+    public void Initialize(UnitData unitData)
+    {
+        if (unitData == null)
+        {
+            Debug.LogError("UnitInstance: Initialize called with null UnitData!");
+            return;
+        }
 
+        unitName = unitData.UnitName;
+        maxHealth = unitData.MaxHP;
+        currentHealth = maxHealth;
+        attackPower = unitData.BaseAttack;
+        attackRange = unitData.AttackRange;
+        movementRange = unitData.MoveSpeed;
+    }
     // ---------------------------
     // Placement / Movement
     // ---------------------------
@@ -43,7 +64,7 @@ public class UnitInstance : MonoBehaviour
 
         currentTile = tile;
         tile.SetUnit(this);
-        transform.position = tile.transform.position;
+        transform.position = tile.transform.position + Vector3.up * tileVisualOffset;
     }
 
     /// Moves the unit along a path (e.g. from HexPathfinder.FindPath). MVP: snaps
@@ -76,7 +97,13 @@ public class UnitInstance : MonoBehaviour
     {
         if (!CanAttack(target)) return;
 
-        int damage = Mathf.Max(0, attackPower - target.currentTile.defenseBonus);
+        int attackRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
+        int defRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
+
+
+        int damage = 
+            Mathf.RoundToInt(attackRoll + Mathf.Max((attackPower * (1.1f * attackRoll) * currentTile.attackBonus) - (target.defensePower * (1.05f * defRoll) * target.currentTile.defenseBonus), 0f));
+        Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage! (Attack Roll: {attackRoll}, Defense Roll: {defRoll})");
         target.TakeDamage(damage);
     }
 

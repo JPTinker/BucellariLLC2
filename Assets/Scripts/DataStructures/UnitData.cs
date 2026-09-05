@@ -16,7 +16,7 @@ public class UnitData : ScriptableObject
     public int BaseAttack = 15;
     public int AttackRange = 1;       // 1 = Melee, 2+ = Ranged
     public int MoveSpeed = 3;         // Tiles per turn
-
+    public int defensePower = 1;
     [Header("Faction & Classification")]
     public UnitFaction Faction;
 }
