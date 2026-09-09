@@ -9,9 +9,11 @@ public class CombatManager : MonoBehaviour
     public event Action OnLevelWon;
     public event Action OnLevelLost;
 
+
     [SerializeField] private EnemyAIController enemyAI;
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> enemyUnits = new List<UnitInstance>();
+    private readonly List<UnitInstance> villagerUnits = new List<UnitInstance>();
     private readonly List<HexTile> highlightedTiles = new List<HexTile>();
     private readonly HashSet<HexTile> reachableTiles = new HashSet<HexTile>();
     private readonly List<HexTile> previewPath = new List<HexTile>();
@@ -35,11 +37,11 @@ public class CombatManager : MonoBehaviour
     /// <summary>Called by HexTile when the player clicks it.</summary>
     public void SelectedTile(HexTile tile)
     {
-        Debug.Log($"CombatManager: SelectedTile called with {tile?.name ?? "null"}");
+        //Debug.Log($"CombatManager: SelectedTile called with {tile?.name ?? "null"}");
         if (tile == null || levelEnded || enemyTurnInProgress) return;
         if (selectedUnit == null)
         {
-            if (tile.occupyingUnit != null && !tile.occupyingUnit.isEnemy) SelectUnit(tile.occupyingUnit);
+            if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) SelectUnit(tile.occupyingUnit);
             return;
         }
         else {
@@ -63,6 +65,7 @@ public class CombatManager : MonoBehaviour
                 }
                 return;
             }
+            
             // First click previews a route. Clicking the same destination commits it.
             if (pendingDestination != tile) { PreviewDestination(tile); return; }
             if (selectedUnit.MoveTo(tile)) TakeAction(selectedUnit);
@@ -91,6 +94,14 @@ public class CombatManager : MonoBehaviour
 
         foreach (HexTile tile in HexPathfinder.GetReachableTiles(unit.currentTile, unit.movementRange))
         {
+            if(tile.occupyingUnit != null && tile.occupyingUnit.Faction == UnitFaction.Villager)
+            {
+                tile.Highlight(TileHighlightType.Rescue);
+                reachableTiles.Add(tile);
+                highlightedTiles.Add(tile);
+                tile.Highlight(TileHighlightType.Rescue);
+                continue;
+            }
             if (!tile.CanEnter(unit)) continue;
             reachableTiles.Add(tile);
             highlightedTiles.Add(tile);
@@ -179,7 +190,21 @@ public class CombatManager : MonoBehaviour
     public void Track(UnitInstance unit)
     {
         if (unit == null) return;
-        List<UnitInstance> list = unit.isEnemy ? enemyUnits : playerUnits;
+        List<UnitInstance> list;
+
+        if (unit.Faction == UnitFaction.Enemy) {
+            list = enemyUnits;
+        } 
+        else if (unit.Faction == UnitFaction.Player) {
+            list = playerUnits;
+        } 
+        else if(unit.Faction == UnitFaction.Villager){
+            list = villagerUnits;
+        }
+        else {
+            Debug.LogWarning($"CombatManager: Track called with unit {unit.name} of unknown faction {unit.Faction}. Ignoring.");
+            return;
+        }
         if (list.Contains(unit)) return;
         list.Add(unit);
         unit.OnDeath += HandleUnitDeath;

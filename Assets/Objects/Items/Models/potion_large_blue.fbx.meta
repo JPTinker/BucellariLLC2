@@ -3,7 +3,12 @@ guid: e2d20812f80f2734e96689ea247d0134
 ModelImporter:
   serializedVersion: 24501
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: druid
+    second: {fileID: 2100000, guid: 0140f9ecaaa4e274c8fcc0da4b8c005e, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

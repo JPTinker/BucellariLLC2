@@ -3,7 +3,7 @@ using UnityEngine;
 
 public enum BuildingType { WoodTower, StoneTower, Mine, Farm, WoodenWall, StoneWall }
 public enum TerrainType { Water, Sand, Grass, StoneHill, StoneMountain, Buildings }
-public enum TileHighlightType { None, Movement, Attack, Build, Path }
+public enum TileHighlightType { None, Movement, Attack, Build, Path, Rescue }
 
 public class HexTile : MonoBehaviour
 {
@@ -12,11 +12,11 @@ public class HexTile : MonoBehaviour
     [Header("Occupancy")] public UnitInstance occupyingUnit;
     [Header("Movement")] public bool isWalkable = true; public int movementCost = 1; public float heightOffset = 0.187f;
     [Header("Combat Modifiers")] public int defenseBonus; public int attackBonus;
-    [Header("Visuals")] public bool isHighlighted; public Material movementHighlightMaterial; public Material pathPreviewHighlightMaterial; public Material attackHighlightMaterial; public Material buildHighlightMaterial;
+    [Header("Visuals")] public bool isHighlighted; public Material movementHighlightMaterial; public Material pathPreviewHighlightMaterial; public Material attackHighlightMaterial; public Material buildHighlightMaterial;public Material rescueHighlightMaterial;
     [Header("Fog of War")] public GameObject fogInstance; public bool isRevealed; public int foodLeftOnTile;
     [Header("Farming Visuals")] [Range(0f, 1f)] public float depletedDarkness = 0.5f;
     public bool IsOccupied => occupyingUnit != null;
-
+    public bool IsExtractionPoint = false;
     public bool CanEnter(UnitInstance unit) => isWalkable && !IsOccupied;
     public bool CanEnter() => isWalkable && !IsOccupied;
     public void SetUnit(UnitInstance unit) { occupyingUnit = unit; isWalkable = false; }
@@ -31,6 +31,7 @@ public class HexTile : MonoBehaviour
             TileHighlightType.Attack => attackHighlightMaterial,
             TileHighlightType.Build => buildHighlightMaterial,
             TileHighlightType.Path => pathPreviewHighlightMaterial != null ? pathPreviewHighlightMaterial : movementHighlightMaterial,
+            TileHighlightType.Rescue => rescueHighlightMaterial,
             _ => movementHighlightMaterial
         };
         if (material == null) return;
@@ -56,7 +57,7 @@ public class HexTile : MonoBehaviour
     private void RemoveHighlightMaterials(List<Material> materials)
     {
         materials.Remove(movementHighlightMaterial); materials.Remove(pathPreviewHighlightMaterial);
-        materials.Remove(attackHighlightMaterial); materials.Remove(buildHighlightMaterial);
+        materials.Remove(attackHighlightMaterial); materials.Remove(buildHighlightMaterial); materials.Remove(rescueHighlightMaterial);
     }
 
     public void OnTilePressed()

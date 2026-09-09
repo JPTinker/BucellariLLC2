@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="card-root" class="unit-card">
+        <ui:VisualElement name="card-corner-accent" picking-mode="Ignore" class="corner-accent"/>
+        <ui:Label name="card-badge" text="" class="card-badge"/>
+        <ui:VisualElement name="card-icon-frame" class="card-icon-frame"/>
+        <ui:Label name="card-name" text="UNIT NAME" class="card-name"/>
+        <ui:VisualElement name="card-stats-row" class="card-stats-row">
+            <ui:VisualElement class="card-stat-block">
+                <ui:Label text="HP" class="card-stat-label"/>
+                <ui:Label name="card-hp-value" text="0" class="card-stat-value card-stat-value-hp"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="card-stat-block">
+                <ui:Label text="ATK" class="card-stat-label"/>
+                <ui:Label name="card-atk-value" text="0" class="card-stat-value card-stat-value-atk"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Label name="card-footer-tag" text="" class="card-footer-tag"/>
+    </ui:VisualElement>
+</ui:UXML>

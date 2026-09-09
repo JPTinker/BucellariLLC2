@@ -1,0 +1,67 @@
+.combat-screen {
+    flex-grow: 1;
+    background-color: rgba(11, 13, 16, 0);
+    padding: 16px;
+    color: #e5d3b3;
+}
+
+.resource-bar {
+    min-height: 74px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: rgba(21, 25, 30, 0.78);
+    border-bottom-width: 2px;
+    border-bottom-color: #c84b31;
+}
+
+.resource-heading { min-width: 190px; }
+.eyebrow, .resource-label, .panel-hint, .battlefield-label {
+    font-size: 9px;
+    color: #8c7b6c;
+    letter-spacing: 1px;
+}
+.location-name { font-size: 19px; -unity-font-style: bold; color: #e5d3b3; }
+.resource-group { flex-direction: row; align-items: center; }
+.resource-item { min-width: 106px; padding-left: 14px; border-left-width: 1px; border-left-color: #31211b; }
+.resource-value { font-size: 17px; -unity-font-style: bold; color: #e5d3b3; }
+.resource-value-positive { color: #8db58c; }
+.resource-value-gold { color: #d4a359; }
+.round-item { margin-left: 14px; padding-left: 18px; border-left-width: 1px; border-left-color: #c84b31; }
+.round-value { font-size: 26px; -unity-font-style: bold; color: #c84b31; }
+
+.play-area { flex-grow: 1; flex-direction: row; margin-top: 14px; margin-bottom: 14px; background-color: rgba(11, 13, 16, 0); }
+.unit-roster { width: 272px; padding: 14px; background-color: rgba(17, 21, 26, 0.82); border-width: 1px; border-color: #2a3038; }
+.panel-heading, .action-heading { flex-direction: row; justify-content: space-between; align-items: center; }
+.panel-title { font-size: 12px; -unity-font-style: bold; color: #e5d3b3; letter-spacing: 1px; }
+.unit-list { flex-grow: 1; margin-top: 12px; }
+.unit-card { flex-direction: row; align-items: center; padding: 10px; margin-bottom: 8px; background-color: rgba(25, 30, 36, 0.72); border-width: 1px; border-color: #2a3038; border-radius: 3px; }
+.unit-card-selected { border-left-width: 3px; border-left-color: #c84b31; background-color: rgba(35, 26, 24, 0.78); }
+.unit-card-exhausted { opacity: 0.48; }
+.unit-avatar { width: 36px; height: 36px; margin-right: 10px; justify-content: center; align-items: center; border-width: 1px; border-radius: 2px; }
+.avatar-vance { background-color: #513026; border-color: #c84b31; }
+.avatar-ghost { background-color: #293b42; border-color: #6d9a9a; }
+.avatar-bulwark { background-color: #34302b; border-color: #777064; }
+.avatar-letter { font-size: 17px; -unity-font-style: bold; color: #f7eede; }
+.unit-copy { flex-grow: 1; }
+.unit-name { font-size: 12px; -unity-font-style: bold; color: #e5d3b3; }
+.unit-role, .unit-meta { font-size: 9px; color: #8c7b6c; }
+.health-track { height: 5px; margin-top: 7px; margin-bottom: 4px; background-color: #0b0d10; }
+.health-fill { height: 100%; background-color: #c84b31; }
+.health-fill-low { background-color: #d4a359; }
+.health-fill-dim { background-color: #59616a; }
+
+.battlefield-panel { flex-grow: 1; margin-left: 14px; justify-content: center; align-items: center; background-color: rgba(15, 20, 24, 0); border-width: 1px; border-color: rgba(42, 48, 56, 0.45); }
+.battlefield-label { color: #c84b31; }
+.battlefield-hint { margin-top: 8px; font-size: 11px; color: #59616a; letter-spacing: 1px; }
+
+.action-bar { padding: 12px 14px; background-color: rgba(21, 25, 30, 0.78); border-top-width: 1px; border-top-color: #31211b; }
+.turn-label { font-size: 10px; color: #c84b31; -unity-font-style: bold; }
+.action-buttons { flex-direction: row; margin-top: 10px; }
+.action-button, .end-turn-button { flex-grow: 1; height: 42px; margin-right: 8px; border-width: 1px; border-color: #4a525d; border-radius: 2px; background-color: #20262d; color: #e5d3b3; font-size: 11px; -unity-font-style: bold; letter-spacing: 1px; }
+.action-button:hover { background-color: #2c343c; border-color: #8c7b6c; }
+.action-button-primary { background-color: #c84b31; border-color: #c84b31; color: #f7eede; }
+.action-button-primary:hover { background-color: #e05337; }
+.action-button-spell { border-color: #6d9a9a; color: #9dc4c1; }
+.end-turn-button { flex-grow: 0; width: 110px; margin-right: 0; background-color: #31211b; border-color: #8c7b6c; color: #e5d3b3; }

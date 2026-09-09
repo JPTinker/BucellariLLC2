@@ -104,10 +104,12 @@ MonoBehaviour:
   pathPreviewHighlightMaterial: {fileID: 2100000, guid: 91bbc5fdb1bb7b748b2f5b6949c69253, type: 2}
   attackHighlightMaterial: {fileID: 2100000, guid: 89ef6ad31ec193e41b12cb3989b6b8ed, type: 2}
   buildHighlightMaterial: {fileID: 0}
+  rescueHighlightMaterial: {fileID: 2100000, guid: 1cb50d384945fd24cbb5f4a9f273b965, type: 2}
   fogInstance: {fileID: 0}
   isRevealed: 1
   foodLeftOnTile: 0
   depletedDarkness: 0.5
+  IsExtractionPoint: 0
 --- !u!65 &-3464438756404524608
 BoxCollider:
   m_ObjectHideFlags: 0

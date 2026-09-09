@@ -1,89 +1,65 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI/MapPhaseStyle.uss?fileID=7433441132597879392&amp;guid=40d130f0d25139442bf9ed138c03f947&amp;type=3#MapPhaseStyle"/>
-    <ui:VisualElement class="screen-root">
-        <ui:VisualElement class="header-container">
-            <ui:VisualElement class="header-titles">
-                <ui:Label text="CLAN WARBAND" class="header-title"/>
-                <ui:Label text="Pre-Combat Oath Assessment" class="header-subtitle"/>
+    <Style src="project://database/Assets/UI/MapPhaseStyle.uss?fileID=7433441132597879392&amp;guid=cfc4ea522fdc98e4f910a39abcf0944e&amp;type=3#MapPhaseStyle"/>
+
+    <!-- Unpadded outer root. screen-root (below) carries the padding; the overlays
+         are siblings of screen-root here so their position:absolute inset:0 fills
+         the WHOLE panel edge-to-edge, not just screen-root's padded content box. -->
+    <ui:VisualElement name="phase-root" class="phase-root">
+
+        <ui:VisualElement class="screen-root">
+            <ui:VisualElement class="header-container">
+                <ui:VisualElement class="header-titles">
+                    <ui:Label text="CLAN WARBAND" class="header-title"/>
+                    <ui:Label text="Pre-Combat Oath Assessment" class="header-subtitle"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="timer-container">
+                    <ui:Label text="APOCALYPSE APPROACHES" class="timer-label"/>
+                    <ui:Label text="00:14:59" class="timer-value"/>
+                </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement class="timer-container">
-                <ui:Label text="APOCALYPSE APPROACHES" class="timer-label"/>
-                <ui:Label text="00:14:59" class="timer-value"/>
+
+            <!-- Cards are instantiated from UnitCard.uxml by PlanningPhaseController -->
+            <ui:ScrollView name="unit-list" class="unit-list"/>
+
+            <ui:VisualElement class="action-container">
+                <ui:Label name="selection-counter" text="0 / 5 SELECTED" class="selection-counter"/>
+                <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button">
+                    <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-tr"/>
+                    <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-bl"/>
+                </ui:Button>
+            </ui:VisualElement>
+
+            <!-- Stub bottom nav for the upcoming Campaign Map (movement planning) and
+                 Inventory (supplies) screens. Only Roster is functional for now;
+                 the other two are visible but disabled so the shell is in place. -->
+            <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar">
+                <ui:Button name="nav-roster" text="ROSTER" class="nav-button nav-button-active"/>
+                <ui:Button name="nav-map" text="CAMPAIGN MAP" class="nav-button"/>
+                <ui:Button name="nav-inventory" text="INVENTORY" class="nav-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:ScrollView class="unit-list">
-            <ui:VisualElement class="unit-card unit-card-ready">
-                <ui:VisualElement class="unit-icon-frame">
-                    <ui:Label text="⚔" class="unit-icon"/>
+
+        <!-- New-unit reveal overlay. Hidden by default; PlanningPhaseController shows/animates
+             this for each unit in GameStateManager.Instance.PendingReveal. -->
+        <ui:VisualElement name="reveal-overlay" class="reveal-overlay hidden">
+            <ui:VisualElement name="reveal-flash" picking-mode="Ignore" class="reveal-flash"/>
+            <ui:VisualElement name="reveal-card" class="reveal-card">
+                <ui:Label text="NEW RECRUIT" class="reveal-eyebrow"/>
+                <ui:VisualElement name="reveal-icon-frame" class="reveal-icon-frame">
+                    <ui:VisualElement name="reveal-icon" class="reveal-icon"/>
                 </ui:VisualElement>
-                <ui:VisualElement class="unit-details">
-                    <ui:VisualElement class="unit-header">
-                        <ui:Label text="Vance • Shield-Thrall" class="unit-name"/>
-                        <ui:Label text="BLOOD OATH" class="status-badge status-badge-active"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="HP" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill hp-fill" style="width: 80%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="ATK" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill atk-fill" style="width: 60%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
+                <ui:Label name="reveal-name" text="" class="reveal-name"/>
+                <ui:Label text="Tap to continue" class="reveal-continue-hint"/>
             </ui:VisualElement>
-            <ui:VisualElement class="unit-card unit-card-ready">
-                <ui:VisualElement class="unit-icon-frame">
-                    <ui:Label text="👁" class="unit-icon"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="unit-details">
-                    <ui:VisualElement class="unit-header">
-                        <ui:Label text="Ghost • Alien Seer" class="unit-name"/>
-                        <ui:Label text="READY" class="status-badge status-badge-active"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="HP" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill hp-fill" style="width: 60%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="ATK" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill atk-fill" style="width: 80%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-            </ui:VisualElement>
-            <ui:VisualElement class="unit-card unit-card-disabled">
-                <ui:VisualElement class="unit-icon-frame">
-                    <ui:Label text="🛡" class="unit-icon"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="unit-details">
-                    <ui:VisualElement class="unit-header">
-                        <ui:Label text="Bulwark • Ironclad" class="unit-name"/>
-                        <ui:Label text="EXHAUSTED" class="status-badge status-badge-inactive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="HP" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill hp-fill-dim" style="width: 100%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="stat-row">
-                        <ui:Label text="ATK" class="stat-label"/>
-                        <ui:VisualElement class="stat-bar-bg">
-                            <ui:VisualElement class="stat-bar-fill atk-fill-dim" style="width: 40%;"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-            </ui:VisualElement>
-        </ui:ScrollView>
-        <ui:VisualElement class="action-container">
-            <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button"/>
+        </ui:VisualElement>
+
+        <!-- Draft overlay: "choose 1 of N" new recruits. Hidden by default;
+             PlanningPhaseController populates draft-options from
+             GameStateManager.Instance.PendingDraftOptions and shows this
+             before the reveal overlay above. -->
+        <ui:VisualElement name="draft-overlay" class="draft-overlay hidden">
+            <ui:Label text="CHOOSE YOUR RECRUIT" class="reveal-eyebrow"/>
+            <ui:VisualElement name="draft-options" class="draft-options-row"/>
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

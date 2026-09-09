@@ -66,7 +66,7 @@ public static class HexPathfinder
 
             foreach (HexTile neighbor in current.neighbors)
             {
-                if (neighbor == null || !neighbor.isWalkable) continue;
+                if (neighbor == null || (!neighbor.isWalkable && !neighbor.IsOccupied)) continue;
 
                 int newCost = currentCost + Mathf.Max(1, neighbor.movementCost);
                 if (newCost > movementRange) continue;

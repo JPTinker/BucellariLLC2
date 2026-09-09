@@ -21,4 +21,5 @@ MonoBehaviour:
   BaseAttack: 15
   AttackRange: 1
   MoveSpeed: 3
+  defensePower: 15
   Faction: 0

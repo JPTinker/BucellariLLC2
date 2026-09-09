@@ -68,14 +68,14 @@ public class TeamManagerUIController : MonoBehaviour
 
         gsm.EnsurePlayerHasTeam();
 
-        foreach (UnitData unit in gsm.ActiveTeam)
+        foreach (Unit unit in gsm.ActiveTeam)
         {
             VisualElement card = CreateUnitCard(unit);
             unitListScrollView.Add(card);
         }
     }
 
-    private VisualElement CreateUnitCard(UnitData unit)
+    private VisualElement CreateUnitCard(Unit unit)
     {
         VisualElement card = new VisualElement();
         card.AddToClassList("unit-card");

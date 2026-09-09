@@ -3,7 +3,12 @@ guid: 35004bd5a1f748a4099c38d95de9630e
 ModelImporter:
   serializedVersion: 24501
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: rogue
+    second: {fileID: 2100000, guid: 84eed479414a74b4fad05e2efa6c3182, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

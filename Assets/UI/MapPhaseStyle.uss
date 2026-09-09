@@ -1,174 +1,396 @@
+/* ============================================================
+   Cryo-Tactical Interface theme (from DESIGN.md)
+   Structural note: phase-root is unpadded so the reveal/draft
+   overlays (position:absolute, inset 0) cover the WHOLE panel.
+   screen-root carries the actual content padding.
+   Fanfare (punch-in bounce, flash) is driven from C# via
+   PlanningPhaseController, not USS transitions, so it can overshoot.
+   ============================================================ */
+
+.phase-root {
+    flex-grow: 1;
+}
+
 .screen-root {
     flex-grow: 1;
-    background-color: #0b0d10;
+    background-color: rgb(14, 20, 26); /* surface */
     padding: 16px;
     justify-content: space-between;
 }
 
-/* Header */
+/* ---------------- Header ---------------- */
 .header-container {
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-end;
     padding-bottom: 12px;
-    border-bottom-width: 2px;
-    border-bottom-color: #31211b;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(58, 73, 75, 0.6);
 }
 
 .header-title {
     font-size: 20px;
-    color: #e5d3b3;
+    color: rgb(221, 227, 236);
     -unity-font-style: bold;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
 }
 
 .header-subtitle {
     font-size: 11px;
-    color: #8c7b6c;
+    color: rgb(185, 202, 203);
+    opacity: 0.8;
 }
 
 .timer-label {
     font-size: 9px;
-    color: #c84b31;
+    color: rgb(0, 219, 231);
     -unity-text-align: middle-right;
+    letter-spacing: 2px;
 }
 
 .timer-value {
     font-size: 18px;
-    color: #e5d3b3;
+    color: rgb(221, 227, 236);
     -unity-font-style: bold;
 }
 
-/* Unit Cards */
+/* ---------------- Unit list ---------------- */
 .unit-list {
     flex-grow: 1;
     margin-top: 16px;
     margin-bottom: 16px;
 }
 
-.unit-card {
-    flex-direction: row;
-    background-color: #15191e;
-    border-width: 1px;
-    border-color: #2a3038;
-    border-radius: 4px;
-    padding: 12px;
-    margin-bottom: 12px;
-    align-items: center;
-}
+/* Note: the ScrollView's row/wrap layout is set via
+   _unitList.contentContainer.style in PlanningPhaseController, not here -
+   Unity's internal content-container class name varies across versions. */
 
-.unit-card-ready {
-    border-left-width: 4px;
-    border-left-color: #c84b31;
+/* ---------------- Trading Card ---------------- */
+.unit-card {
+    width: 150px;
+    background-color: rgba(26, 32, 39, 0.78);
+    border-width: 1px;
+    border-top-color: rgba(221, 227, 236, 0.12);
+    border-left-color: rgba(221, 227, 236, 0.12);
+    border-bottom-color: rgba(0, 219, 231, 0.35);
+    border-right-color: rgba(0, 219, 231, 0.35);
+    border-radius: 3px;
+    padding: 10px;
+    margin: 6px;
+    overflow: hidden;
+    transition-property: border-color, background-color;
+    transition-duration: 0.15s;
 }
 
 .unit-card-disabled {
-    opacity: 0.5;
+    opacity: 0.45;
 }
 
-.unit-icon-frame {
-    width: 44px;
-    height: 44px;
-    background-color: #0b0d10;
+.corner-accent {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(0, 242, 255, 0.10);
+    rotate: 45deg;
+    translate: 10px -10px;
+}
+
+.unit-card-selected {
+    border-width: 2px;
+    border-top-color: rgb(0, 219, 231);
+    border-left-color: rgb(0, 219, 231);
+    border-bottom-color: rgb(0, 219, 231);
+    border-right-color: rgb(0, 219, 231);
+    background-color: rgba(0, 219, 231, 0.10);
+}
+
+.unit-card-denied {
+    border-top-color: rgb(255, 180, 171);
+    border-left-color: rgb(255, 180, 171);
+    border-bottom-color: rgb(255, 180, 171);
+    border-right-color: rgb(255, 180, 171);
+}
+
+.card-badge {
+    display: none; /* enable per-card in C# if/when a badge value is available */
+    align-self: flex-start;
+    font-size: 8px;
+    letter-spacing: 1px;
+    color: rgb(0, 219, 231);
+    -unity-font-style: bold;
+    margin-bottom: 4px;
+}
+
+.card-icon-frame {
+    width: 100%;
+    height: 128px;
+    background-color: rgb(9, 15, 21);
     border-width: 1px;
-    border-color: #31211b;
-    border-radius: 4px;
-    justify-content: center;
-    align-items: center;
-    margin-right: 12px;
+    border-color: rgba(58, 73, 75, 0.7);
+    border-radius: 2px;
+    -unity-background-scale-mode: scale-to-fit;
+    margin-bottom: 8px;
 }
 
-.unit-icon {
+.card-name {
+    font-size: 12px;
+    color: rgb(221, 227, 236);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    -unity-text-align: middle-center;
+    margin-bottom: 8px;
+}
+
+.card-stats-row {
+    flex-direction: row;
+    border-top-width: 1px;
+    border-top-color: rgba(0, 219, 231, 0.25);
+    padding-top: 8px;
+}
+
+.card-stat-block {
+    flex-grow: 1;
+    align-items: center;
+}
+
+.card-stat-label {
+    font-size: 8px;
+    color: rgb(185, 202, 203);
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.card-stat-value {
     font-size: 22px;
-    color: #e5d3b3;
-}
-
-.unit-details {
-    flex-grow: 1;
-}
-
-.unit-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-
-.unit-name {
-    font-size: 13px;
-    color: #e5d3b3;
     -unity-font-style: bold;
 }
 
-.status-badge {
+.card-stat-value-hp {
+    color: rgb(0, 219, 231);
+}
+
+.card-stat-value-atk {
+    color: rgb(177, 203, 207);
+}
+
+.card-footer-tag {
+    display: none;
+    align-self: center;
+    margin-top: 8px;
     font-size: 9px;
-    padding: 2px 6px;
-    border-radius: 2px;
     -unity-font-style: bold;
+    letter-spacing: 1px;
+    color: rgb(0, 54, 58);
+    background-color: rgb(0, 219, 231);
+    padding: 2px 8px;
+    border-radius: 1px;
 }
 
-.status-badge-active {
-    background-color: #2d1815;
-    color: #c84b31;
-    border-width: 1px;
-    border-color: #c84b31;
+.unit-card-selected .card-footer-tag {
+    display: flex;
 }
 
-.status-badge-inactive {
-    background-color: #1a1e24;
-    color: #5c6672;
-}
-
-/* Stat Bars */
-.stat-row {
-    flex-direction: row;
-    align-items: center;
-    margin-top: 2px;
-}
-
-.stat-label {
-    font-size: 10px;
-    color: #8c7b6c;
-    width: 32px;
-}
-
-.stat-bar-bg {
-    flex-grow: 1;
-    height: 6px;
-    background-color: #0b0d10;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.stat-bar-fill {
-    height: 100%;
-}
-
-.hp-fill { background-color: #c84b31; }
-.atk-fill { background-color: #d4a359; }
-.hp-fill-dim { background-color: #4a525d; }
-.atk-fill-dim { background-color: #313740; }
-
-/* Action Button */
+/* ---------------- Action area ---------------- */
 .action-container {
     padding-top: 8px;
 }
 
-.engage-button {
-    height: 52px;
-    background-color: #c84b31;
-    color: #f7eede;
-    font-size: 16px;
-    -unity-font-style: bold;
-    border-width: 0;
-    border-radius: 4px;
+.selection-counter {
+    font-size: 10px;
+    color: rgb(185, 202, 203);
+    -unity-text-align: middle-center;
+    margin-bottom: 8px;
     letter-spacing: 2px;
 }
 
+.engage-button {
+    height: 56px;
+    background-color: rgba(26, 32, 39, 0.85);
+    color: rgb(0, 219, 231);
+    font-size: 18px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: rgba(0, 219, 231, 0.4);
+    border-radius: 2px;
+    letter-spacing: 3px;
+    transition-property: background-color, color;
+    transition-duration: 0.15s;
+}
+
 .engage-button:hover {
-    background-color: #e05337;
+    background-color: rgb(0, 219, 231);
+    color: rgb(0, 54, 58);
 }
 
 .engage-button:active {
-    background-color: #a33b25;
+    background-color: rgb(0, 180, 190);
+}
+
+.engage-button:disabled {
+    background-color: rgba(26, 32, 39, 0.5);
+    color: rgba(185, 202, 203, 0.4);
+    border-color: rgba(58, 73, 75, 0.4);
+}
+
+.button-corner-accent {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: rgb(0, 219, 231);
+    rotate: 45deg;
+}
+
+.button-corner-accent-tr {
+    top: 0;
+    right: 0;
+    translate: 6px -6px;
+}
+
+.button-corner-accent-bl {
+    bottom: 0;
+    left: 0;
+    translate: -6px 6px;
+}
+
+/* ---------------- Bottom nav bar (stub for Campaign Map / Inventory) ---------------- */
+.bottom-nav-bar {
+    flex-direction: row;
+    margin-top: 12px;
+    border-top-width: 1px;
+    border-top-color: rgba(58, 73, 75, 0.6);
+    padding-top: 8px;
+}
+
+.nav-button {
+    flex-grow: 1;
+    height: 40px;
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(133, 148, 149);
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+.nav-button-active {
+    color: rgb(0, 219, 231);
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(0, 219, 231);
+}
+
+/* Campaign Map / Inventory aren't built yet - visible so the shell reads as
+   complete, but disabled. Assign SetEnabled(false) to these in code. */
+.nav-button:disabled {
+    color: rgba(133, 148, 149, 0.4);
+}
+
+/* ---------------- New-unit reveal overlay ---------------- */
+.hidden {
+    display: none;
+}
+
+.reveal-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(9, 15, 21, 0.92);
+    justify-content: center;
+    align-items: center;
+}
+
+.reveal-flash {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 100px;
+    background-color: rgba(0, 219, 231, 0.55);
+}
+
+.reveal-card {
+    width: 240px;
+    background-color: rgba(26, 32, 39, 0.9);
+    border-width: 1px;
+    border-top-color: rgba(221, 227, 236, 0.15);
+    border-left-color: rgba(221, 227, 236, 0.15);
+    border-bottom-color: rgb(0, 219, 231);
+    border-right-color: rgb(0, 219, 231);
+    border-radius: 2px;
+    padding: 24px;
+    align-items: center;
+}
+
+.reveal-eyebrow {
+    font-size: 10px;
+    color: rgb(0, 219, 231);
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+    -unity-font-style: bold;
+}
+
+.reveal-icon-frame {
+    width: 96px;
+    height: 96px;
+    background-color: rgb(9, 15, 21);
+    border-width: 1px;
+    border-color: rgba(0, 219, 231, 0.4);
+    border-radius: 2px;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.reveal-icon {
+    width: 80px;
+    height: 80px;
+    -unity-background-scale-mode: scale-to-fit;
+}
+
+.reveal-name {
+    font-size: 17px;
+    color: rgb(221, 227, 236);
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.reveal-continue-hint {
+    font-size: 9px;
+    color: rgb(133, 148, 149);
+    margin-top: 16px;
+    letter-spacing: 1px;
+}
+
+/* ---------------- Draft overlay (choose 1 of N new recruits) ---------------- */
+.draft-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(9, 15, 21, 0.92);
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+}
+
+.draft-options-row {
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.draft-card {
+    width: 168px;
+}
+
+.draft-card:hover {
+    border-top-color: rgb(0, 219, 231);
+    border-left-color: rgb(0, 219, 231);
+    border-bottom-color: rgb(0, 219, 231);
+    border-right-color: rgb(0, 219, 231);
+    background-color: rgba(0, 219, 231, 0.10);
 }

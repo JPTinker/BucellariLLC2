@@ -14,5 +14,6 @@ public class ItemData : ScriptableObject
     public int damage = 0;
     public int range = 0;       // 1 = Melee, 2+ = Ranged
     public int healing = 0;         // Tiles per turn
+    public int defense = 0;         // Damage reduction
 
 }

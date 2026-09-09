@@ -7,6 +7,11 @@ using UnityEngine;
 /// mapped to a terrain type via ordered bands (low = water, high = mountain, etc).
 /// Spawns HexTile prefabs, applies the matching visual from the TileDatabase, and
 /// wires up every tile's neighbor list so pathfinding works immediately after.
+///
+/// This script is responsible for: generating the map, placing the player's team,
+/// spawning enemies in nearby clusters (no stacking - each enemy gets its own tile),
+/// marking extraction points, and spawning villagers to be rescued. Rescue logic
+/// itself (a unit carrying up to 2 rescued villagers) lives on UnitInstance, not here.
 /// </summary>
 public class MapManager : MonoBehaviour
 {
@@ -48,15 +53,28 @@ public class MapManager : MonoBehaviour
 
     public IReadOnlyDictionary<Vector2Int, HexTile> Tiles => tileMap;
 
-    [Header("Setup")]
-
     private readonly Dictionary<TerrainType, List<GameObject>> prefabsByTerrain = new();
-    private GameStateManager gameStateManager; 
+    private GameStateManager gameStateManager;
 
     [Header("Spawn Settings")]
     [SerializeField] private GameObject spawnVfxPrefab;
     public List<UnitData> AvailableEnemyArchetypes;
 
+    [Header("Enemy Groups")]
+    [Tooltip("How many enemies land together per cluster. Each enemy still gets its own tile - no stacking.")]
+    public int enemyGroupSize = 3;
+
+    [Header("Extraction")]
+    [Tooltip("Grid coordinates that act as extraction/exit points. If left empty, the far edge column is used by default.")]
+    public List<Vector2Int> extractionPoints = new List<Vector2Int>();
+
+    [Header("Villagers / Rescue")]
+    [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
+    public List<UnitData> villagerArchetypes;
+    public int villagerSpawnCount = 5;
+
+    /// <summary>Fired when a unit successfully reaches an extraction point and leaves the map.</summary>
+    public event Action<UnitInstance> UnitExtracted;
 
     private void Awake()
     {
@@ -68,27 +86,25 @@ public class MapManager : MonoBehaviour
         Instance = this;
         BuildTerrainDatabase();
         Generate();
-        // place units. 
         gameStateManager = GameStateManager.Instance;
         placeUnits();
         SpawnEnemyWave(20);
+        SpawnVillagers(villagerSpawnCount);
     }
 
-
-
-    public UnitInstance SpawnEnemyUnit(HexTile tile , bool isEnemy, UnitData data = null)
+    public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null)
     {
         // 1. Guard Clause: Tile Check
         if (tile == null)
         {
-            Debug.LogWarning($"[MapGenerator] Cannot spawn unit: No tile found at position {tile.name}.");
+            Debug.LogWarning("[MapGenerator] Cannot spawn unit: no tile provided.");
             return null;
         }
 
-        // 2. Guard Clause: Occupied Tile Check
-        if (tile.IsOccupied) 
+        // 2. Guard Clause: Tile Occupancy Check
+        if (!tile.CanEnter())
         {
-            Debug.LogWarning($"[MapGenerator] Tile at {tile.name} is already occupied by {tile.occupyingUnit.name}.");
+            Debug.LogWarning($"[MapGenerator] Tile at {tile.name} cannot be entered.");
             return null;
         }
 
@@ -98,12 +114,12 @@ public class MapManager : MonoBehaviour
             Debug.LogError("No UnitData archetypes assigned in GameStateManager!");
             return null;
         }
-        int randomIndex = UnityEngine.Random.Range(0, AvailableEnemyArchetypes.Count);
-        UnitData enemyData = AvailableEnemyArchetypes[randomIndex];
+
+        UnitData enemyData = data != null ? data : AvailableEnemyArchetypes[UnityEngine.Random.Range(0, AvailableEnemyArchetypes.Count)];
         GameObject targetPrefab = enemyData.ModelPrefab;
         if (targetPrefab == null)
         {
-            Debug.LogError("[MapGenerator] Spawn failed: No valid unit prefab specified.");
+            Debug.LogError("[MapGenerator] Spawn failed: no valid unit prefab specified.");
             return null;
         }
 
@@ -118,11 +134,7 @@ public class MapManager : MonoBehaviour
 
         // 5. Initialize Unit State & Grid Mapping
         instance.isEnemy = isEnemy;
-        if (data != null)
-        {
-            instance.Initialize(data);
-            //instance.InitializeStats(data); // Inject ScriptableObject stats if applicable
-        }
+        instance.Initialize(enemyData);
         instance.PlaceOnTile(tile);
 
         // 6. Spawn Visual Juice / Particle Effects
@@ -130,19 +142,20 @@ public class MapManager : MonoBehaviour
 
         return instance;
     }
+
     private void PlaySpawnEffects(Vector3 position)
     {
         if (spawnVfxPrefab != null)
         {
             GameObject vfx = Instantiate(spawnVfxPrefab, position, Quaternion.identity);
-            Destroy(vfx, 2.0f); // Auto-cleanup particle after 2 seconds
+            Destroy(vfx, 2.0f);
         }
     }
+
     private void BuildTerrainDatabase()
     {
         prefabsByTerrain.Clear();
 
-        Debug.Log("MapGenerator: ---- Scanning tileGameObjectDatabase ----");
         for (int i = 0; i < tileGameObjectDatabase.Length; i++)
         {
             GameObject prefab = tileGameObjectDatabase[i];
@@ -159,10 +172,6 @@ public class MapManager : MonoBehaviour
                 continue;
             }
 
-            bool validEnum = Enum.IsDefined(typeof(TerrainType), tile.terrainType);
-            Debug.Log($"MapGenerator: [{i}] prefab '{prefab.name}' -> terrainType = {tile.terrainType} " +
-                    $"(int {(int)tile.terrainType}, valid = {validEnum})");
-
             if (!prefabsByTerrain.TryGetValue(tile.terrainType, out var list))
             {
                 list = new List<GameObject>();
@@ -171,32 +180,16 @@ public class MapManager : MonoBehaviour
             list.Add(prefab);
         }
 
-        Debug.Log("MapGenerator: ---- Terrain bands ----");
-        for (int i = 0; i < terrainBands.Count; i++)
-        {
-            var band = terrainBands[i];
-            bool validEnum = Enum.IsDefined(typeof(TerrainType), band.terrain);
-            Debug.Log($"MapGenerator: band[{i}] maxHeight = {band.maxHeight} -> terrain = {band.terrain} " +
-                    $"(int {(int)band.terrain}, valid = {validEnum})");
-        }
-
-        Debug.Log("MapGenerator: ---- prefabsByTerrain keys ----");
-        foreach (var kvp in prefabsByTerrain)
-        {
-            Debug.Log($"MapGenerator: key {kvp.Key} (int {(int)kvp.Key}) -> {kvp.Value.Count} prefab(s)");
-        }
-
-        // Catch missing terrain coverage immediately, before Generate() ever runs.
         foreach (var band in terrainBands)
         {
             if (!prefabsByTerrain.ContainsKey(band.terrain))
             {
-                Debug.LogError($"MapGenerator: terrainBands references terrain int {(int)band.terrain} " +
-                                $"(defined name: {(Enum.IsDefined(typeof(TerrainType), band.terrain) ? band.terrain.ToString() : "UNDEFINED")}), " +
-                                $"but no prefab in tileGameObjectDatabase has that terrainType assigned!");
+                Debug.LogError($"MapGenerator: terrainBands references terrain {band.terrain}, " +
+                                "but no prefab in tileGameObjectDatabase has that terrainType assigned!");
             }
         }
     }
+
     public void Generate()
     {
         Debug.Log($"MapGenerator: Generating map {width}x{height} with seed {seed} and noise scale {noiseScale}");
@@ -219,54 +212,72 @@ public class MapManager : MonoBehaviour
         }
 
         ConnectAllNeighbors();
+        MarkExtractionPoints();
     }
-    public List<UnitInstance> SpawnEnemyWave(int count)
+
+    // ---------------------------------------------------------------------
+    // Enemy clusters: groups land near each other, but never share a tile.
+    // ---------------------------------------------------------------------
+    public List<UnitInstance> SpawnEnemyWave(int totalCount)
     {
-        List<UnitInstance> spawnedEnemies = new List<UnitInstance>();
+        List<UnitInstance> spawned = new List<UnitInstance>();
         List<HexTile> validTiles = GetValidSpawnTiles();
 
         if (validTiles.Count == 0)
         {
             Debug.LogWarning("[MapGenerator] No unoccupied tiles available for spawning enemies.");
-            return spawnedEnemies;
+            return spawned;
         }
 
-        // Shuffle or pick random positions up to the requested count
-        int spawnAmount = Mathf.Min(count, validTiles.Count);
-
-        for (int i = 0; i < spawnAmount; i++)
+        while (spawned.Count < totalCount && validTiles.Count > 0)
         {
-            // Pick a random tile from available pool
-            int randomIndex = UnityEngine.Random.Range(0, validTiles.Count);
-            HexTile targetTile = validTiles[randomIndex];
-            validTiles.RemoveAt(randomIndex); // Prevent picking the same tile twice
+            // Pick an anchor tile to seed a new enemy cluster.
+            int anchorIndex = UnityEngine.Random.Range(0, validTiles.Count);
+            HexTile anchorTile = validTiles[anchorIndex];
+            validTiles.RemoveAt(anchorIndex);
 
+            if (!anchorTile.CanEnter()) continue;
 
-            // Spawn and assign state
-            UnitInstance newEnemy = SpawnEnemyUnit(targetTile, isEnemy: true);
-            if (newEnemy != null)
+            // Gather the anchor plus its still-free neighbors as landing spots for this cluster.
+            // Each spot hosts exactly one enemy - no stacking.
+            List<HexTile> groupSpots = new List<HexTile> { anchorTile };
+            foreach (HexTile neighbor in anchorTile.neighbors)
             {
-                spawnedEnemies.Add(newEnemy);
+                if (groupSpots.Count >= enemyGroupSize) break;
+                if (neighbor != null && neighbor.CanEnter() && !groupSpots.Contains(neighbor))
+                    groupSpots.Add(neighbor);
+            }
+
+            int groupTarget = Mathf.Min(enemyGroupSize, groupSpots.Count, totalCount - spawned.Count);
+
+            for (int i = 0; i < groupTarget; i++)
+            {
+                HexTile spot = groupSpots[i];
+                UnitInstance enemy = SpawnEnemyUnit(spot, isEnemy: true);
+                if (enemy != null)
+                {
+                    spawned.Add(enemy);
+                    validTiles.Remove(spot); // tile is now occupied, remove from the pool
+                }
             }
         }
 
-        Debug.Log($"[MapGenerator] Successfully spawned wave of {spawnedEnemies.Count} enemies.");
-        return spawnedEnemies;
+        Debug.Log($"[MapGenerator] Spawned enemy wave of {spawned.Count} in clusters of up to {enemyGroupSize}.");
+        return spawned;
     }
+
     private List<HexTile> GetValidSpawnTiles()
     {
         List<HexTile> candidates = new List<HexTile>();
 
-        // Example edge placement: Spawning along top row and rightmost column
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
             {
-                // Edge filter: Only consider tiles on upper/right halves
                 if (x >= width / 2 || y >= height / 2)
                 {
                     HexTile tile = GetTile(new Vector2Int(x, y));
-                    if (tile != null && !tile.IsOccupied)
+                    if (tile != null && tile.CanEnter())
                     {
                         candidates.Add(tile);
                     }
@@ -276,6 +287,7 @@ public class MapManager : MonoBehaviour
 
         return candidates;
     }
+
     private void placeUnits()
     {
         if (gameStateManager == null)
@@ -283,29 +295,33 @@ public class MapManager : MonoBehaviour
             Debug.LogError("MapGenerator: GameStateManager instance is null. Cannot place units.");
             return;
         }
-        // Ensure the player has a team of units
-        gameStateManager.EnsurePlayerHasTeam();
 
-        // Get the player's active team
-        List<UnitData> playerTeam = gameStateManager.ActiveTeam;
+        gameStateManager.EnsurePlayerHasTeam();
+        List<Unit> playerTeam = gameStateManager.ActiveTeam;
         int count = 0;
-        // Place each unit on a random tile
-        foreach (UnitData unit in playerTeam)
+
+        foreach (Unit unit in playerTeam)
         {
-            Vector2Int randomTilePosition = new Vector2Int(0,count);
-            HexTile tile = GetTile(randomTilePosition);
+            Debug.Log($"Placing player unit: {unit.UnitName} at starting position (0, {count})");
+
+            Vector2Int startPosition = new Vector2Int(0, count);
+            HexTile tile = GetTile(startPosition);
 
             if (tile != null)
             {
-                GameObject unitPrefab = unit.ModelPrefab;
-                if (unitPrefab == null)
+                if (unit == null || unit.Archetype == null)
                 {
-                    Debug.LogError($"MapGenerator: {unit.name} has no ModelPrefab assigned.");
+                    Debug.LogError("MapGenerator: player unit is missing its archetype.");
                     continue;
                 }
 
-                // Configure the instantiated object, not the prefab asset. PlaceOnTile
-                // also establishes the occupancy data required by movement/pathfinding.
+                GameObject unitPrefab = unit.Archetype.ModelPrefab;
+                if (unitPrefab == null)
+                {
+                    Debug.LogError($"MapGenerator: {unit.UnitName} has no ModelPrefab assigned.");
+                    continue;
+                }
+
                 GameObject spawnedUnit = Instantiate(unitPrefab, tile.transform.position, Quaternion.identity);
                 UnitInstance instance = spawnedUnit.GetComponent<UnitInstance>();
                 if (instance == null)
@@ -321,10 +337,101 @@ public class MapManager : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"No tile found at position {randomTilePosition} for unit {unit.name}");
+                Debug.LogWarning($"No tile found at position {startPosition} for unit {unit.UnitName}");
             }
         }
     }
+
+    // ---------------------------------------------------------------------
+    // Extraction: designated tiles a unit can stand on to leave the battle.
+    // ---------------------------------------------------------------------
+    private void MarkExtractionPoints()
+    {
+        if (extractionPoints == null || extractionPoints.Count == 0)
+        {
+            extractionPoints = new List<Vector2Int>();
+            for (int y = 0; y < height; y++)
+                extractionPoints.Add(new Vector2Int(width - 1, y));
+        }
+
+        foreach (var coord in extractionPoints)
+        {
+            HexTile tile = GetTile(coord);
+            if (tile != null)
+                tile.IsExtractionPoint = true;
+            else
+                Debug.LogWarning($"MapGenerator: extraction point {coord} has no matching tile.");
+        }
+    }
+
+    /// <summary>Call when a unit attempts to leave the battle from its current tile.</summary>
+    public bool TryExtractUnit(UnitInstance unit)
+    {
+        if (unit == null || unit.currentTile == null) return false;
+
+        if (!unit.currentTile.IsExtractionPoint)
+        {
+            Debug.Log($"[MapGenerator] {unit.name} is not standing on an extraction point.");
+            return false;
+        }
+
+        //unit.currentTile.RemoveFromSquad(unit); // NOTE: rename to match your tile's current "vacate" method if it changed
+        Debug.Log($"[MapGenerator] {unit.name} extracted safely.");
+        UnitExtracted?.Invoke(unit);
+        Destroy(unit.gameObject);
+        return true;
+    }
+
+    // ---------------------------------------------------------------------
+    // Villagers: this script only spawns them. Rescuing (a unit carrying up
+    // to 2 villagers) is handled entirely by UnitInstance.
+    // ---------------------------------------------------------------------
+    public List<UnitInstance> SpawnVillagers(int count)
+    {
+        List<UnitInstance> spawnedVillagers = new List<UnitInstance>();
+
+        if (villagerArchetypes == null || villagerArchetypes.Count == 0)
+        {
+            Debug.LogError("[MapGenerator] No villager archetypes assigned.");
+            return spawnedVillagers;
+        }
+
+        List<HexTile> validTiles = GetValidSpawnTiles();
+        int spawnAmount = Mathf.Min(count, validTiles.Count);
+
+        for (int i = 0; i < spawnAmount; i++)
+        {
+            int tileIndex = UnityEngine.Random.Range(0, validTiles.Count);
+            HexTile tile = validTiles[tileIndex];
+            validTiles.RemoveAt(tileIndex);
+
+            UnitData villagerData = villagerArchetypes[UnityEngine.Random.Range(0, villagerArchetypes.Count)];
+            UnitInstance villager = SpawnVillagerUnit(tile, villagerData);
+            if (villager != null) spawnedVillagers.Add(villager);
+        }
+
+        Debug.Log($"[MapGenerator] Spawned {spawnedVillagers.Count} villagers to rescue.");
+        return spawnedVillagers;
+    }
+
+    private UnitInstance SpawnVillagerUnit(HexTile tile, UnitData data)
+    {
+        if (tile == null || !tile.CanEnter() || data == null || data.ModelPrefab == null) return null;
+
+        GameObject spawnedObj = Instantiate(data.ModelPrefab, tile.transform.position, Quaternion.identity);
+        if (!spawnedObj.TryGetComponent<UnitInstance>(out var instance))
+        {
+            Debug.LogError($"[MapGenerator] Villager prefab '{data.ModelPrefab.name}' is missing a UnitInstance component!");
+            Destroy(spawnedObj);
+            return null;
+        }
+
+        instance.Faction = UnitFaction.Villager; // Set the faction
+        instance.Initialize(data);
+        instance.PlaceOnTile(tile);
+        return instance;
+    }
+
     private TerrainType PickTerrain(float noiseValue)
     {
         foreach (var band in terrainBands)
@@ -332,10 +439,9 @@ public class MapManager : MonoBehaviour
             if (noiseValue <= band.maxHeight)
                 return band.terrain;
         }
-
-        // Fallback: last band, or Grass if none configured.
         return terrainBands.Count > 0 ? terrainBands[^1].terrain : TerrainType.Grass;
     }
+
     private void SpawnTile(Vector2Int gridPosition, TerrainType terrain)
     {
         GameObject prefab = GetPrefabForTerrain(terrain);
@@ -354,14 +460,15 @@ public class MapManager : MonoBehaviour
 
         tileMap[gridPosition] = tile;
     }
+
     private GameObject GetPrefabForTerrain(TerrainType terrain)
     {
         if (!prefabsByTerrain.TryGetValue(terrain, out var matchingPrefabs) || matchingPrefabs.Count == 0)
             return null;
 
-        // supports terrain-type variety, e.g. multiple grass tile variants
         return matchingPrefabs[UnityEngine.Random.Range(0, matchingPrefabs.Count)];
     }
+
     private void ConnectAllNeighbors()
     {
         foreach (var kvp in tileMap)
@@ -376,11 +483,13 @@ public class MapManager : MonoBehaviour
             }
         }
     }
+
     public HexTile GetTile(Vector2Int gridPosition)
     {
         tileMap.TryGetValue(gridPosition, out HexTile tile);
         return tile;
     }
+
     public void ClearMap()
     {
         foreach (var kvp in tileMap)
