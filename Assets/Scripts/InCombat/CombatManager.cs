@@ -21,7 +21,7 @@ public class CombatManager : MonoBehaviour
     private HexTile pendingDestination;
     private bool levelEnded;
     private bool enemyTurnInProgress;
-
+    public int currentRound { get; private set; } = 1;
 
 
     private void Awake()
@@ -45,8 +45,27 @@ public class CombatManager : MonoBehaviour
             return;
         }
         else {
-            if (tile.occupyingUnit != null && !tile.occupyingUnit.isEnemy) { SelectUnit(tile.occupyingUnit); return; }
+            if (tile.occupyingUnit != null &&
+                tile.occupyingUnit.Faction == UnitFaction.Player)
+            {
+                SelectUnit(tile.occupyingUnit);
+                return;
+            }
             if (!highlightedTiles.Contains(tile)) { ClearSelection(); return; }
+            if (tile.occupyingUnit != null &&
+                tile.occupyingUnit.Faction == UnitFaction.Villager)
+            {
+                if (pendingDestination != tile)
+                {
+                    pendingDestination = tile;
+                    return;
+                }
+
+                if (selectedUnit.Rescue(tile.occupyingUnit))
+                    TakeAction(selectedUnit);
+                ClearSelection();
+                return;
+            }
             if (tile.occupyingUnit != null && tile.occupyingUnit.isEnemy)
             {
                 Debug.Log($"CombatManager: Attempting to attack enemy unit on {tile.name}");
@@ -94,14 +113,6 @@ public class CombatManager : MonoBehaviour
 
         foreach (HexTile tile in HexPathfinder.GetReachableTiles(unit.currentTile, unit.movementRange))
         {
-            if(tile.occupyingUnit != null && tile.occupyingUnit.Faction == UnitFaction.Villager)
-            {
-                tile.Highlight(TileHighlightType.Rescue);
-                reachableTiles.Add(tile);
-                highlightedTiles.Add(tile);
-                tile.Highlight(TileHighlightType.Rescue);
-                continue;
-            }
             if (!tile.CanEnter(unit)) continue;
             reachableTiles.Add(tile);
             highlightedTiles.Add(tile);
@@ -109,10 +120,30 @@ public class CombatManager : MonoBehaviour
         }
         foreach (HexTile tile in HexPathfinder.GetAttackableTiles(unit.currentTile, unit.attackRange))
         {
-            if (tile.occupyingUnit == null || tile.occupyingUnit.isEnemy == unit.isEnemy) continue;
+            if (tile.occupyingUnit == null) continue;
+            if (tile.occupyingUnit.Faction == UnitFaction.Villager)
+            {
+                if (HasRescueCapacity(unit))
+                {
+                    highlightedTiles.Add(tile);
+                    tile.Highlight(TileHighlightType.Rescue);
+                }
+                continue;
+            }
+            if (tile.occupyingUnit.Faction != UnitFaction.Enemy) continue;
             highlightedTiles.Add(tile);
             tile.Highlight(TileHighlightType.Attack);
         }
+    }
+
+    private static bool HasRescueCapacity(UnitInstance unit)
+    {
+        if (unit.rescuedUnitData == null) return false;
+        foreach (UnitData rescuedUnit in unit.rescuedUnitData)
+        {
+            if (rescuedUnit == null) return true;
+        }
+        return false;
     }
 
     public void CheckTurnEnd()
@@ -213,7 +244,7 @@ public class CombatManager : MonoBehaviour
     private void HandleUnitDeath(UnitInstance unit)
     {
         unit.OnDeath -= HandleUnitDeath;
-        playerUnits.Remove(unit); enemyUnits.Remove(unit);
+        playerUnits.Remove(unit); enemyUnits.Remove(unit); villagerUnits.Remove(unit);
         if (unit == selectedUnit) ClearSelection();
         CheckLevelEnd();
     }
@@ -231,5 +262,13 @@ public class CombatManager : MonoBehaviour
             levelEnded = true;
             OnLevelWon?.Invoke();
         }
+    }
+    public int GetVillagerCount()
+    {
+        return villagerUnits.Count;
+    }
+    public UnitInstance[] GetPlayerUnits()
+    {
+        return playerUnits.ToArray();
     }
 }

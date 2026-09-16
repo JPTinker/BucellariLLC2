@@ -11,14 +11,23 @@ public class UnitData : ScriptableObject
     public string Description;
     public Sprite UnitIcon;          // For UI / Roster list
     public GameObject ModelPrefab;    // World space visual / Sprite Prefab
+    public GameObject[] equipmentPrefabs; // Array of equipment prefabs for the unit
+
+    [Header("Visual Style")]
+    public UnitColorScheme ColorScheme = UnitColorScheme.Scheme1;
+    public Material ColorScheme1;
+    public Material ColorScheme2;
+    public Material ColorScheme3;
 
     [Header("Base Combat Stats")]
     public int MaxHP = 100;
     public int BaseAttack = 15;
     public int AttackRange = 1;       // 1 = Melee, 2+ = Ranged
     public int MoveSpeed = 3;         // Tiles per turn
+    public int MaxMovementPoints = 2;
+    public int VisibilityRange = 3;
     public int defensePower = 1;
-    public int healsOthers = 0;          // How much this unit heals others (if any)
+    public int healsOthers = 1;          // How much this unit heals others (if any)
     [Header("Faction & Classification")]
     public UnitFaction Faction;
 }
@@ -29,6 +38,13 @@ public enum UnitFaction
     Enemy,
     Neutral,
     Villager
+}
+
+public enum UnitColorScheme
+{
+    Scheme1,
+    Scheme2,
+    Scheme3
 }
 
 /// <summary>
@@ -48,9 +64,12 @@ public class Unit
     public int MaxHP;
     public int BaseAttack;
     public int AttackRange;
-    public int MoveSpeed;
+    public int MoveRange;
     public int DefensePower;
-    public int HealsOthers;
+    public int VisibilityRange;
+    public int HealingPower;
+    public int MaxMovementPoints;
+    public UnitColorScheme ColorScheme;
     public UnitFaction Faction;
 
     [Header("Archetype Reference")]
@@ -70,9 +89,12 @@ public class Unit
         MaxHP = archetype.MaxHP;
         BaseAttack = archetype.BaseAttack;
         AttackRange = archetype.AttackRange;
-        MoveSpeed = archetype.MoveSpeed;
+        MoveRange = archetype.MoveSpeed;
+        MaxMovementPoints = archetype.MaxMovementPoints;
+        VisibilityRange = archetype.VisibilityRange;
         DefensePower = archetype.defensePower;
-        HealsOthers = archetype.healsOthers;
+        HealingPower = archetype.healsOthers;
+        ColorScheme = archetype.ColorScheme;
         Faction = archetype.Faction;
     }
 }

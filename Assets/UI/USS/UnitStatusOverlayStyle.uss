@@ -1,0 +1,139 @@
+/* =====================================================================
+   UnitStatusOverlayStyle.uss
+   Floating per-unit badge shown over the battlefield.
+
+   Palette lives in custom properties on .unit-status so the whole badge
+   can be recolored from one place later. Requires Unity's UI Toolkit
+   var()/custom-property support (2022.2+). If your project is on an
+   older version, tell me and I'll inline the values instead.
+   ===================================================================== */
+
+.unit-status {
+    /* --- palette --- */
+    --color-panel-bg: rgba(6, 14, 26, 0.82);
+    --color-panel-border: rgba(79, 216, 255, 0.55);
+    --color-accent-cyan: rgb(79, 216, 255);
+    --color-accent-ice: rgb(142, 207, 255);
+    --color-text-dim: rgb(127, 168, 201);
+    --color-track-bg: rgba(12, 26, 42, 0.9);
+    --color-health-high: rgb(79, 216, 255);
+    --color-health-mid: rgb(255, 180, 84);
+    --color-health-low: rgb(255, 90, 90);
+    --color-pip-filled: rgb(142, 207, 255);
+    --color-pip-empty: rgba(127, 168, 201, 0.25);
+    --color-buff-fortified: rgb(142, 122, 255);
+
+    width: 120px;
+    padding: 4px 6px;
+    background-color: var(--color-panel-bg);
+    border-width: 1px;
+    border-color: var(--color-panel-border);
+    /* Deliberately square, no border-radius - keep the HUD hard-edged. */
+}
+
+/* --- name row --- */
+
+.status-name-row {
+    margin-bottom: 3px;
+}
+
+.status-name-label {
+    -unity-font-style: bold;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--color-accent-ice);
+    -unity-text-align: middle-left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- health bar --- */
+
+.status-health-track {
+    height: 5px;
+    background-color: var(--color-track-bg);
+    border-width: 1px;
+    border-color: rgba(79, 216, 255, 0.25);
+    overflow: hidden;
+}
+
+.status-health-fill {
+    height: 100%;
+    width: 100%;
+    background-color: var(--color-health-high);
+    transition-property: width, background-color;
+    transition-duration: 0.15s;
+    transition-timing-function: ease-out;
+}
+
+/* Toggle these from code based on HP thresholds (e.g. <=50%, <=20%). */
+.status-health-fill-mid {
+    background-color: var(--color-health-mid);
+}
+
+.status-health-fill-low {
+    background-color: var(--color-health-low);
+}
+
+/* --- bottom row: action pips + buff icons --- */
+
+.status-bottom-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.status-actions-row {
+    flex-direction: row;
+}
+
+.status-action-pip {
+    width: 6px;
+    height: 6px;
+    margin-right: 3px;
+    background-color: var(--color-pip-filled);
+    border-width: 1px;
+    border-color: var(--color-accent-cyan);
+    rotate: 45deg;
+}
+
+/* Applied in code once a unit spends that action point. */
+.status-action-pip-spent {
+    background-color: var(--color-pip-empty);
+    border-color: rgba(127, 168, 201, 0.35);
+}
+
+.status-buffs-row {
+    flex-direction: row;
+}
+
+.status-buff-icon {
+    width: 10px;
+    height: 10px;
+    margin-left: 3px;
+    border-width: 1px;
+    border-color: var(--color-accent-cyan);
+    background-color: transparent;
+    display: none; /* hidden until the buff is active; code flips this on */
+}
+
+.status-buff-icon-active {
+    display: flex;
+}
+
+.status-buff-fortified {
+    background-color: var(--color-buff-fortified);
+    border-color: var(--color-buff-fortified);
+}
+
+/* --- exhausted state: whole badge dims when the unit is out of actions --- */
+
+.unit-status-exhausted {
+    opacity: 0.55;
+}
+
+.unit-status-exhausted .status-health-fill {
+    background-color: var(--color-text-dim);
+}

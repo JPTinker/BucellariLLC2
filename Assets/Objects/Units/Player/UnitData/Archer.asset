@@ -16,10 +16,12 @@ MonoBehaviour:
   UnitName: Archer
   Description: 
   UnitIcon: {fileID: 0}
-  ModelPrefab: {fileID: 457713065277653106, guid: 0b6cc2bb6e865424d8d5eea53676edc9, type: 3}
+  ModelPrefab: {fileID: 6163759254571570966, guid: 1e05f6ce39100134ba3d4819bc76565f, type: 3}
+  equipmentPrefabs: []
   MaxHP: 100
-  BaseAttack: 15
+  BaseAttack: 5
   AttackRange: 2
   MoveSpeed: 2
-  defensePower: 10
+  defensePower: 2
+  healsOthers: 1
   Faction: 0

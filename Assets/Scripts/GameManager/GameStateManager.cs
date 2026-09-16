@@ -7,7 +7,7 @@ public class GameStateManager : MonoBehaviour
 {
 
     [System.Serializable]
-    public class PlayerProgression
+    public class PlayerResources
     {
         public int Gold = 100;
         public int CurrentStageIndex = 1;
@@ -26,7 +26,7 @@ public class GameStateManager : MonoBehaviour
     public const int MaxTeamSize = 5;
 
     [Header("Persistent Data")]
-    public PlayerProgression Progression = new PlayerProgression();
+    public PlayerResources Resources = new PlayerResources();
 
     // Roster of all owned units (the pool shown on the team-selection screen).
     public List<Unit> FullRoster = new List<Unit>();
@@ -277,9 +277,10 @@ public class GameStateManager : MonoBehaviour
     {
         if (playerWon)
         {
-            Progression.Gold += goldEarned;
-            Progression.CurrentStageIndex++;
+            Resources.Gold += goldEarned;
+            Resources.CurrentStageIndex++;
         }
+
 
         SetState(GameState.TeamManagement);
         SceneManager.LoadScene(sceneName);

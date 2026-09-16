@@ -13,14 +13,15 @@ MonoBehaviour:
   m_Name: Rogue
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   UnitID: 
-  UnitName: Man at arms
+  UnitName: Rogue
   Description: 
   UnitIcon: {fileID: 0}
-  ModelPrefab: {fileID: 457713065277653106, guid: 0b6cc2bb6e865424d8d5eea53676edc9, type: 3}
-  IsMagical: 1
-  MaxHP: 75
-  BaseAttack: 30
-  AttackRange: 2
-  MoveSpeed: 3
-  defensePower: 5
+  ModelPrefab: {fileID: 6163759254571570966, guid: caa3e0ed74b3f9440a2591e2fbef0d57, type: 3}
+  equipmentPrefabs: []
+  MaxHP: 100
+  BaseAttack: 10
+  AttackRange: 1
+  MoveSpeed: 2
+  defensePower: 2
+  healsOthers: 1
   Faction: 0

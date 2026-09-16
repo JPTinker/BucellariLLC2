@@ -48,6 +48,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: f2a90ce3a58247944818c5820f8baee8, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: f2a90ce3a58247944818c5820f8baee8, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 919c6af12b350684e9de1d4951c5b0b0, type: 2}
     - target: {fileID: 919132149155446097, guid: f2a90ce3a58247944818c5820f8baee8, type: 3}
       propertyPath: m_Name
       value: sand-desert
@@ -97,6 +105,7 @@ MonoBehaviour:
   rescueHighlightMaterial: {fileID: 2100000, guid: 1cb50d384945fd24cbb5f4a9f273b965, type: 2}
   fogInstance: {fileID: 0}
   isRevealed: 1
+  hiddenDarkness: 0.2
   foodLeftOnTile: 0
   depletedDarkness: 0.5
   IsExtractionPoint: 0

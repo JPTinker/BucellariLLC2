@@ -12,7 +12,7 @@ public static class HexPathfinder
     public static List<HexTile> FindPath(HexTile start, HexTile goal, int maxMovementCost = -1)
     {
         if (start == null || goal == null) return null;
-        if (!goal.isWalkable) return null;
+        if (!goal.isWalkable || goal.IsOccupied) return null;
 
         var openSet = new List<HexTile> { start };
         var cameFrom = new Dictionary<HexTile, HexTile>();
@@ -31,7 +31,7 @@ public static class HexPathfinder
             foreach (HexTile neighbor in current.neighbors)
             {
                 if (neighbor == null) continue;
-                if (!neighbor.isWalkable && neighbor != goal) continue;
+                if (!neighbor.isWalkable || neighbor.IsOccupied) continue;
 
                 int tentativeG = gScore[current] + Mathf.Max(1, neighbor.movementCost);
                 if (maxMovementCost >= 0 && tentativeG > maxMovementCost) continue;

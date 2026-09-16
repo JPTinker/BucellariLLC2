@@ -16,6 +16,8 @@ using UnityEngine;
 public class MapManager : MonoBehaviour
 {
     public static MapManager Instance { get; private set; }
+    private static readonly Vector2Int ExfilTilePosition = new Vector2Int(0, 0);
+    private const int VillagerEdgeMargin = 2;
 
     [Serializable]
     public struct TerrainBand
@@ -28,6 +30,9 @@ public class MapManager : MonoBehaviour
     [Header("Setup")]
     public GameObject[] tileGameObjectDatabase;
     public float hexSize = 1f;
+
+    public GameObject Cloud;
+    [SerializeField] private float fogHeight = 0.25f;
 
     [Header("Map Size")]
     public int width = 20;
@@ -63,10 +68,8 @@ public class MapManager : MonoBehaviour
     [Header("Enemy Groups")]
     [Tooltip("How many enemies land together per cluster. Each enemy still gets its own tile - no stacking.")]
     public int enemyGroupSize = 3;
-
-    [Header("Extraction")]
-    [Tooltip("Grid coordinates that act as extraction/exit points. If left empty, the far edge column is used by default.")]
-    public List<Vector2Int> extractionPoints = new List<Vector2Int>();
+    [Tooltip("Total number of enemies spawned at the start of combat.")]
+    public int enemySpawnCount = 20;
 
     [Header("Villagers / Rescue")]
     [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
@@ -75,6 +78,8 @@ public class MapManager : MonoBehaviour
 
     /// <summary>Fired when a unit successfully reaches an extraction point and leaves the map.</summary>
     public event Action<UnitInstance> UnitExtracted;
+
+
 
     private void Awake()
     {
@@ -88,8 +93,9 @@ public class MapManager : MonoBehaviour
         Generate();
         gameStateManager = GameStateManager.Instance;
         placeUnits();
-        SpawnEnemyWave(20);
+        SpawnEnemyWave(enemySpawnCount);
         SpawnVillagers(villagerSpawnCount);
+        InitializeRevealState();
     }
 
     public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null)
@@ -206,8 +212,11 @@ public class MapManager : MonoBehaviour
                     (x + offsetX) * noiseScale,
                     (y + offsetY) * noiseScale);
 
-                TerrainType terrain = PickTerrain(noiseValue);
-                SpawnTile(new Vector2Int(x, y), terrain);
+                Vector2Int gridPosition = new Vector2Int(x, y);
+                TerrainType terrain = gridPosition == ExfilTilePosition
+                    ? TerrainType.Exfil
+                    : PickTerrain(noiseValue);
+                SpawnTile(gridPosition, terrain);
             }
         }
 
@@ -221,7 +230,7 @@ public class MapManager : MonoBehaviour
     public List<UnitInstance> SpawnEnemyWave(int totalCount)
     {
         List<UnitInstance> spawned = new List<UnitInstance>();
-        List<HexTile> validTiles = GetValidSpawnTiles();
+        List<HexTile> validTiles = GetEnemyEdgeSpawnTiles();
 
         if (validTiles.Count == 0)
         {
@@ -231,10 +240,9 @@ public class MapManager : MonoBehaviour
 
         while (spawned.Count < totalCount && validTiles.Count > 0)
         {
-            // Pick an anchor tile to seed a new enemy cluster.
-            int anchorIndex = UnityEngine.Random.Range(0, validTiles.Count);
-            HexTile anchorTile = validTiles[anchorIndex];
-            validTiles.RemoveAt(anchorIndex);
+            // Pick an anchor tile to seed a new enemy cluster as far from players as possible.
+            HexTile anchorTile = GetFarthestEnemyAnchor(validTiles);
+            validTiles.Remove(anchorTile);
 
             if (!anchorTile.CanEnter()) continue;
 
@@ -266,7 +274,7 @@ public class MapManager : MonoBehaviour
         return spawned;
     }
 
-    private List<HexTile> GetValidSpawnTiles()
+    private List<HexTile> GetEnemyEdgeSpawnTiles()
     {
         List<HexTile> candidates = new List<HexTile>();
 
@@ -274,7 +282,8 @@ public class MapManager : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                if (x >= width / 2 || y >= height / 2)
+                bool isEdge = x == 0 || x == width - 1 || y == 0 || y == height - 1;
+                if (isEdge)
                 {
                     HexTile tile = GetTile(new Vector2Int(x, y));
                     if (tile != null && tile.CanEnter())
@@ -288,6 +297,59 @@ public class MapManager : MonoBehaviour
         return candidates;
     }
 
+    private List<HexTile> GetValidSpawnTiles()
+    {
+        List<HexTile> candidates = new List<HexTile>();
+
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile == null || !tile.CanEnter())
+                continue;
+
+            Vector2Int position = tile.gridPosition;
+            bool isWithinEdgeMargin =
+                position.x < VillagerEdgeMargin ||
+                position.x >= width - VillagerEdgeMargin ||
+                position.y < VillagerEdgeMargin ||
+                position.y >= height - VillagerEdgeMargin;
+
+            if (!isWithinEdgeMargin)
+                candidates.Add(tile);
+        }
+
+        return candidates;
+    }
+
+    private HexTile GetFarthestEnemyAnchor(List<HexTile> candidates)
+    {
+        HexTile farthestTile = null;
+        int farthestDistance = int.MinValue;
+        UnitInstance[] units = FindObjectsByType<UnitInstance>();
+
+        foreach (HexTile candidate in candidates)
+        {
+            int nearestPlayerDistance = int.MaxValue;
+            foreach (UnitInstance player in units)
+            {
+                if (player == null || player.Faction != UnitFaction.Player || player.currentTile == null)
+                    continue;
+
+                int distance = HexCoordinates.GetDistance(
+                    candidate.gridPosition,
+                    player.currentTile.gridPosition);
+                nearestPlayerDistance = Mathf.Min(nearestPlayerDistance, distance);
+            }
+
+            if (nearestPlayerDistance > farthestDistance)
+            {
+                farthestDistance = nearestPlayerDistance;
+                farthestTile = candidate;
+            }
+        }
+
+        return farthestTile;
+    }
+
     private void placeUnits()
     {
         if (gameStateManager == null)
@@ -298,14 +360,23 @@ public class MapManager : MonoBehaviour
 
         gameStateManager.EnsurePlayerHasTeam();
         List<Unit> playerTeam = gameStateManager.ActiveTeam;
-        int count = 0;
-
-        foreach (Unit unit in playerTeam)
+        Vector2Int[] playerSpawnPositions =
         {
-            Debug.Log($"Placing player unit: {unit.UnitName} at starting position (0, {count})");
+            new Vector2Int(0, 1),
+            new Vector2Int(1, 1),
+            new Vector2Int(1, 0),
+            new Vector2Int(2, 0),
+            new Vector2Int(0, 2)
+        };
 
-            Vector2Int startPosition = new Vector2Int(0, count);
-            HexTile tile = GetTile(startPosition);
+        int playerCount = Mathf.Min(playerTeam.Count, playerSpawnPositions.Length);
+        for (int count = 0; count < playerCount; count++)
+        {
+            Unit unit = playerTeam[count];
+            Vector2Int preferredPosition = playerSpawnPositions[count];
+            Debug.Log($"Placing player unit: {unit.UnitName} at starting position {preferredPosition}");
+
+            HexTile tile = GetPlayerSpawnTile(preferredPosition);
 
             if (tile != null)
             {
@@ -330,38 +401,54 @@ public class MapManager : MonoBehaviour
                     Destroy(spawnedUnit);
                     continue;
                 }
-
                 instance.Initialize(unit);
                 instance.PlaceOnTile(tile);
-                count++;
             }
             else
             {
-                Debug.LogWarning($"No tile found at position {startPosition} for unit {unit.UnitName}");
+                Debug.LogWarning($"No valid player spawn tile found near {preferredPosition} for unit {unit.UnitName}");
             }
         }
     }
 
+    private HexTile GetPlayerSpawnTile(Vector2Int preferredPosition)
+    {
+        HexTile preferredTile = GetTile(preferredPosition);
+        if (preferredTile != null && preferredTile.CanEnter())
+            return preferredTile;
+
+        HexTile closestTile = null;
+        int closestDistance = int.MaxValue;
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile == null || !tile.CanEnter())
+                continue;
+
+            int distance = HexCoordinates.GetDistance(preferredPosition, tile.gridPosition);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closestTile = tile;
+            }
+        }
+
+        return closestTile;
+    }
+
     // ---------------------------------------------------------------------
-    // Extraction: designated tiles a unit can stand on to leave the battle.
+    // Extraction: a unit must stand adjacent to the fixed exfil tile.
     // ---------------------------------------------------------------------
     private void MarkExtractionPoints()
     {
-        if (extractionPoints == null || extractionPoints.Count == 0)
+        HexTile exfilTile = GetTile(ExfilTilePosition);
+        if (exfilTile == null)
         {
-            extractionPoints = new List<Vector2Int>();
-            for (int y = 0; y < height; y++)
-                extractionPoints.Add(new Vector2Int(width - 1, y));
+            Debug.LogWarning($"MapGenerator: exfil tile {ExfilTilePosition} has no matching tile.");
+            return;
         }
 
-        foreach (var coord in extractionPoints)
-        {
-            HexTile tile = GetTile(coord);
-            if (tile != null)
-                tile.IsExtractionPoint = true;
-            else
-                Debug.LogWarning($"MapGenerator: extraction point {coord} has no matching tile.");
-        }
+        exfilTile.IsExtractionPoint = true;
+        exfilTile.isWalkable = false;
     }
 
     /// <summary>Call when a unit attempts to leave the battle from its current tile.</summary>
@@ -369,13 +456,16 @@ public class MapManager : MonoBehaviour
     {
         if (unit == null || unit.currentTile == null) return false;
 
-        if (!unit.currentTile.IsExtractionPoint)
+        HexTile exfilTile = GetTile(ExfilTilePosition);
+        if (exfilTile == null ||
+            HexCoordinates.GetDistance(unit.currentTile.gridPosition, ExfilTilePosition) != 1)
         {
-            Debug.Log($"[MapGenerator] {unit.name} is not standing on an extraction point.");
+            Debug.Log($"[MapGenerator] {unit.name} is not adjacent to the exfil tile.");
             return false;
         }
 
-        //unit.currentTile.RemoveFromSquad(unit); // NOTE: rename to match your tile's current "vacate" method if it changed
+        unit.currentTile.RemoveUnit();
+        unit.currentTile = null;
         Debug.Log($"[MapGenerator] {unit.name} extracted safely.");
         UnitExtracted?.Invoke(unit);
         Destroy(unit.gameObject);
@@ -426,8 +516,8 @@ public class MapManager : MonoBehaviour
             return null;
         }
 
-        instance.Faction = UnitFaction.Villager; // Set the faction
         instance.Initialize(data);
+        instance.Faction = UnitFaction.Villager;
         instance.PlaceOnTile(tile);
         return instance;
     }
@@ -456,9 +546,75 @@ public class MapManager : MonoBehaviour
 
         HexTile tile = tileObj.GetComponent<HexTile>();
         tile.gridPosition = gridPosition;
+        tile.isRevealed = false;
+        tile.SetDarkness(tile.hiddenDarkness);
+        CreateFog(tile);
         tileObj.name = $"Tile_{gridPosition.x}_{gridPosition.y}";
 
         tileMap[gridPosition] = tile;
+    }
+
+    private void CreateFog(HexTile tile)
+    {
+        if (Cloud == null)
+        {
+            Clouds cloud = FindAnyObjectByType<Clouds>(FindObjectsInactive.Include);
+            if (cloud != null) Cloud = cloud.gameObject;
+        }
+
+        if (Cloud == null) return;
+
+        GameObject fog = Instantiate(
+            Cloud,
+            tile.transform.position + Vector3.up * fogHeight,
+            Quaternion.identity,
+            tile.transform);
+        fog.name = $"Fog_{tile.gridPosition.x}_{tile.gridPosition.y}";
+        fog.transform.localPosition = Vector3.up * fogHeight;
+        fog.SetActive(true);
+        tile.fogInstance = fog;
+    }
+
+    private int GetRevealRadius(UnitInstance unit)
+    {
+        return Mathf.Max(0, unit.visibilityRange);
+    }
+
+    private void InitializeRevealState()
+    {
+        UnitInstance[] units = FindObjectsByType<UnitInstance>();
+        foreach (UnitInstance unit in units)
+        {
+            if (unit != null) unit.OnTileHidden();
+        }
+
+        foreach (UnitInstance unit in units)
+        {
+            if (unit == null || unit.currentTile == null) continue;
+
+            if (unit.Faction == UnitFaction.Player || unit.Faction == UnitFaction.Villager)
+                RevealAround(unit.currentTile, GetRevealRadius(unit));
+        }
+    }
+
+    public void RevealAroundUnit(UnitInstance unit)
+    {
+        if (unit == null || unit.currentTile == null) return;
+
+        if (unit.Faction == UnitFaction.Player || unit.Faction == UnitFaction.Villager)
+            RevealAround(unit.currentTile, GetRevealRadius(unit));
+    }
+
+    private void RevealAround(HexTile center, int radius)
+    {
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile != null &&
+                HexCoordinates.GetDistance(center.gridPosition, tile.gridPosition) <= radius)
+            {
+                tile.Reveal();
+            }
+        }
     }
 
     private GameObject GetPrefabForTerrain(TerrainType terrain)

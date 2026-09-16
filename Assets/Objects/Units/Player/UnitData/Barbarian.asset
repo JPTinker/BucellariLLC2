@@ -13,13 +13,15 @@ MonoBehaviour:
   m_Name: Barbarian
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   UnitID: 
-  UnitName: Knight
+  UnitName: Barbarian
   Description: 
   UnitIcon: {fileID: 0}
-  ModelPrefab: {fileID: 457713065277653106, guid: 0b6cc2bb6e865424d8d5eea53676edc9, type: 3}
+  ModelPrefab: {fileID: 6163759254571570966, guid: c22b4874198c9a7419da2b901c1efc31, type: 3}
+  equipmentPrefabs: []
   MaxHP: 100
-  BaseAttack: 25
+  BaseAttack: 8
   AttackRange: 1
   MoveSpeed: 2
-  defensePower: 8
+  defensePower: 5
+  healsOthers: 1
   Faction: 0

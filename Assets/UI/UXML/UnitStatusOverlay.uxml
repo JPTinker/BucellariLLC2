@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/UnitStatusOverlayStyle.uss?fileID=7433441132597879392&amp;guid=ffded9be82c5a8f4c903e7d294ae9164&amp;type=3#UnitStatusOverlayStyle"/>
+    <ui:VisualElement name="status-root" picking-mode="Ignore" class="unit-status">
+        <ui:VisualElement name="status-name-row" picking-mode="Ignore" class="status-name-row">
+            <ui:Label name="status-name-label" text="UNIT NAME" picking-mode="Ignore" class="status-name-label"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="status-health-track" picking-mode="Ignore" class="status-health-track">
+            <ui:VisualElement name="status-health-fill" picking-mode="Ignore" class="status-health-fill"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="status-bottom-row" picking-mode="Ignore" class="status-bottom-row">
+            <ui:VisualElement name="status-actions-row" picking-mode="Ignore" class="status-actions-row">
+                <ui:VisualElement name="status-action-pip" picking-mode="Ignore" class="status-action-pip"/>
+                <ui:VisualElement name="status-action-pip" picking-mode="Ignore" class="status-action-pip"/>
+                <ui:VisualElement name="status-action-pip" picking-mode="Ignore" class="status-action-pip"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="status-buffs-row" picking-mode="Ignore" class="status-buffs-row">
+                <ui:VisualElement name="status-buff-fortified" picking-mode="Ignore" class="status-buff-icon status-buff-fortified"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

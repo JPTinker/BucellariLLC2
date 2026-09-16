@@ -16,10 +16,12 @@ MonoBehaviour:
   UnitName: Knight
   Description: 
   UnitIcon: {fileID: 0}
-  ModelPrefab: {fileID: 457713065277653106, guid: 0b6cc2bb6e865424d8d5eea53676edc9, type: 3}
+  ModelPrefab: {fileID: 6163759254571570966, guid: c4e182651f83ace44b25e78824f34201, type: 3}
+  equipmentPrefabs: []
   MaxHP: 100
-  BaseAttack: 15
+  BaseAttack: 6
   AttackRange: 1
-  MoveSpeed: 3
-  defensePower: 15
+  MoveSpeed: 2
+  defensePower: 8
+  healsOthers: 2
   Faction: 0

@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>Executes a tactical enemy turn against the player units.</summary>
+/// <summary>Executes a tactical enemy turn against non-enemy units.</summary>
 public class EnemyAIController : MonoBehaviour
 {
     [SerializeField] private float actionDelay = 0.1f;
@@ -20,7 +20,7 @@ public class EnemyAIController : MonoBehaviour
     {
         turnInProgress = true;
 
-        UnitInstance[] enemies = FindObjectsByType<UnitInstance>(FindObjectsSortMode.None);
+        UnitInstance[] enemies = FindObjectsByType<UnitInstance>();
         List<UnitInstance> activeEnemies = new List<UnitInstance>();
         foreach (UnitInstance enemy in enemies)
         {
@@ -35,8 +35,9 @@ public class EnemyAIController : MonoBehaviour
         {
             while (enemy != null && !enemy.IsDead && enemy.actionsRemaining > 0)
             {
-                List<UnitInstance> players = GetActivePlayers();
-                UnitInstance target = FindBestTarget(enemy, players);
+                Debug.Log($"{enemy.name} actions={enemy.actionsRemaining} atkRange={enemy.attackRange} moveRange={enemy.movementRange}");
+                List<UnitInstance> targets = GetActiveTargets();
+                UnitInstance target = FindBestTarget(enemy, targets);
                 if (target == null) break;
 
                 if (enemy.CanAttack(target))
@@ -47,9 +48,9 @@ public class EnemyAIController : MonoBehaviour
                     continue;
                 }
 
-                HexTile destination = FindBestDestination(enemy, players);
+                HexTile destination = FindBestDestination(enemy, targets, activeEnemies);
                 if (destination == null || !enemy.MoveTo(destination, enemy.movementRange)) break;
-
+                Debug.Log($"{enemy.name} moved to {destination.gridPosition}");
                 SpendAction(enemy);
                 yield return new WaitForSeconds(actionDelay);
             }
@@ -59,30 +60,33 @@ public class EnemyAIController : MonoBehaviour
         onComplete?.Invoke();
     }
 
-    private static List<UnitInstance> GetActivePlayers()
+    private static List<UnitInstance> GetActiveTargets()
     {
-        UnitInstance[] units = FindObjectsByType<UnitInstance>(FindObjectsSortMode.None);
-        List<UnitInstance> players = new List<UnitInstance>();
+        UnitInstance[] units = FindObjectsByType<UnitInstance>();
+        List<UnitInstance> targets = new List<UnitInstance>();
         foreach (UnitInstance unit in units)
         {
-            if (unit != null && !unit.isEnemy && !unit.IsDead && unit.currentTile != null)
-                players.Add(unit);
+            if (unit == null || unit.isEnemy || unit.IsDead || unit.currentTile == null)
+                continue;
+
+            if (unit.Faction != UnitFaction.Enemy)
+                targets.Add(unit);
         }
 
-        return players;
+        return targets;
     }
 
-    private static UnitInstance FindBestTarget(UnitInstance enemy, List<UnitInstance> players)
+    private static UnitInstance FindBestTarget(UnitInstance enemy, List<UnitInstance> targets)
     {
         UnitInstance bestTarget = null;
         float bestScore = float.MinValue;
 
-        foreach (UnitInstance player in players)
+        foreach (UnitInstance target in targets)
         {
-            float score = GetTargetScore(enemy, player);
+            float score = GetTargetScore(enemy, target);
             if (score > bestScore)
             {
-                bestTarget = player;
+                bestTarget = target;
                 bestScore = score;
             }
         }
@@ -90,7 +94,10 @@ public class EnemyAIController : MonoBehaviour
         return bestTarget;
     }
 
-    private static HexTile FindBestDestination(UnitInstance enemy, List<UnitInstance> players)
+    private static HexTile FindBestDestination(
+        UnitInstance enemy,
+        List<UnitInstance> targets,
+        List<UnitInstance> activeEnemies)
     {
         HexTile bestDestination = null;
         float bestScore = float.MinValue;
@@ -101,19 +108,22 @@ public class EnemyAIController : MonoBehaviour
 
             float terrainScore = tile.defenseBonus * 20f + tile.attackBonus * 10f;
             float bestTargetScore = float.MinValue;
-            foreach (UnitInstance player in players)
+            foreach (UnitInstance target in targets)
             {
-                int distance = HexCoordinates.GetDistance(tile.gridPosition, player.currentTile.gridPosition);
+                int distance = HexCoordinates.GetDistance(tile.gridPosition, target.currentTile.gridPosition);
                 bool canAttackFromTile = distance <= enemy.attackRange;
-                float targetScore = GetTargetScore(enemy, player) - distance * 4f;
+                float targetScore = GetTargetScore(enemy, target) - distance * 4f;
 
                 if (canAttackFromTile) targetScore += 1000f;
                 if (enemy.attackRange > 1)
                     targetScore -= Mathf.Abs(distance - enemy.attackRange) * 3f;
 
+                // Prefer positions that create a follow-up attack for other enemies.
+                targetScore += CountAttackersAfterMove(target, enemy, tile, activeEnemies) * 35f;
                 bestTargetScore = Mathf.Max(bestTargetScore, targetScore);
             }
 
+            if (bestTargetScore == float.MinValue) continue;
             float score = terrainScore + bestTargetScore;
             if (score > bestScore)
             {
@@ -125,11 +135,32 @@ public class EnemyAIController : MonoBehaviour
         return bestDestination;
     }
 
-    private static float GetTargetScore(UnitInstance enemy, UnitInstance player)
+    private static int CountAttackersAfterMove(
+        UnitInstance target,
+        UnitInstance movingEnemy,
+        HexTile destination,
+        List<UnitInstance> activeEnemies)
     {
-        int distance = HexCoordinates.GetDistance(enemy.currentTile.gridPosition, player.currentTile.gridPosition);
-        float healthRatio = player.maxHealth > 0 ? (float)player.currentHealth / player.maxHealth : 1f;
-        return (1f - healthRatio) * 200f + player.attackPower * 3f - distance * 2f;
+        int attackers = 0;
+        foreach (UnitInstance enemy in activeEnemies)
+        {
+            if (enemy == null || enemy.IsDead || enemy.currentTile == null)
+                continue;
+
+            HexTile attackerTile = enemy == movingEnemy ? destination : enemy.currentTile;
+            int distance = HexCoordinates.GetDistance(attackerTile.gridPosition, target.currentTile.gridPosition);
+            if (distance <= enemy.attackRange)
+                attackers++;
+        }
+
+        return attackers;
+    }
+
+    private static float GetTargetScore(UnitInstance enemy, UnitInstance target)
+    {
+        int distance = HexCoordinates.GetDistance(enemy.currentTile.gridPosition, target.currentTile.gridPosition);
+        float healthRatio = target.maxHealth > 0 ? (float)target.currentHealth / target.maxHealth : 1f;
+        return (1f - healthRatio) * 200f + target.attackPower * 3f - distance * 2f;
     }
 
     private static void SpendAction(UnitInstance unit)

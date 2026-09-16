@@ -13,12 +13,21 @@ MonoBehaviour:
   m_Name: Grunt
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
   UnitID: 
-  UnitName: 
+  UnitName: Grunt
   Description: 
   UnitIcon: {fileID: 0}
   ModelPrefab: {fileID: 2867696692719545677, guid: d1e856b0d43433c45a77c217591232fa, type: 3}
+  equipmentPrefabs: []
+  ColorScheme: 0
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
   MaxHP: 20
   BaseAttack: 1
   AttackRange: 1
   MoveSpeed: 1
+  MaxMovementPoints: 2
+  VisibilityRange: 3
+  defensePower: 1
+  healsOthers: 1
   Faction: 1
