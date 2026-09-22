@@ -128,7 +128,7 @@ public class MapManager : MonoBehaviour
             Debug.LogError("[MapGenerator] Spawn failed: no valid unit prefab specified.");
             return null;
         }
-
+        
         // 4. Instantiate & Component Verification
         GameObject spawnedObj = Instantiate(targetPrefab, tile.transform.position, Quaternion.identity);
         if (!spawnedObj.TryGetComponent<UnitInstance>(out var instance))
@@ -139,8 +139,15 @@ public class MapManager : MonoBehaviour
         }
 
         // 5. Initialize Unit State & Grid Mapping
-        instance.isEnemy = isEnemy;
+
         instance.Initialize(enemyData);
+        if (isEnemy){
+            instance.Faction =  UnitFaction.Enemy;
+        }
+        string uniqueId = GenerateUnique4DigitString();
+        instance.unitName = $"{enemyData.UnitName}_{uniqueId}";
+        instance.gameObject.name = instance.unitName;
+
         instance.PlaceOnTile(tile);
 
         // 6. Spawn Visual Juice / Particle Effects
@@ -602,19 +609,26 @@ public class MapManager : MonoBehaviour
         if (unit == null || unit.currentTile == null) return;
 
         if (unit.Faction == UnitFaction.Player || unit.Faction == UnitFaction.Villager)
-            RevealAround(unit.currentTile, GetRevealRadius(unit));
+        {
+            int newlyRevealed = RevealAround(unit.currentTile, GetRevealRadius(unit));
+            if (unit.Faction == UnitFaction.Player)
+                unit.AddExperience(newlyRevealed);
+        }
     }
 
-    private void RevealAround(HexTile center, int radius)
+    private int RevealAround(HexTile center, int radius)
     {
+        int newlyRevealed = 0;
         foreach (HexTile tile in tileMap.Values)
         {
             if (tile != null &&
                 HexCoordinates.GetDistance(center.gridPosition, tile.gridPosition) <= radius)
             {
+                if (!tile.isRevealed) newlyRevealed++;
                 tile.Reveal();
             }
         }
+        return newlyRevealed;
     }
 
     private GameObject GetPrefabForTerrain(TerrainType terrain)
@@ -654,5 +668,35 @@ public class MapManager : MonoBehaviour
                 Destroy(kvp.Value.gameObject);
         }
         tileMap.Clear();
+    }
+    private HashSet<string> usedCodes = new HashSet<string>();
+
+    public string GenerateUnique4DigitString()
+    {
+        // Limit reached check (10,000 possible 4-digit combinations: 0000-9999)
+        if (usedCodes.Count >= 10000)
+        {
+            Debug.LogWarning("All 10,000 unique 4-digit combinations have been used!");
+            return null;
+        }
+
+        string newCode;
+        do
+        {
+            // Generates a random integer between 0 and 9999
+            int randomNum = UnityEngine.Random.Range(0, 10000);
+            
+            // Formats the number to always be 4 digits with leading zeros (e.g., "0042")
+            newCode = randomNum.ToString("D4");
+        } 
+        while (!usedCodes.Add(newCode)); // Repeats if the code already exists in the set
+
+        return newCode;
+    }
+
+    void Start()
+    {
+        // Test generation
+        Debug.Log("Generated Code: " + GenerateUnique4DigitString());
     }
 }

@@ -73,7 +73,7 @@ public class UnitStatusOverlayController : MonoBehaviour
 
         foreach (UnitInstance unit in currentUnits)
         {
-            if (unit == null || unit.IsDead || unit.IsExtracted) continue;
+            if (unit == null || unit.IsDead || unit.IsExtracted || !unit.IsRevealed) continue;
             if (overlays.ContainsKey(unit)) continue;
 
             OverlayView view = new OverlayView(unit, overlayAsset);
@@ -88,7 +88,7 @@ public class UnitStatusOverlayController : MonoBehaviour
         foreach (KeyValuePair<UnitInstance, OverlayView> kvp in overlays)
         {
             UnitInstance unit = kvp.Key;
-            if (unit == null || unit.IsDead || unit.IsExtracted)
+            if (unit == null || unit.IsDead || unit.IsExtracted || !unit.IsRevealed)
                 pendingRemoval.Add(unit);
         }
 

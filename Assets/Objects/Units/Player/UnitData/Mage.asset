@@ -17,11 +17,28 @@ MonoBehaviour:
   Description: 
   UnitIcon: {fileID: 0}
   ModelPrefab: {fileID: 6163759254571570966, guid: adb8871f9b10baf40bd6d4be379d01e4, type: 3}
-  equipmentPrefabs: []
+  weaponPrefabs:
+  - {fileID: 919132149155446097, guid: 65093afa9b2d18846a34801fcc10676d, type: 3}
+  - {fileID: 919132149155446097, guid: 2c22dd491c3e0a24b87af2110cb4bf72, type: 3}
+  equipmentPrefabs:
+  - {fileID: 919132149155446097, guid: e2d20812f80f2734e96689ea247d0134, type: 3}
+  - {fileID: 919132149155446097, guid: 720bb877a2fc1b049855fa248085c6d4, type: 3}
+  - {fileID: 919132149155446097, guid: f977f919970cac44f85591800661492a, type: 3}
+  - {fileID: 919132149155446097, guid: e9134b9ac41152c4b97d0db8298f2b5e, type: 3}
+  - {fileID: 919132149155446097, guid: 70081b63d602dc54286e2105d21949bd, type: 3}
+  - {fileID: 919132149155446097, guid: 91bc1c3f4ddff4d4e9bc32a88b93848a, type: 3}
+  - {fileID: 919132149155446097, guid: bf4dcd4b4f8a8204fbf6f532c5a4e6ba, type: 3}
+  - {fileID: 919132149155446097, guid: f249e45715e448a419f9714026425b45, type: 3}
+  ColorScheme: 0
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
   MaxHP: 100
   BaseAttack: 5
   AttackRange: 2
   MoveSpeed: 2
+  MaxMovementPoints: 2
+  VisibilityRange: 3
   defensePower: 3
   healsOthers: 5
   Faction: 0

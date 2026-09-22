@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -43,7 +44,13 @@ public class GameStateManager : MonoBehaviour
     // using these candidates. Call OfferUnitDraft() to populate it; the UI calls
     // ResolveUnitDraft() with the player's choice.
     public List<UnitData> PendingDraftOptions = new List<UnitData>();
+    public int PendingDraftsToOffer { get; private set; }
 
+    [Header("Extraction & Combat Progress")]
+    // Tracks units that successfully extracted during the current battle
+    public List<Unit> ExtractedUnitsThisBattle = new List<Unit>();
+    // Tracks villagers saved during the current battle
+    public int SavedVillagersThisBattle = 0;
 
     private void Awake()
     {
@@ -58,7 +65,30 @@ public class GameStateManager : MonoBehaviour
 
         EnsurePlayerHasTeam();
     }
-
+    private void OnEnable()
+    {
+        // Subscribe to the sceneLoaded event
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+    // This method runs automatically when any scene loads
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"Scene loaded: {scene.name}");
+        // Add your custom logic here (e.g., spawn player, update UI)
+        if (scene.name == "DecisionPhase")
+        {
+            Debug.Log(" Scene has been confirmed");
+            PlanningPhaseController planningController =
+                GameObject.FindAnyObjectByType<PlanningPhaseController>();
+            
+            if (SavedVillagersThisBattle > 0){
+                PendingDraftsToOffer = Mathf.Max(1, (SavedVillagersThisBattle + 2) / 3);
+                OfferNextUnitDraft();
+                planningController?.LevelChangeDraftOffer();
+            }
+            SavedVillagersThisBattle = 0;
+        }   
+    }
     /// <summary>
     /// Sets up whatever the current scene needs on startup:
     ///  - "DecisionPhase": make sure a roster exists, then offer a unit draft
@@ -148,6 +178,7 @@ public class GameStateManager : MonoBehaviour
 
     public void OfferUnitDraft(int optionCount = 3)
     {
+        Debug.Log("Offering draft");
         if (AvailablePlayerArchetypes == null || AvailablePlayerArchetypes.Count == 0)
         {
             Debug.LogError("No UnitData archetypes assigned in GameStateManager!");
@@ -180,6 +211,15 @@ public class GameStateManager : MonoBehaviour
         int count = Mathf.Min(optionCount, pool.Count);
         PendingDraftOptions = pool.GetRange(0, count);
     }
+
+    public void OfferNextUnitDraft()
+    {
+        if (PendingDraftsToOffer <= 0) return;
+
+        OfferUnitDraft(3);
+        PendingDraftsToOffer--;
+    }
+
     public void ResolveUnitDraft(UnitData chosen)
     {
         PendingDraftOptions.Clear();
@@ -290,5 +330,71 @@ public class GameStateManager : MonoBehaviour
     {
         CurrentState = newState;
         OnGameStateChanged?.Invoke(newState);
+    }
+
+    public void ProcessExtraction(UnitInstance unitInstance)
+    {
+        if (unitInstance == null) return;
+
+        // 1. Set the unit as saved / extracted
+        unitInstance.IsExtracted = true;
+        CombatManager.Instance.HandleUnitExtract(unitInstance);
+        // If your UnitInstance maps back to a persistent Unit data model, 
+        // store or track it here so it's preserved for the next screen.
+        // (Assuming UnitInstance has a reference to its underlying persistent 'Unit' or data)
+        // ExtractedUnitsThisBattle.Add(unitInstance.persistentUnitData);
+
+        // 3. If the unit was carrying / saved any villagers, tally them up
+        // (Adjust property name if your UnitInstance tracks rescued villagers differently)
+        if (unitInstance.rescuedUnitData[0] != null)
+        {
+            Debug.Log("Villager has been saved");
+            SavedVillagersThisBattle++;
+        }
+        if (unitInstance.rescuedUnitData[1] != null)
+        {
+            SavedVillagersThisBattle++;
+        }
+
+
+        // 2. Remove the unit from the battlefield (Disable GameObject / destroy)
+        // This triggers cleanup in your CombatManager/Roster
+        Destroy(unitInstance.gameObject);
+
+        Debug.Log($"GameStateManager: Unit {unitInstance.unitName} successfully extracted!");
+
+        // 4. Check if the player has any living/active units left on the battlefield
+        CheckForCombatEnd();
+    }
+
+    private void CheckForCombatEnd(String sceneName = "DecisionPhase")
+    {
+        // Find all remaining active player units on the field
+        UnitInstance[] remainingUnits = FindObjectsByType<UnitInstance>();
+        
+        bool hasActiveUnits = false;
+
+        foreach (var u in remainingUnits)
+        {
+            if (u != null && u.Faction == UnitFaction.Player && !u.IsDead && !u.IsExtracted)
+            {
+                hasActiveUnits = true;
+                break;
+            }
+        }
+        
+
+        // If no active units left, end the round/combat phase
+        if (!hasActiveUnits)
+        {
+            Debug.Log("GameStateManager: All player units are dead or extracted. Ending round.");
+            SetState(GameState.InCombat);
+            SceneManager.LoadScene(sceneName);
+            // Trigger your round end logic here (e.g., call CombatManager.Instance.EndRound() or invoke an event)
+            if (CombatManager.Instance != null)
+            {
+                // CombatManager.Instance.TriggerRoundEnd();
+            }
+        }
     }
 }

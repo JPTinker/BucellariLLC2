@@ -1369,7 +1369,7 @@ Animator:
   m_GameObject: {fileID: 6163759254571570966}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: b29b2128ad71ad649baeac918d2d5a2e, type: 2}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1fabf78c1441eb84890087e0c8b2f6db, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1403,6 +1403,14 @@ MonoBehaviour:
   defensePower: 1
   movementRange: 3
   healsOthers: 0
+  visibilityRange: 3
+  colorScheme: 0
+  leftHand: {fileID: 2654713455406179991}
+  rightHand: {fileID: 776700800631521036}
+  ColorScheme1: {fileID: 2800000, guid: df300ff02ec9cae4d813f97578b26022, type: 3}
+  ColorScheme2: {fileID: 2800000, guid: c6076428da4ee35488f40bbac22307fc, type: 3}
+  ColorScheme3: {fileID: 2800000, guid: 4f4a7f59263406f4d820f1c98fa4d324, type: 3}
+  ColorScheme4: {fileID: 2800000, guid: 27f1905a198abc348a652c335f919a91, type: 3}
   tileVisualOffset: 0.5
   currentTile: {fileID: 0}
   maxActionsPerTurn: 2
@@ -1410,6 +1418,13 @@ MonoBehaviour:
   rescuedUnitData:
   - {fileID: 0}
   - {fileID: 0}
+  IsExtracted: 0
+  IsFortified: 0
+  lightHitThreshold: 0.15
+  heavyHitThreshold: 0.35
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashOnDuration: 0.08
+  flashOffDuration: 0.08
 --- !u!1 &6211831913304919448
 GameObject:
   m_ObjectHideFlags: 0

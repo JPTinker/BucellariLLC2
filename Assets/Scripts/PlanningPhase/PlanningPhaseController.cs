@@ -150,6 +150,18 @@ public class PlanningPhaseController : MonoBehaviour
             EnqueueAndPlayReveals();
         }
     }
+    public void LevelChangeDraftOffer()
+    {
+        var gsm = GameStateManager.Instance;
+        if (gsm.PendingDraftOptions.Count > 0 && _draftOverlay != null && _draftOptionsContainer != null)
+        {
+            StartCoroutine(PlayDraftSequence());
+        }
+        else
+        {
+            EnqueueAndPlayReveals();
+        }        
+    }
 
     private void EnqueueAndPlayReveals()
     {
@@ -412,7 +424,16 @@ public class PlanningPhaseController : MonoBehaviour
 
         RefreshRosterList();
         RefreshSelectionCounter();
-        EnqueueAndPlayReveals();
+
+        if (GameStateManager.Instance.PendingDraftsToOffer > 0)
+        {
+            GameStateManager.Instance.OfferNextUnitDraft();
+            yield return StartCoroutine(PlayDraftSequence());
+        }
+        else
+        {
+            EnqueueAndPlayReveals();
+        }
     }
 
     private List<VisualElement> BuildDraftOptions(List<UnitData> options)

@@ -17,11 +17,20 @@ MonoBehaviour:
   Description: 
   UnitIcon: {fileID: 0}
   ModelPrefab: {fileID: 6163759254571570966, guid: caa3e0ed74b3f9440a2591e2fbef0d57, type: 3}
-  equipmentPrefabs: []
+  weaponPrefabs:
+  - {fileID: 919132149155446097, guid: 261370fa15a7bb54e9762162f0227fa9, type: 3}
+  equipmentPrefabs:
+  - {fileID: 919132149155446097, guid: 261370fa15a7bb54e9762162f0227fa9, type: 3}
+  ColorScheme: 0
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
   MaxHP: 100
   BaseAttack: 10
   AttackRange: 1
   MoveSpeed: 2
+  MaxMovementPoints: 2
+  VisibilityRange: 3
   defensePower: 2
   healsOthers: 1
   Faction: 0

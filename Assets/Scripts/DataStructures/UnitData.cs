@@ -11,6 +11,7 @@ public class UnitData : ScriptableObject
     public string Description;
     public Sprite UnitIcon;          // For UI / Roster list
     public GameObject ModelPrefab;    // World space visual / Sprite Prefab
+    public GameObject[] weaponPrefabs; // Array of equipment prefabs for the unit
     public GameObject[] equipmentPrefabs; // Array of equipment prefabs for the unit
 
     [Header("Visual Style")]
@@ -59,6 +60,7 @@ public class Unit
     public string UnitID;
     public string UnitName;
     public int Level = 1;
+    public int Experience;
 
     [Header("Persistent Stats")]
     public int MaxHP;
@@ -71,6 +73,9 @@ public class Unit
     public int MaxMovementPoints;
     public UnitColorScheme ColorScheme;
     public UnitFaction Faction;
+
+    public GameObject WeaponPrefab;
+    public GameObject EquipmentPrefab;
 
     [Header("Archetype Reference")]
     public UnitData Archetype;
@@ -96,5 +101,19 @@ public class Unit
         HealingPower = archetype.healsOthers;
         ColorScheme = archetype.ColorScheme;
         Faction = archetype.Faction;
+        WeaponPrefab = archetype.weaponPrefabs != null && archetype.weaponPrefabs.Length > 0 ? archetype.weaponPrefabs[0] : null;
+        EquipmentPrefab = archetype.equipmentPrefabs != null && archetype.equipmentPrefabs.Length > 0 ? archetype.equipmentPrefabs[0] : null;
+        
+    }
+
+    public void ApplyLevelUp()
+    {
+        Level++;
+        BaseAttack++;
+        DefensePower++;
+        HealingPower++;
+
+        if (UnityEngine.Random.value < 0.5f)
+            MaxHP += 5;
     }
 }

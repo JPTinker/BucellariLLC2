@@ -17,6 +17,7 @@ MonoBehaviour:
   Description: 
   UnitIcon: {fileID: 0}
   ModelPrefab: {fileID: 2867696692719545677, guid: d1e856b0d43433c45a77c217591232fa, type: 3}
+  weaponPrefabs: []
   equipmentPrefabs: []
   ColorScheme: 0
   ColorScheme1: {fileID: 0}

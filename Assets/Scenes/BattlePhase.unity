@@ -289,7 +289,7 @@ GameObject:
   - component: {fileID: 226643594}
   - component: {fileID: 226643596}
   - component: {fileID: 226643595}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: UI Blocker
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -328,7 +328,7 @@ BoxCollider:
   m_LayerOverridePriority: 0
   m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
@@ -727,7 +727,7 @@ Camera:
   serializedVersion: 2
   m_ClearFlags: 1
   m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
-  m_projectionMatrixMode: 2
+  m_projectionMatrixMode: 1
   m_GateFitMode: 1
   m_FOVAxisMode: 0
   m_Iso: 200
@@ -750,8 +750,8 @@ Camera:
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 26.991467
-  orthographic: 0
-  orthographic size: 5
+  orthographic: 1
+  orthographic size: 3.5
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -795,11 +795,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06478d908e2765b44a727af69c5b1e64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
-  moveSpeed: 15
+  moveSpeed: 20
   dragSpeed: 0.01
-  zoomSpeed: 5
-  minZoom: 5
-  maxZoom: 25
+  zoomSpeed: 0.1
+  minZoom: 2
+  maxZoom: 15
   minBounds: {x: 3, y: -6}
   maxBounds: {x: 25, y: 25}
   useBounds: 0
@@ -990,8 +990,8 @@ MonoBehaviour:
   hexSize: 0.6
   Cloud: {fileID: 919132149155446097, guid: fc2dbb2f2b55de843918e525fe3947ac, type: 3}
   fogHeight: 0.25
-  width: 20
-  height: 20
+  width: 25
+  height: 25
   seed: 0
   noiseScale: 0.15
   terrainBands:
@@ -1041,6 +1041,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   enemyAI: {fileID: 2007730828}
+  combatUIManager: {fileID: 1221553267}
 --- !u!114 &2007730828
 MonoBehaviour:
   m_ObjectHideFlags: 0

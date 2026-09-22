@@ -130,46 +130,6 @@ public class CombatPhaseUIController : MonoBehaviour
         SetGold(GameStateManager.Instance.Resources.Gold);
     }
 
-    /*private void Update()
-    {
-        if (unitList == null) return;
-
-        UnitInstance[] currentUnits = FindObjectsByType<UnitInstance>();
-        bool rosterChanged = false;
-        HashSet<UnitInstance> currentPlayerUnits = new HashSet<UnitInstance>();
-
-        foreach (UnitInstance unit in currentUnits)
-        {
-            if (IsActivePlayerUnit(unit))
-                currentPlayerUnits.Add(unit);
-        }
-
-        if (currentPlayerUnits.Count != playerUnits.Count)
-        {
-            rosterChanged = true;
-        }
-        else
-        {
-            foreach (UnitInstance unit in playerUnits)
-            {
-                if (!currentPlayerUnits.Contains(unit))
-                {
-                    rosterChanged = true;
-                    break;
-                }
-            }
-        }
-
-        if (rosterChanged) RefreshRoster();
-
-        foreach (UnitCardView cardView in cardViews.Values)
-            cardView.Refresh();
-
-        // Unit stats (HP, position, actions remaining) can change without a
-        // roster change or a new selection, so re-evaluate button states each frame.
-        RefreshActionButtonStates();
-    }*/
-
     private static bool IsActivePlayerUnit(UnitInstance unit)
     {
         return unit != null && unit.Faction == UnitFaction.Player && !unit.IsDead && !unit.IsExtracted;
@@ -216,8 +176,9 @@ public class CombatPhaseUIController : MonoBehaviour
         }
     }
 
-    private void SelectUnit(UnitInstance unit)
+    public void SelectUnit(UnitInstance unit)
     {
+        Debug.Log($"CombatPhaseUIController: SelectUnit called with {unit?.unitName ?? "null"}");
         selectedUnit = unit;
 
         foreach (KeyValuePair<UnitInstance, UnitCardView> kvp in cardViews)
@@ -225,7 +186,6 @@ public class CombatPhaseUIController : MonoBehaviour
 
         RefreshActionButtonStates();
 
-        CombatManager.Instance?.SelectUnit(unit);
         OnUnitSelected?.Invoke(unit);
     }
 
@@ -235,33 +195,47 @@ public class CombatPhaseUIController : MonoBehaviour
         bool hasSelection = unit != null;
         bool hasActions = hasSelection && unit.actionsRemaining > 0;
 
-        healButton?.SetEnabled(hasActions && unit.currentHealth < unit.maxHealth);
-        fortifyButton?.SetEnabled(hasActions);
-        extractButton?.SetEnabled(hasActions && IsAdjacentToExtractionPoint(unit));
-        scoutButton?.SetEnabled(hasActions);
-        // End Turn stays available regardless of unit selection/action count.
-    }
+        // Rule 1: If they have no actions (or no unit selected), all action buttons are disabled
+        if (!hasActions)
+        {
+            healButton?.SetEnabled(false);
+            fortifyButton?.SetEnabled(false);
+            extractButton?.SetEnabled(false);
+            scoutButton?.SetEnabled(false);
+            return;
+        }
 
-    private bool IsAdjacentToExtractionPoint(UnitInstance unit)
-    {
-        if (unit == null) return false;
+        // Rule 2: If they are not adjacent to (0,0) then extract is disabled
+        bool isAdjacentToOrigin = false;
+        if (unit.currentTile != null)
+        {
+            Vector2Int pos = unit.currentTile.gridPosition;
+            int dx = Mathf.Abs(pos.x);
+            int dy = Mathf.Abs(pos.y);
+            isAdjacentToOrigin = (Mathf.Max(dx, dy) == 1);
+        }
+        extractButton?.SetEnabled(isAdjacentToOrigin);
 
-        // NOTE: assumes UnitInstance exposes a grid coordinate as GridPosition
-        // (Vector2Int). Rename this if your unit's coordinate field differs.
-        Vector2Int pos = unit.currentTile != null ? unit.currentTile.gridPosition : Vector2Int.zero;
-        int dx = Mathf.Abs(pos.x - extractionPoint.x);
-        int dy = Mathf.Abs(pos.y - extractionPoint.y);
+        // Rule 3: If the unit is not below its max health then heal is disabled
+        bool isBelowMaxHealth = unit.currentHealth < unit.maxHealth;
+        healButton?.SetEnabled(isBelowMaxHealth);
 
-        // Adjacent = one tile away (including diagonals), not standing on it.
-        return Mathf.Max(dx, dy) == 1;
+        // Rule 4: If the unit is already fortified then fortify is disabled
+        // (Change 'isFortified' to 'IsFortified' if your property casing differs)
+        bool isFortified = unit.IsFortified; 
+        fortifyButton?.SetEnabled(!isFortified);
+
+        // Scout can be used if they have actions remaining
+        scoutButton?.SetEnabled(true);
     }
 
     private void RaiseAction(CombatAction action)
     {
         if (action != CombatAction.EndTurn && selectedUnit == null) return;
         OnActionRequested?.Invoke(action, selectedUnit);
+        RefreshActionButtonStates();
+        RefreshRoster();
     }
-
     private sealed class UnitCardView
     {
         public VisualElement Root { get; }

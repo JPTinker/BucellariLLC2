@@ -23,6 +23,7 @@ public class CombatManager : MonoBehaviour
     private bool enemyTurnInProgress;
     public int currentRound { get; private set; } = 1;
 
+    public CombatPhaseUIController combatUIManager;
 
     private void Awake()
     {
@@ -32,7 +33,75 @@ public class CombatManager : MonoBehaviour
         if (enemyAI == null) enemyAI = gameObject.AddComponent<EnemyAIController>();
     }
 
+    private void OnEnable()
+    {
+        if (combatUIManager != null)
+            combatUIManager.OnActionRequested += HandleActionRequested;
+    }
+
+    private void OnDisable()
+    {
+        if (combatUIManager != null)
+            combatUIManager.OnActionRequested -= HandleActionRequested;
+    }
+
     private void Start() => TrackAll(FindObjectsByType<UnitInstance>());
+
+    private void HandleActionRequested(CombatPhaseUIController.CombatAction action, UnitInstance unit)
+    {
+        if (unit == null)
+        {
+            Debug.LogWarning($"CombatManager: {action} clicked without a selected unit.");
+            return;
+        }
+
+        switch (action)
+        {
+            case CombatPhaseUIController.CombatAction.Heal:
+                HandleHealClicked(unit);
+                break;
+            case CombatPhaseUIController.CombatAction.Fortify:
+                HandleFortifyClicked(unit);
+                break;
+            case CombatPhaseUIController.CombatAction.Extract:
+                HandleExtractClicked(unit);
+                break;
+            case CombatPhaseUIController.CombatAction.Scout:
+                HandleScoutClicked(unit);
+                break;
+        }
+    }
+
+    private static void HandleHealClicked(UnitInstance unit)
+    {
+        unit.onHeal();
+        Debug.Log($"CombatManager: Heal clicked for {unit.unitName}.");
+    }
+
+    private static void HandleFortifyClicked(UnitInstance unit)
+    {
+        unit.onFortify();
+        Debug.Log($"CombatManager: Fortify clicked for {unit.unitName}.");
+    }
+
+    private static void HandleExtractClicked(UnitInstance unit)
+    {
+        if (unit == null) return;
+
+        Debug.Log($"CombatManager: Extract clicked for {unit.unitName}.");
+
+        // Tell GameStateManager to handle the extraction logic (saving, tracking villagers, etc.)
+        if (GameStateManager.Instance != null)
+        {
+            GameStateManager.Instance.ProcessExtraction(unit);
+        }
+    }
+
+    private static void HandleScoutClicked(UnitInstance unit)
+    {
+        unit.onScout();
+        Debug.Log($"CombatManager: Scout clicked for {unit.unitName}.");
+    }
 
     /// <summary>Called by HexTile when the player clicks it.</summary>
     public void SelectedTile(HexTile tile)
@@ -41,7 +110,10 @@ public class CombatManager : MonoBehaviour
         if (tile == null || levelEnded || enemyTurnInProgress) return;
         if (selectedUnit == null)
         {
-            if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) SelectUnit(tile.occupyingUnit);
+            if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) {
+                SelectUnit(tile.occupyingUnit);
+                combatUIManager.SelectUnit(tile.occupyingUnit);
+            }
             return;
         }
         else {
@@ -49,6 +121,7 @@ public class CombatManager : MonoBehaviour
                 tile.occupyingUnit.Faction == UnitFaction.Player)
             {
                 SelectUnit(tile.occupyingUnit);
+                combatUIManager.SelectUnit(tile.occupyingUnit);
                 return;
             }
             if (!highlightedTiles.Contains(tile)) { ClearSelection(); return; }
@@ -66,7 +139,7 @@ public class CombatManager : MonoBehaviour
                 ClearSelection();
                 return;
             }
-            if (tile.occupyingUnit != null && tile.occupyingUnit.isEnemy)
+            if (tile.occupyingUnit != null && tile.occupyingUnit.Faction == UnitFaction.Enemy)
             {
                 Debug.Log($"CombatManager: Attempting to attack enemy unit on {tile.name}");
                 // Attack logic can be implemented here
@@ -92,7 +165,7 @@ public class CombatManager : MonoBehaviour
         }
 
     }
-    private void TakeAction(UnitInstance selectedUnit)
+    public void TakeAction(UnitInstance selectedUnit)
     {
         selectedUnit.actionsRemaining = Mathf.Max(0, selectedUnit.actionsRemaining - 1);
         if (selectedUnit.actionsRemaining <= 0)
@@ -106,7 +179,7 @@ public class CombatManager : MonoBehaviour
 
     public void SelectUnit(UnitInstance unit)
     {
-        if (unit == null || unit.isEnemy || unit.IsDead || unit.currentTile == null) return;
+        if (unit == null || unit.Faction == UnitFaction.Enemy || unit.IsDead || unit.currentTile == null) return;
         ClearSelection();
         selectedUnit = unit;
         if (unit.actionsRemaining <= 0) return;
@@ -186,6 +259,7 @@ public class CombatManager : MonoBehaviour
 
     private void FinishEnemyTurn()
     {
+        Debug.Log("Enemy turn completed. Resetting player units for next round.");
         enemyTurnInProgress = false;
         foreach (UnitInstance unit in playerUnits)
         {
@@ -209,6 +283,7 @@ public class CombatManager : MonoBehaviour
 
     private void ClearSelection()
     {
+        combatUIManager.SelectUnit(null);
         selectedUnit = null;
         pendingDestination = null;
         previewPath.Clear();
@@ -247,6 +322,14 @@ public class CombatManager : MonoBehaviour
         playerUnits.Remove(unit); enemyUnits.Remove(unit); villagerUnits.Remove(unit);
         if (unit == selectedUnit) ClearSelection();
         CheckLevelEnd();
+        CheckTurnEnd();
+    }
+    public void HandleUnitExtract(UnitInstance unit)
+    {
+        playerUnits.Remove(unit);
+        if (unit == selectedUnit) ClearSelection();
+        CheckLevelEnd();
+        CheckTurnEnd();
     }
 
     private void CheckLevelEnd()

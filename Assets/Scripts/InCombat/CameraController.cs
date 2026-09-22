@@ -95,6 +95,7 @@ public class CameraController : MonoBehaviour
         float scrollNormalized = Mathf.Sign(scroll);
 
         // 4. Update the orthographic size
+        //Debug.Log($"Mouse scroll detected: {scroll}, normalized: {scrollNormalized}");
         cam.orthographicSize -= scrollNormalized * zoomSpeed;
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
     }

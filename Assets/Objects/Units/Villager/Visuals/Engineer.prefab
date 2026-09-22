@@ -993,7 +993,7 @@ Animator:
   m_GameObject: {fileID: 919132149155446097}
   m_Enabled: 1
   m_Avatar: {fileID: 9000000, guid: b29b2128ad71ad649baeac918d2d5a2e, type: 2}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1fabf78c1441eb84890087e0c8b2f6db, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1018,7 +1018,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitInstance
   unitName: Unit
-  isEnemy: 0
   Faction: 3
   maxHealth: 10000
   currentHealth: 10
@@ -1029,6 +1028,12 @@ MonoBehaviour:
   healsOthers: 0
   visibilityRange: 1
   colorScheme: 0
+  leftHand: {fileID: 0}
+  rightHand: {fileID: 0}
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
   tileVisualOffset: 0.5
   currentTile: {fileID: 0}
   maxActionsPerTurn: 2
@@ -1037,6 +1042,13 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   IsExtracted: 0
+  IsFortified: 0
+  isRevealed: 0
+  lightHitThreshold: 0.15
+  heavyHitThreshold: 0.35
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashOnDuration: 0.08
+  flashOffDuration: 0.08
 --- !u!1 &1836331795753964598
 GameObject:
   m_ObjectHideFlags: 0

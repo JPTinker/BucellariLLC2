@@ -11,8 +11,15 @@ public class UnitInstance : MonoBehaviour
 {
     [Header("Identity")]
     public string unitName = "Unit";
-    public bool isEnemy = false;
+    //public bool isEnemy = false;
     public Unit PersistentUnit { get; private set; }
+    public int Experience { get; private set; }
+    public int Level { get; private set; } = 1;
+
+    private const int ExperiencePerLevel = 100;
+    private const int AttackExperience = 10;
+    private const int KillExperience = 20;
+    private const int RescueExperience = 25;
 
     public UnitFaction Faction;
 
@@ -27,8 +34,14 @@ public class UnitInstance : MonoBehaviour
     public int visibilityRange = 3;
     public UnitColorScheme colorScheme = UnitColorScheme.Scheme1;
 
-    [Tooltip("Visual height above the centre of the tile.")]
-    public float tileVisualOffset = 0.5f;
+    public GameObject leftHand;
+    public GameObject rightHand;
+
+    public Texture2D ColorScheme1;
+    public Texture2D ColorScheme2;
+    public Texture2D ColorScheme3;
+    public Texture2D ColorScheme4;
+
 
     [Header("State")]
     public HexTile currentTile;
@@ -41,6 +54,7 @@ public class UnitInstance : MonoBehaviour
 
     public bool IsExtracted = false;
     public bool IsFortified = false;
+    public bool IsRevealed = false;
     public event Action<UnitInstance> OnStatsChanged;
     private Renderer[] flashRenderers;
     private MaterialPropertyBlock flashPropertyBlock;
@@ -76,6 +90,8 @@ public class UnitInstance : MonoBehaviour
         }
 
         PersistentUnit = unit;
+        Experience = unit.Experience;
+        Level = unit.Level;
         unitName = unit.UnitName;
         maxHealth = unit.MaxHP;
         currentHealth = maxHealth;
@@ -90,6 +106,14 @@ public class UnitInstance : MonoBehaviour
         Faction = unit.Faction;
         actionsRemaining = maxActionsPerTurn;
         ApplyColorScheme(unit.Archetype);
+        if (unit.WeaponPrefab != null && rightHand != null){
+            GameObject.Instantiate(unit.WeaponPrefab, rightHand.transform, false);
+        }
+
+        if (unit.EquipmentPrefab != null && leftHand != null)
+        {
+            GameObject.Instantiate(unit.EquipmentPrefab, leftHand.transform, false);
+        }
     }
 
     public void NotifyStatsChanged()
@@ -106,6 +130,34 @@ public class UnitInstance : MonoBehaviour
         }
 
         Initialize(new Unit(archetype));
+    }
+
+    public void AddExperience(int amount)
+    {
+        if (amount <= 0 || PersistentUnit == null) return;
+
+        Experience += amount;
+        PersistentUnit.Experience = Experience;
+
+        while (Experience >= ExperiencePerLevel)
+        {
+            Experience -= ExperiencePerLevel;
+            PersistentUnit.Experience = Experience;
+            LevelUp();
+        }
+    }
+
+    private void LevelUp()
+    {
+        PersistentUnit.ApplyLevelUp();
+        Level = PersistentUnit.Level;
+        maxHealth = PersistentUnit.MaxHP;
+        attackPower = PersistentUnit.BaseAttack;
+        defensePower = PersistentUnit.DefensePower;
+        healsOthers = PersistentUnit.HealingPower;
+        currentHealth = Mathf.Min(maxHealth, currentHealth + 5);
+        NotifyStatsChanged();
+        Debug.Log($"{unitName} reached level {Level}.");
     }
 
     private void ApplyColorScheme(UnitData archetype)
@@ -150,7 +202,11 @@ public class UnitInstance : MonoBehaviour
 
         currentTile = tile;
         tile.SetUnit(this);
-        transform.position = tile.transform.position + Vector3.up * tileVisualOffset;
+        transform.position = tile.transform.position + Vector3.up * tile.heightOffset;
+        if (!IsRevealed && tile.isRevealed)
+            OnTileRevealed();
+        else if (IsRevealed && !tile.isRevealed)
+            OnTileHidden();
     }
 
     /// Moves the unit along a path (e.g. from HexPathfinder.FindPath). MVP: snaps
@@ -161,9 +217,10 @@ public class UnitInstance : MonoBehaviour
 
         var path = HexPathfinder.FindPath(currentTile, destinationTile, maxMovementCost >= 0 ? maxMovementCost : movementRange);
         if (path == null || path.Count == 0) return false;
-
+        Debug.Log($"{unitName} moving from {currentTile.gridPosition} to {destinationTile.gridPosition} via path of length {path.Count}");
         PlaceOnTile(destinationTile);
         MapManager.Instance?.RevealAroundUnit(this);
+        IsFortified = false;
         return true;
     }
 
@@ -180,9 +237,9 @@ public class UnitInstance : MonoBehaviour
         return distance <= attackRange;
     }
 
-    public void Attack(UnitInstance target)
+    public bool Attack(UnitInstance target)
     {
-        if (!CanAttack(target)) return;
+        if (!CanAttack(target)) return false;
 
         //int attackRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
         //int defRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
@@ -192,16 +249,33 @@ public class UnitInstance : MonoBehaviour
         float terrainBonus = 1f+ (Mathf.Max(currentTile.attackBonus - target.currentTile.defenseBonus, 1f)/5f);
         int flatAttack = Mathf.Max(attackPower - target.defensePower,1);
         
+        if (IsFortified == true)
+        {
+            flatAttack += 3;
+        }
+
         int damage = flatAttack * Mathf.RoundToInt(terrainBonus * (attackRoll / (float)defRoll));
             //Mathf.RoundToInt(attackRoll + Mathf.Max((attackPower * (1.1f * attackRoll) * (1 + currentTile.attackBonus/5)) - (target.defensePower * (1.05f * defRoll) * (1 + target.currentTile.defenseBonus/5)), 0f));
         Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage! (Attack Roll: {attackRoll}, Defense Roll: {defRoll}, terrainBonus: {terrainBonus})");
         target.TakeDamage(damage);
+        if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
+        {
+            AddExperience(AttackExperience);
+            if (target.IsDead)
+                AddExperience(KillExperience);
+        }
+        return true;
     }
 
     public void TakeDamage(int amount)
     {
         if (IsDead) return;
  
+        if (IsFortified == true)
+        {
+            amount = Mathf.Min(1, amount - 3);
+        }
+
         int healthBefore = currentHealth;
         currentHealth = Mathf.Max(0, currentHealth - amount);
         int damageTaken = healthBefore - currentHealth;
@@ -275,12 +349,14 @@ public class UnitInstance : MonoBehaviour
 
     public void OnTileRevealed()
     {
+        IsRevealed = true;
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             renderer.enabled = true;
     }
 
     public void OnTileHidden()
     {
+        IsRevealed = false;
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             renderer.enabled = false;
     }
@@ -346,7 +422,29 @@ public class UnitInstance : MonoBehaviour
             collider.enabled = false;
 
         villager.enabled = false;
+        if (Faction == UnitFaction.Player)
+            AddExperience(RescueExperience);
         Debug.Log($"{unitName} has rescued {villager.unitName}!");
         return true;
+    }
+    public void onHeal()
+    {
+        currentHealth = Mathf.Min(maxHealth, currentHealth + healsOthers);
+        NotifyStatsChanged();
+        CombatManager.Instance?.TakeAction(this);
+    }
+    public void onFortify()
+    {
+        IsFortified = true;
+        NotifyStatsChanged();
+        CombatManager.Instance?.TakeAction(this);
+    }
+    public void onScout()
+    {
+        int temp = visibilityRange;
+        visibilityRange = visibilityRange + 2;
+        MapManager.Instance?.RevealAroundUnit(this);
+        visibilityRange = temp;
+        CombatManager.Instance?.TakeAction(this);
     }
 }

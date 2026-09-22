@@ -94,7 +94,7 @@ MonoBehaviour:
   occupyingUnit: {fileID: 0}
   isWalkable: 1
   movementCost: 2
-  heightOffset: 0.187
+  heightOffset: 0.2
   defenseBonus: 6
   attackBonus: -4
   isHighlighted: 0
