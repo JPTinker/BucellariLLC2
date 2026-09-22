@@ -93,6 +93,7 @@ public class CombatManager : MonoBehaviour
         // Tell GameStateManager to handle the extraction logic (saving, tracking villagers, etc.)
         if (GameStateManager.Instance != null)
         {
+            unit.currentTile.RemoveUnit();
             GameStateManager.Instance.ProcessExtraction(unit);
         }
     }
