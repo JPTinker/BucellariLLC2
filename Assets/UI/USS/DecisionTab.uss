@@ -1,0 +1,324 @@
+/* DecisionTab.uss
+   Ported from the Tailwind config in code.html. USS custom properties (--x)
+   require Unity 2022.2+; on older versions, find/replace var(--token) with
+   its literal hex value throughout this file.
+
+   NOT portable from the HTML version, by design limitation:
+   - No CSS Grid: all "grid-cols-N" layouts below are flex rows with
+     flex-grow:1 / flex-basis:0 children, which balances N equal columns.
+   - No backdrop-filter/blur: .header and .bottom-nav use a solid
+     semi-transparent background instead of frosted glass.
+   - No text-transform: uppercase labels must have their text set in caps
+     already (done in the UXML / controller).
+   - box-shadow requires Unity 6+; remove those rules on older versions.
+   - Fonts (Sora / JetBrains Mono / Space Mono) and all icons must be
+     imported as project assets and referenced below - see the top of
+     DecisionTab.uxml for the icon-to-glyph mapping.
+*/
+
+.root {
+    --color-surface: #0E141A;
+    --color-surface-container-low: #161C22;
+    --color-surface-container: #1A2027;
+    --color-surface-container-high: #252B31;
+    --color-surface-container-highest: #2F353C;
+
+    --color-primary: #E1FDFF;
+    --color-primary-fixed: #74F5FF;
+    --color-primary-fixed-dim: #00DBE7;
+    --color-primary-container: #00F2FF;
+    --color-on-primary: #00363A;
+
+    --color-on-surface: #DDE3EC;
+    --color-on-surface-variant: #B9CACB;
+    --color-outline: #849495;
+    --color-outline-variant: #3A494B;
+
+    --color-error: #FFB4AB;
+    --color-error-container: #93000A;
+    --color-on-error-container: #FFDAD6;
+
+    --color-secondary-fixed: #CDE7EB;
+    --color-secondary-container: #324B4E;
+    --color-on-secondary-container: #A0BABE;
+
+    flex-grow: 1;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+}
+
+/* ---------- Typography ---------- */
+.label-caps {
+    font-size: 10px;
+    letter-spacing: 2px;
+    -unity-font-style: bold;
+    color: var(--color-on-surface);
+    /* Assign the Space Mono font asset in USS or via UI Builder:
+       -unity-font-definition: url("project://database/Assets/Fonts/SpaceMono-Bold.asset"); */
+}
+
+.body-text {
+    font-size: 12px;
+    white-space: normal;
+    /* -unity-font-definition: JetBrains Mono */
+}
+
+.headline {
+    font-size: 24px;
+    -unity-font-style: bold;
+    color: var(--color-primary);
+    margin-top: 2px;
+    /* -unity-font-definition: Sora Bold */
+}
+
+.stat-value {
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--color-on-surface);
+}
+.stat-value--md { font-size: 14px; }
+.stat-suffix { font-size: 10px; color: var(--color-outline); margin-left: 2px; }
+.stat-text { font-size: 12px; -unity-font-style: bold; }
+
+.text-muted { color: var(--color-on-surface-variant); }
+.text-bold { -unity-font-style: bold; }
+.text-positive { color: var(--color-primary-fixed); }
+.text-negative { color: var(--color-error); }
+.text-primary { color: var(--color-primary); }
+.text-primary-fixed { color: var(--color-primary-fixed); }
+.text-primary-fixed-dim { color: var(--color-primary-fixed-dim); }
+.text-primary-container { color: var(--color-primary-container); }
+
+/* ---------- Layout primitives ---------- */
+.row { flex-direction: row; align-items: center; }
+.row--space-between { justify-content: space-between; }
+.row--baseline { align-items: flex-end; }
+.row--gap-sm > * { margin-right: 8px; }
+.row--gap-sm > *:last-child { margin-right: 0; }
+.row--gap-xs > * { margin-right: 4px; }
+.row--gap-xs > *:last-child { margin-right: 0; }
+
+.panel {
+    background-color: var(--color-surface-container-low);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    /* box-shadow: 0 2px 8px rgba(0,0,0,0.25); Unity 6+ only */
+}
+
+.chip {
+    font-size: 9px;
+    color: var(--color-on-surface-variant);
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+.chip--muted { color: var(--color-outline); }
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--color-primary-fixed);
+    margin-right: 6px;
+}
+
+/* ---------- Header ---------- */
+.header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 64px;
+    padding: 0 20px;
+    background-color: rgba(14, 20, 26, 0.92);
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(0, 242, 255, 0.1);
+}
+.header__logo {
+    width: 32px;
+    height: 32px;
+    /* background-image: resource("Icons/logo"); */
+}
+.header__avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background-color: var(--color-surface-container-high);
+    border-width: 1px;
+    border-color: rgba(0, 242, 255, 0.2);
+    margin-left: 12px;
+}
+.header__status-text { font-size: 10px; -unity-text-align: upper-right; }
+
+/* ---------- Scroll content ---------- */
+.content-scroll { flex-grow: 1; padding: 16px 20px 96px 20px; }
+
+/* ---------- Debrief ---------- */
+.debrief__grid { flex-direction: row; margin-top: 8px; }
+.debrief__stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: center;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 8px;
+    margin-right: 6px;
+}
+.debrief__stat:last-child { margin-right: 0; }
+
+/* ---------- Ledger ---------- */
+.ledger__grid { flex-direction: row; margin-top: 8px; }
+.ledger__cell {
+    flex-grow: 1;
+    flex-basis: 0;
+    justify-content: space-between;
+    background-color: var(--color-surface-container-high);
+    border-radius: 4px;
+    padding: 8px;
+    margin-right: 6px;
+    min-height: 64px;
+}
+.ledger__cell:last-child { margin-right: 0; }
+
+/* ---------- Section headers ---------- */
+.section-header-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    margin-bottom: 8px;
+}
+.section-title { color: var(--color-on-surface); font-size: 12px; }
+
+/* ---------- Directive cards ---------- */
+.directive-list { flex-direction: column; }
+.directive-card { flex-direction: column; }
+
+.icon-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background-color: var(--color-surface-container-highest);
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+.icon { width: 18px; height: 18px; }
+
+.card-title { font-size: 13px; -unity-font-style: bold; margin-bottom: 2px; }
+
+.tag {
+    font-size: 10px;
+    color: var(--color-on-surface-variant);
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+.tag--danger { color: var(--color-on-error-container); background-color: var(--color-error-container); }
+.tag--info { color: var(--color-on-secondary-container); background-color: var(--color-secondary-container); }
+
+.card-info-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 8px;
+    margin: 10px 0;
+}
+.info-line {
+    flex-basis: 48%;
+    color: var(--color-on-surface-variant);
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+.info-line--positive { color: var(--color-primary-fixed); }
+.info-line--negative { color: var(--color-error); }
+
+.stepper {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--color-surface-container-highest);
+    border-radius: 4px;
+    padding: 2px;
+}
+.stepper__btn {
+    width: 28px;
+    height: 28px;
+    border-width: 0;
+    background-color: transparent;
+    color: var(--color-on-surface);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+.stepper__btn:hover { color: var(--color-primary); }
+.stepper__value {
+    width: 32px;
+    -unity-text-align: middle-center;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--color-primary-fixed);
+}
+
+/* ---------- Forecast ---------- */
+.forecast__grid { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
+.forecast__cell {
+    flex-basis: 48%;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 0 4px 8px 0;
+}
+
+.banner {
+    flex-direction: row;
+    align-items: flex-start;
+    background-color: var(--color-surface-container-high);
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 4px;
+}
+.banner--danger {
+    background-color: rgba(147, 0, 10, 0.15);
+    border-width: 1px;
+    border-color: rgba(255, 180, 171, 0.3);
+}
+
+/* ---------- Footer buttons ---------- */
+.action-footer { margin-top: 8px; }
+.btn {
+    height: 48px;
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+.btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
+.btn--ghost { background-color: var(--color-surface-container); color: var(--color-on-surface-variant); height: 40px; }
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav-bar {
+    flex-direction: row;
+    margin-top: 12px;
+    border-top-width: 1px;
+    border-top-color: rgba(58, 73, 75, 0.6);
+    padding-top: 8px;
+}
+.nav-button {
+    flex-grow: 1;
+    height: 40px;
+    background-color: transparent;
+    border-width: 0;
+    color: rgb(133, 148, 149);
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+.nav-button-active {
+    color: rgb(0, 219, 231);
+    border-bottom-width: 2px;
+    border-bottom-color: rgb(0, 219, 231);
+}
+.nav-button:disabled {
+    color: rgba(133, 148, 149, 0.4);
+}

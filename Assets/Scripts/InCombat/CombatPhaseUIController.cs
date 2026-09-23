@@ -19,6 +19,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
     // Resource bar elements
     private Label townsfolkSavedLabel;
+    private Label townsfolkSpawnedLabel;
     private Label unitCountLabel;
     private Label goldLabel;
     private Label roundLabel;
@@ -91,6 +92,12 @@ public class CombatPhaseUIController : MonoBehaviour
         uiDocument = GetComponent<UIDocument>();
     }
 
+    private void OnDisable()
+    {
+        if (MapManager.Instance != null)
+            MapManager.Instance.VillagerCountChanged -= HandleVillagerCountChanged;
+    }
+
     private void Start()
     {
         combatManager = CombatManager.Instance;
@@ -100,6 +107,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
         // Resource bar
         townsfolkSavedLabel = root.Q<Label>("townsfolk-saved-value");
+        townsfolkSpawnedLabel = root.Q<Label>("townsfolk-spawned-value");
         unitCountLabel = root.Q<Label>("unit-count-value");
         goldLabel = root.Q<Label>("gold-value");
         roundLabel = root.Q<Label>("round-value");
@@ -125,9 +133,34 @@ public class CombatPhaseUIController : MonoBehaviour
         RefreshActionButtonStates();
 
         RefreshRoster();
-        SetTownsfolkSaved(0, combatManager.GetVillagerCount());
+        if (MapManager.Instance != null)
+            MapManager.Instance.VillagerCountChanged += HandleVillagerCountChanged;
+        RefreshTownsfolkDisplay();
         SetRound(combatManager.currentRound);
         SetGold(GameStateManager.Instance.Resources.Gold);
+    }
+
+    private void HandleVillagerCountChanged(int spawned, int target)
+    {
+        SetTownsfolkSpawned(spawned, target);
+        SetTownsfolkSaved(GameStateManager.Instance.SavedVillagersThisBattle, target);
+    }
+
+    private void RefreshTownsfolkDisplay()
+    {
+        if (MapManager.Instance == null || GameStateManager.Instance == null)
+            return;
+
+        int spawned = MapManager.Instance.GetVillagersSpawned();
+        int target = MapManager.Instance.GetVillagerSpawnTarget();
+        SetTownsfolkSpawned(spawned, target);
+        SetTownsfolkSaved(GameStateManager.Instance.SavedVillagersThisBattle, target);
+    }
+
+    private void SetTownsfolkSpawned(int spawned, int target)
+    {
+        if (townsfolkSpawnedLabel != null)
+            townsfolkSpawnedLabel.text = $"{spawned} / {target}";
     }
 
     private static bool IsActivePlayerUnit(UnitInstance unit)
@@ -235,6 +268,7 @@ public class CombatPhaseUIController : MonoBehaviour
         OnActionRequested?.Invoke(action, selectedUnit);
         RefreshActionButtonStates();
         RefreshRoster();
+        RefreshTownsfolkDisplay();
     }
     private sealed class UnitCardView
     {

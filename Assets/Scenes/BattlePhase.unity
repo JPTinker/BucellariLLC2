@@ -1012,7 +1012,6 @@ MonoBehaviour:
   enemySpawnCount: 20
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
-  villagerSpawnCount: 5
 --- !u!4 &2007730826
 Transform:
   m_ObjectHideFlags: 0
@@ -1168,50 +1167,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: AvailablePlayerArchetypes.Array.size
-      value: 7
-      objectReference: {fileID: 0}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[1]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 9706b9d60de9f6d4d9bd24f2ea03191f, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[2]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 4d9091c96d9e2014993d95efae3eae67, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[3]'
-      value: 
-      objectReference: {fileID: 11400000, guid: a04f5ffb987cdb544acdcbf78ca8317d, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[4]'
-      value: 
-      objectReference: {fileID: 11400000, guid: bea55953af8a9cb409b8d432c9fe50a1, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[5]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 7af65160f0085e8429cba02cd52ac2af, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[6]'
-      value: 
-      objectReference: {fileID: 11400000, guid: a819e4fd9b4abde49a0fd54816a40a2e, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[7]'
-      value: 
-      objectReference: {fileID: 11400000, guid: a04f5ffb987cdb544acdcbf78ca8317d, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[8]'
-      value: 
-      objectReference: {fileID: 11400000, guid: bea55953af8a9cb409b8d432c9fe50a1, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[9]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 7af65160f0085e8429cba02cd52ac2af, type: 2}
-    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
-      propertyPath: 'AvailablePlayerArchetypes.Array.data[10]'
-      value: 
-      objectReference: {fileID: 11400000, guid: a819e4fd9b4abde49a0fd54816a40a2e, type: 2}
     - target: {fileID: 7801607055821855217, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: m_Name
       value: FullGameManager

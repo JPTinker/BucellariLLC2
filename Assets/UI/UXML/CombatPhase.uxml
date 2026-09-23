@@ -1,15 +1,19 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
-    <Style src="project://database/Assets/UI/CombatPhaseStyle.uss?fileID=7433441132597879392&amp;guid=0d4aa06d22099cf418dbb3a703ddd4d9&amp;type=3#CombatPhaseStyle"/>
+    <Style src="project://database/Assets/UI/USS/CombatPhaseStyle.uss?fileID=7433441132597879392&amp;guid=0d4aa06d22099cf418dbb3a703ddd4d9&amp;type=3#CombatPhaseStyle"/>
     <ui:VisualElement name="combat-screen" class="combat-screen">
         <ui:VisualElement name="resource-bar" class="resource-bar">
             <ui:VisualElement class="resource-heading">
                 <ui:Label text="BATTLEFIELD STATUS" class="eyebrow"/>
                 <ui:Label text="THE OLD QUARRY" class="location-name"/>
             </ui:VisualElement>
-            <ui:VisualElement class="resource-group">
+            <ui:VisualElement name="VisualElement" class="resource-group">
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="SPAWNED" class="resource-label"/>
+                    <ui:Label name="townsfolk-spawned-value" text="0 / 0" class="resource-value"/>
+                </ui:VisualElement>
                 <ui:VisualElement class="resource-item">
                     <ui:Label text="TOWNSFOLK SAVED" class="resource-label"/>
-                    <ui:Label name="townsfolk-saved-value" text="12 / 20" class="resource-value resource-value-positive"/>
+                    <ui:Label name="townsfolk-saved-value" text="0 / 0" class="resource-value resource-value-positive"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="resource-item">
                     <ui:Label text="WAR BAND" class="resource-label"/>
@@ -38,14 +42,12 @@
         <ui:VisualElement name="action-bar" class="action-bar">
             <ui:VisualElement class="action-heading">
                 <ui:Label text="AVAILABLE ACTIONS" class="panel-title"/>
-                <ui:Label text="VANCE&apos;S TURN" name="turn-label" class="turn-label"/>
             </ui:VisualElement>
             <ui:VisualElement class="action-buttons">
                 <ui:Button name="action-heal" text="HEAL" class="action-button action-button-heal"/>
                 <ui:Button name="action-fortify" text="FORTIFY" class="action-button"/>
                 <ui:Button name="action-extract" text="EXTRACT" class="action-button action-button-extract"/>
                 <ui:Button name="action-scout" text="SCOUT" class="action-button"/>
-                <ui:Button name="end-turn" text="END TURN" class="end-turn-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

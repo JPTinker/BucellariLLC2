@@ -1,0 +1,94 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/MapPhaseStyle.uss?fileID=7433441132597879392&amp;guid=cfc4ea522fdc98e4f910a39abcf0944e&amp;type=3#MapPhaseStyle"/>
+
+    <ui:VisualElement name="phase-root" class="phase-root">
+        <ui:VisualElement class="screen-root">
+            
+            <!-- Header & Colony Resource Dashboard -->
+            <ui:VisualElement class="header-container">
+                <ui:VisualElement class="header-titles">
+                    <ui:Label text="ISLAND OUTPOST COMMAND" class="header-title"/>
+                    <ui:Label text="Sector: Frozen North // Survivor Management" class="header-subtitle"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="timer-container">
+                    <ui:Label text="STORM ARRIVAL IN" class="timer-label"/>
+                    <ui:Label text="00:14:59" class="timer-value"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Colony Survival Metrics (Food, Shelter, Boats) -->
+            <ui:VisualElement class="colony-metrics-bar">
+                <ui:VisualElement class="metric-item">
+                    <ui:Label text="RATIONS" class="metric-label"/>
+                    <ui:Label name="metric-food" text="24 / 40" class="metric-value metric-food"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="metric-divider"/>
+                <ui:VisualElement class="metric-item">
+                    <ui:Label text="SHELTER" class="metric-label"/>
+                    <ui:Label name="metric-shelter" text="STABLE (85%)" class="metric-value metric-shelter"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="metric-divider"/>
+                <ui:VisualElement class="metric-item">
+                    <ui:Label text="FLEET" class="metric-label"/>
+                    <ui:Label name="metric-boats" text="2 / 3 READY" class="metric-value metric-boat"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Cards are instantiated from UnitCard.uxml by PlanningPhaseController -->
+            <ui:ScrollView name="unit-list" class="unit-list"/>
+
+            <!-- Action & Deployment Area -->
+            <ui:VisualElement class="action-container">
+                <ui:Label name="selection-counter" text="SURVIVORS ASSIGNED: 0 / 5" class="selection-counter"/>
+                <ui:Button text="SAIL TO BATTLE &amp; RESCUE" name="btn-engage" class="engage-button">
+                    <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-tr"/>
+                    <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-bl"/>
+                </ui:Button>
+            </ui:VisualElement>
+
+            <!-- Bottom Navigation Shell -->
+            <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar">
+                <ui:Button name="nav-roster" text="SURVIVORS" class="nav-button nav-button-active"/>
+                <ui:Button name="nav-map" text="EXPEDITION MAP" class="nav-button"/>
+                <ui:Button name="nav-inventory" text="COLONY STORAGE" class="nav-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- New-unit reveal overlay -->
+        <ui:VisualElement name="reveal-overlay" class="reveal-overlay hidden">
+            <ui:VisualElement name="reveal-flash" picking-mode="Ignore" class="reveal-flash"/>
+            <ui:VisualElement name="reveal-card" class="reveal-card">
+                <ui:Label text="SURVIVOR RESCUED" class="reveal-eyebrow"/>
+                <ui:VisualElement name="reveal-icon-frame" class="reveal-icon-frame">
+                    <ui:VisualElement name="reveal-icon" class="reveal-icon"/>
+                </ui:VisualElement>
+                <ui:Label name="reveal-name" text="" class="reveal-name"/>
+                <ui:Label text="Tap to welcome to island" class="reveal-continue-hint"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Level-up overlay -->
+        <ui:VisualElement name="level-up-overlay" class="reveal-overlay hidden">
+            <ui:VisualElement name="level-up-flash" picking-mode="Ignore" class="reveal-flash"/>
+            <ui:VisualElement name="level-up-card" class="reveal-card">
+                <ui:Label text="SURVIVOR HARDENED!" class="reveal-eyebrow"/>
+                <ui:VisualElement name="level-up-icon-frame" class="reveal-icon-frame">
+                    <ui:VisualElement name="level-up-icon" class="reveal-icon"/>
+                </ui:VisualElement>
+                <ui:Label name="level-up-name" text="" class="reveal-name"/>
+                <ui:Label name="level-up-level" text="" class="level-up-level"/>
+                <ui:VisualElement class="level-up-stat-row">
+                    <ui:Label name="level-up-hp-value" text="" class="level-up-stat-value"/>
+                    <ui:Label name="level-up-atk-value" text="" class="level-up-stat-value"/>
+                </ui:VisualElement>
+                <ui:Label text="Tap to continue" class="reveal-continue-hint"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Draft overlay: "choose 1 of N" new recruits -->
+        <ui:VisualElement name="draft-overlay" class="draft-overlay hidden">
+            <ui:Label text="RESCUE OPERATION: CHOOSE 1 SURVIVOR" class="reveal-eyebrow"/>
+            <ui:VisualElement name="draft-options" class="draft-options-row"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

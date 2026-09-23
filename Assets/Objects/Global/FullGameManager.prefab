@@ -47,13 +47,18 @@ MonoBehaviour:
   testing: 1
   AvailablePlayerArchetypes:
   - {fileID: 11400000, guid: 2d2623f2569c24a46bbad5a4b9edb069, type: 2}
+  - {fileID: 11400000, guid: 9706b9d60de9f6d4d9bd24f2ea03191f, type: 2}
+  - {fileID: 11400000, guid: 4d9091c96d9e2014993d95efae3eae67, type: 2}
+  - {fileID: 11400000, guid: a04f5ffb987cdb544acdcbf78ca8317d, type: 2}
   - {fileID: 11400000, guid: bea55953af8a9cb409b8d432c9fe50a1, type: 2}
-  - {fileID: 11400000, guid: 03432e19b2768df4aa24bf52d8b777ce, type: 2}
-  - {fileID: 11400000, guid: 792af883dde172e48a44a49697ea8fcb, type: 2}
-  Progression:
+  - {fileID: 11400000, guid: 7af65160f0085e8429cba02cd52ac2af, type: 2}
+  - {fileID: 11400000, guid: a819e4fd9b4abde49a0fd54816a40a2e, type: 2}
+  Resources:
     Gold: 100
     CurrentStageIndex: 1
-  FullRoster:
-  []
+  FullRoster: []
   ActiveTeam: []
   PendingReveal: []
+  PendingDraftOptions: []
+  ExtractedUnitsThisBattle: []
+  SavedVillagersThisBattle: 0

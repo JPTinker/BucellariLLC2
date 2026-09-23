@@ -8,6 +8,7 @@ public class CombatManager : MonoBehaviour
     public static CombatManager Instance { get; private set; }
     public event Action OnLevelWon;
     public event Action OnLevelLost;
+    public event Action<int> OnRoundAdvanced;
 
 
     [SerializeField] private EnemyAIController enemyAI;
@@ -267,6 +268,10 @@ public class CombatManager : MonoBehaviour
             if (unit != null && !unit.IsDead)
                 unit.actionsRemaining = unit.maxActionsPerTurn;
         }
+
+        currentRound++;
+        combatUIManager?.SetRound(currentRound);
+        OnRoundAdvanced?.Invoke(currentRound);
     }
 
     private void PreviewDestination(HexTile destination)

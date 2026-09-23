@@ -18,6 +18,9 @@ public class MapManager : MonoBehaviour
     public static MapManager Instance { get; private set; }
     private static readonly Vector2Int ExfilTilePosition = new Vector2Int(0, 0);
     private const int VillagerEdgeMargin = 2;
+    private const int InitialVillagerSpawnCount = 1;
+    private const int VillagerSpawnInterval = 4;
+    private const int VillagersPerPlayerUnit = 2;
 
     [Serializable]
     public struct TerrainBand
@@ -74,10 +77,12 @@ public class MapManager : MonoBehaviour
     [Header("Villagers / Rescue")]
     [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
     public List<UnitData> villagerArchetypes;
-    public int villagerSpawnCount = 5;
+    private int villagerSpawnTarget;
+    private int villagersSpawned;
 
     /// <summary>Fired when a unit successfully reaches an extraction point and leaves the map.</summary>
     public event Action<UnitInstance> UnitExtracted;
+    public event Action<int, int> VillagerCountChanged;
 
 
 
@@ -94,8 +99,44 @@ public class MapManager : MonoBehaviour
         gameStateManager = GameStateManager.Instance;
         placeUnits();
         SpawnEnemyWave(enemySpawnCount);
-        SpawnVillagers(villagerSpawnCount);
+        villagerSpawnTarget = GetPlayerUnitCount() * VillagersPerPlayerUnit;
+        SpawnVillagers(InitialVillagerSpawnCount);
         InitializeRevealState();
+    }
+
+    private void Start()
+    {
+        if (CombatManager.Instance != null)
+            CombatManager.Instance.OnRoundAdvanced += HandleRoundAdvanced;
+
+        // Test generation
+        Debug.Log("Generated Code: " + GenerateUnique4DigitString());
+    }
+
+    private void OnDisable()
+    {
+        if (CombatManager.Instance != null)
+            CombatManager.Instance.OnRoundAdvanced -= HandleRoundAdvanced;
+    }
+
+    private int GetPlayerUnitCount()
+    {
+        int playerCount = 0;
+        foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
+        {
+            if (unit != null && unit.Faction == UnitFaction.Player)
+                playerCount++;
+        }
+
+        return playerCount;
+    }
+
+    private void HandleRoundAdvanced(int round)
+    {
+        if (round <= 1 || (round - 1) % VillagerSpawnInterval != 0)
+            return;
+
+        SpawnVillagers(1);
     }
 
     public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null)
@@ -231,6 +272,44 @@ public class MapManager : MonoBehaviour
         MarkExtractionPoints();
     }
 
+    private List<HexTile> GetSpacedGroupSpots(HexTile anchor, List<HexTile> validTiles, int groupSize)
+    {
+        List<HexTile> spots = new List<HexTile>();
+        HashSet<HexTile> blocked = new HashSet<HexTile>(); // taken tiles + their neighbors
+
+        List<HexTile> ring = new List<HexTile> { anchor };
+        HashSet<HexTile> visited = new HashSet<HexTile> { anchor };
+
+        while (spots.Count < groupSize && ring.Count > 0)
+        {
+            List<HexTile> nextRing = new List<HexTile>();
+            foreach (HexTile tile in ring)
+            {
+                if (validTiles.Contains(tile) && tile.CanEnter() && !blocked.Contains(tile))
+                {
+                    spots.Add(tile);
+                    blocked.Add(tile);
+                    foreach (HexTile n in tile.neighbors)
+                        if (n != null) blocked.Add(n); // reserve the gap around it
+
+                    if (spots.Count >= groupSize) break;
+                }
+
+                foreach (HexTile neighbor in tile.neighbors)
+                {
+                    if (neighbor != null && !visited.Contains(neighbor))
+                    {
+                        visited.Add(neighbor);
+                        nextRing.Add(neighbor);
+                    }
+                }
+            }
+            ring = nextRing;
+        }
+
+        return spots;
+    }
+
     // ---------------------------------------------------------------------
     // Enemy clusters: groups land near each other, but never share a tile.
     // ---------------------------------------------------------------------
@@ -255,13 +334,13 @@ public class MapManager : MonoBehaviour
 
             // Gather the anchor plus its still-free neighbors as landing spots for this cluster.
             // Each spot hosts exactly one enemy - no stacking.
-            List<HexTile> groupSpots = new List<HexTile> { anchorTile };
-            foreach (HexTile neighbor in anchorTile.neighbors)
+            List<HexTile> groupSpots = GetSpacedGroupSpots(anchorTile, validTiles, enemyGroupSize);
+            /*foreach (HexTile neighbor in anchorTile.neighbors)
             {
                 if (groupSpots.Count >= enemyGroupSize) break;
                 if (neighbor != null && neighbor.CanEnter() && !groupSpots.Contains(neighbor))
                     groupSpots.Add(neighbor);
-            }
+            }*/
 
             int groupTarget = Mathf.Min(enemyGroupSize, groupSpots.Count, totalCount - spawned.Count);
 
@@ -486,6 +565,11 @@ public class MapManager : MonoBehaviour
     public List<UnitInstance> SpawnVillagers(int count)
     {
         List<UnitInstance> spawnedVillagers = new List<UnitInstance>();
+        int remainingVillagerSlots = villagerSpawnTarget - villagersSpawned;
+        int requestedCount = Mathf.Min(count, remainingVillagerSlots);
+
+        if (requestedCount <= 0)
+            return spawnedVillagers;
 
         if (villagerArchetypes == null || villagerArchetypes.Count == 0)
         {
@@ -494,7 +578,7 @@ public class MapManager : MonoBehaviour
         }
 
         List<HexTile> validTiles = GetValidSpawnTiles();
-        int spawnAmount = Mathf.Min(count, validTiles.Count);
+        int spawnAmount = Mathf.Min(requestedCount, validTiles.Count);
 
         for (int i = 0; i < spawnAmount; i++)
         {
@@ -507,8 +591,23 @@ public class MapManager : MonoBehaviour
             if (villager != null) spawnedVillagers.Add(villager);
         }
 
+        villagersSpawned += spawnedVillagers.Count;
+        if (CombatManager.Instance != null)
+            CombatManager.Instance.TrackAll(spawnedVillagers);
+        VillagerCountChanged?.Invoke(villagersSpawned, villagerSpawnTarget);
+
         Debug.Log($"[MapGenerator] Spawned {spawnedVillagers.Count} villagers to rescue.");
         return spawnedVillagers;
+    }
+
+    public int GetVillagersSpawned()
+    {
+        return villagersSpawned;
+    }
+
+    public int GetVillagerSpawnTarget()
+    {
+        return villagerSpawnTarget;
     }
 
     private UnitInstance SpawnVillagerUnit(HexTile tile, UnitData data)
@@ -694,9 +793,4 @@ public class MapManager : MonoBehaviour
         return newCode;
     }
 
-    void Start()
-    {
-        // Test generation
-        Debug.Log("Generated Code: " + GenerateUnique4DigitString());
-    }
 }

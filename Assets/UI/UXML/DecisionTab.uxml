@@ -1,0 +1,253 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/DecisionTab.uss?fileID=7433441132597879392&amp;guid=ede1f172d358ab540beaa266fb7db425&amp;type=3#DecisionTab"/>
+    <ui:VisualElement name="decision-root" class="root">
+        <ui:VisualElement name="header" class="header">
+            <ui:VisualElement class="row row--gap-sm">
+                <ui:VisualElement name="logo" class="header__logo"/>
+                <ui:Label text="HUB" class="label-caps text-primary"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="row row--gap-sm">
+                <ui:Label text="Status: Operational&#10;CMDR Sector 7" class="label-caps text-muted header__status-text"/>
+                <ui:VisualElement name="profile-avatar" class="header__avatar"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:ScrollView name="content-scroll" mode="Vertical" class="content-scroll">
+            <ui:VisualElement name="phase-hud" class="panel phase-hud">
+                <ui:VisualElement class="row row--space-between">
+                    <ui:VisualElement class="row row--gap-sm">
+                        <ui:VisualElement class="pulse-dot"/>
+                        <ui:Label text="Cycle 14 // Pre-Deployment" class="label-caps text-primary-fixed"/>
+                    </ui:VisualElement>
+                    <ui:Label text="Untimed Matrix" class="label-caps chip"/>
+                </ui:VisualElement>
+                <ui:Label text="Planning Phase" class="headline"/>
+                <ui:Label text="Tactical Resource Distribution - Deliberate and allocate squad labor prior to breach resolution." class="body-text text-muted"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="debrief-section" class="panel debrief">
+                <ui:VisualElement class="row row--space-between">
+                    <ui:Label text="Last Cycle Debrief" class="label-caps text-muted"/>
+                    <ui:Label name="debrief-morale-total" text="+2% MORALE" class="label-caps text-bold text-positive"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="debrief__grid">
+                    <ui:VisualElement class="debrief__stat">
+                        <ui:VisualElement class="icon icon-kills"/>
+                        <ui:Label name="debrief-kills" text="3 Kills" class="stat-text"/>
+                        <ui:Label text="+6% Morale" class="label-caps text-positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="debrief__stat">
+                        <ui:VisualElement class="icon icon-saved"/>
+                        <ui:Label name="debrief-saved" text="1 Saved" class="stat-text"/>
+                        <ui:Label text="+5% Morale" class="label-caps text-positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="debrief__stat">
+                        <ui:VisualElement class="icon icon-lost"/>
+                        <ui:Label name="debrief-losses" text="1 Lost" class="stat-text"/>
+                        <ui:Label text="-10% Morale" class="label-caps text-negative"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="resource-ledger" class="panel ledger">
+                <ui:VisualElement class="row row--space-between">
+                    <ui:Label text="Live Asset Ledger" class="label-caps text-muted"/>
+                    <ui:Label name="ledger-sync-status" text="[ MATRIX STABLE ]" class="label-caps text-primary-fixed-dim"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="ledger__grid">
+                    <ui:VisualElement tooltip="Population vs. Housing Capacity. Population above capacity costs Morale each cycle." class="ledger__cell">
+                        <ui:Label text="Units" class="label-caps text-muted"/>
+                        <ui:VisualElement class="row row--baseline">
+                            <ui:Label name="res-units-val" text="18" class="stat-value text-primary"/>
+                            <ui:Label name="res-units-cap" text="/24" class="stat-suffix"/>
+                        </ui:VisualElement>
+                        <ui:Label name="res-units-delta" text="6 IDLE" class="label-caps text-primary-fixed"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ledger__cell">
+                        <ui:Label text="Food" class="label-caps text-muted"/>
+                        <ui:Label name="res-food-val" text="340" class="stat-value"/>
+                        <ui:Label name="res-food-delta" text="+28" class="label-caps text-bold text-positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ledger__cell">
+                        <ui:Label text="Scrap" class="label-caps text-muted"/>
+                        <ui:Label name="res-materials-val" text="185" class="stat-value"/>
+                        <ui:Label name="res-materials-delta" text="-20" class="label-caps text-bold text-negative"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="ledger__cell">
+                        <ui:Label text="Labor" class="label-caps text-muted"/>
+                        <ui:VisualElement class="row row--baseline">
+                            <ui:Label name="res-labor-val" text="34" class="stat-value text-primary-container"/>
+                            <ui:Label text="/50" class="stat-suffix"/>
+                        </ui:VisualElement>
+                        <ui:Label name="res-labor-delta" text="16 REM" class="label-caps text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement tooltip="Morale drops on casualties &amp; overcrowding; rises with successful breach containment and surplus harvest." class="ledger__cell">
+                        <ui:Label text="Morale" class="label-caps text-muted"/>
+                        <ui:Label name="res-morale-val" text="84%" class="stat-value text-primary-fixed"/>
+                        <ui:Label name="res-morale-delta" text="+5%" class="label-caps text-bold text-positive"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="section-header-row">
+                <ui:Label text="Directive Assignments" class="label-caps section-title"/>
+                <ui:Label text="4 Operative Nodes" class="label-caps text-muted"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="directive-list" class="directive-list">
+                <ui:VisualElement name="card-vanguard" class="panel directive-card">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-vanguard"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Combat Vanguard" class="label-caps card-title text-primary"/>
+                                <ui:Label text="Sector B-3 Outpost Perimeter" class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="HIGH RISK" class="label-caps tag tag--danger"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="-15 Food (Rations)" class="body-text info-line info-line--negative"/>
+                        <ui:Label text="+15 Morale on Victory" class="body-text info-line info-line--positive"/>
+                        <ui:Label text="Casualty Risk (-10 Morale)" class="body-text info-line info-line--negative"/>
+                        <ui:Label text="Breach Suppression" class="body-text info-line info-line--positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-xs">
+                            <ui:Label text="[ CMD Vance ]" class="label-caps chip chip--muted"/>
+                            <ui:Label text="[ Alpha ]" class="label-caps chip chip--muted"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement class="stepper">
+                            <ui:Button name="btn-vanguard-dec" text="-" class="stepper__btn"/>
+                            <ui:Label name="count-vanguard" text="4" class="stepper__value"/>
+                            <ui:Button name="btn-vanguard-inc" text="+" class="stepper__btn"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="card-scavenge" class="panel directive-card">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-scavenge"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Material Scavenging" class="label-caps card-title"/>
+                                <ui:Label text="Alien Wreckage &amp; Cryo-Mines" class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="LOW THREAT" class="label-caps tag"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="Costs 10 Labor AP" class="body-text info-line"/>
+                        <ui:Label text="+60 Scrap/Cycle" class="body-text info-line info-line--positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:Label text="[ 2/Unit Yield ]" class="label-caps chip chip--muted"/>
+                        <ui:VisualElement class="stepper">
+                            <ui:Button name="btn-scavenge-dec" text="-" class="stepper__btn"/>
+                            <ui:Label name="count-scavenge" text="5" class="stepper__value"/>
+                            <ui:Button name="btn-scavenge-inc" text="+" class="stepper__btn"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="card-harvest" class="panel directive-card">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-harvest"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Hydro-Harvesting" class="label-caps card-title"/>
+                                <ui:Label text="Sub-zero Flora Cultivation" class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="ESSENTIAL" class="label-caps tag"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="Costs 12 Labor AP" class="body-text info-line"/>
+                        <ui:Label text="+85 Rations/Cycle" class="body-text info-line info-line--positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:Label text="[ Famine Safeguard ]" class="label-caps chip chip--muted"/>
+                        <ui:VisualElement class="stepper">
+                            <ui:Button name="btn-harvest-dec" text="-" class="stepper__btn"/>
+                            <ui:Label name="count-harvest" text="6" class="stepper__value"/>
+                            <ui:Button name="btn-harvest-inc" text="+" class="stepper__btn"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="card-expansion" class="panel directive-card">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-expansion"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Bunker Hab-Pod" class="label-caps card-title"/>
+                                <ui:Label text="Cryo-Insulated Living Quarters" class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="INFRASTRUCTURE" class="label-caps tag tag--info"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="-80 Scrap (Cost)" class="body-text info-line info-line--negative"/>
+                        <ui:Label text="+4 Max Unit Cap" class="body-text info-line info-line--positive"/>
+                        <ui:Label text="Costs 12 Labor AP" class="body-text info-line"/>
+                        <ui:Label text="Zero Overcrowding" class="body-text info-line info-line--positive"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:Label text="[ Housing +4 ]" class="label-caps chip chip--muted"/>
+                        <ui:VisualElement class="stepper">
+                            <ui:Button name="btn-expansion-dec" text="-" class="stepper__btn"/>
+                            <ui:Label name="count-expansion" text="3" class="stepper__value"/>
+                            <ui:Button name="btn-expansion-inc" text="+" class="stepper__btn"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="forecast-section" class="panel forecast">
+                <ui:VisualElement class="row row--space-between">
+                    <ui:Label text="Projected Cycle Outcomes" class="label-caps section-title"/>
+                    <ui:Label text="SIMULATION VERIFIED" class="label-caps chip"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="forecast__grid">
+                    <ui:VisualElement class="forecast__cell">
+                        <ui:Label text="Food Delta" class="body-text text-muted"/>
+                        <ui:Label name="forecast-food" text="Net +28 (Surplus)" class="stat-value stat-value--md text-positive"/>
+                        <ui:Label text="Morale Impact: Stable" class="label-caps text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="forecast__cell">
+                        <ui:Label text="Scrap Delta" class="body-text text-muted"/>
+                        <ui:Label name="forecast-scrap" text="Net -20 (Hab Pod)" class="stat-value stat-value--md text-negative"/>
+                        <ui:Label text="Infrastructure funded" class="label-caps text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="forecast__cell">
+                        <ui:Label text="Labor Budget" class="body-text text-muted"/>
+                        <ui:Label name="forecast-labor" text="34 / 50 AP Used" class="stat-value stat-value--md text-primary"/>
+                        <ui:Label text="16 AP Reserve buffer" class="label-caps text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="forecast__cell">
+                        <ui:Label text="Morale Trajectory" class="body-text text-muted"/>
+                        <ui:Label name="forecast-morale" text="+5% Next Cycle" class="stat-value stat-value--md text-positive"/>
+                        <ui:Label text="Frontline proactive" class="label-caps text-muted"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="overcrowd-banner" class="banner banner--danger" style="display: none;">
+                    <ui:VisualElement class="icon icon-warning"/>
+                    <ui:Label name="overcrowd-detail" text="2 units over Housing Capacity - build a Hab-Pod or morale will keep bleeding." class="body-text"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="banner">
+                    <ui:VisualElement class="icon icon-shield-check"/>
+                    <ui:Label text="SEC-B3 ALERT: Low casualty probability in Sector B-3. Guard protocol active with Vanguard support." class="body-text"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="action-footer" class="action-footer">
+                <ui:Button name="btn-execute-cycle" text="Confirm Allocations &amp; Execute Cycle" class="btn btn--primary"/>
+                <ui:Button name="btn-reset" text="Reset Assignments" class="btn btn--ghost"/>
+            </ui:VisualElement>
+        </ui:ScrollView>
+        <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar" style="height: 92px;">
+            <ui:Button name="nav-roster" text="ROSTER" class="nav-button"/>
+            <ui:Button name="nav-decision" text="DECISION" class="nav-button nav-button-active"/>
+            <ui:Button name="nav-map" text="CAMPAIGN MAP" class="nav-button"/>
+            <ui:Button name="nav-inventory" text="INVENTORY" class="nav-button"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
