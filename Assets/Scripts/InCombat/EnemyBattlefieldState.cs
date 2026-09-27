@@ -1,36 +1,47 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
+/// <summary>
+/// Snapshot of the battlefield the enemy AI plans against. It is cheap to build
+/// and is rebuilt after every enemy commits its actions, so planning never runs
+/// against stale positions or dead units.
+/// </summary>
 public class EnemyBattlefieldState
 {
-    public List<UnitInstance> EnemyUnits { get; private set; } = new();
-    public List<UnitInstance> PlayerUnits { get; private set; } = new();
-    public List<UnitInstance> Villagers { get; private set; } = new();
+    public const int Unreachable = int.MaxValue;
 
-    public HexTile EscapeTile { get; private set; }
+    public List<UnitInstance> EnemyUnits { get; } = new();
+    public List<UnitInstance> PlayerUnits { get; } = new();
+    public List<UnitInstance> Villagers { get; } = new();
 
-    public Dictionary<UnitInstance, List<HexTile>> ReachableTiles = new();
-    public Dictionary<UnitInstance, List<UnitInstance>> AttackableTargets = new();
+    /// Everything the horde wants dead: player units and villagers.
+    public List<UnitInstance> Targets { get; } = new();
+
+    // Extra path cost for walking through a tile an ally currently stands on.
+    // Allies will probably move, so it's passable for multi-turn estimates, but
+    // the penalty spreads the horde around a target instead of queueing up.
+    private readonly int allyPassCost;
+
+    // Movement cost to reach any tile from which a unit with the given attack
+    // range could hit the target. Built lazily per (target, range).
+    private readonly Dictionary<(UnitInstance, int), Dictionary<HexTile, int>> approachFields = new();
+
+    private EnemyBattlefieldState(int allyPassCost)
+    {
+        this.allyPassCost = Mathf.Max(0, allyPassCost);
+    }
 
     //---------------------------------------
     // Build battlefield snapshot
     //---------------------------------------
-    public static EnemyBattlefieldState Build()
+    public static EnemyBattlefieldState Build(int allyPassCost = 2)
     {
-        EnemyBattlefieldState state = new EnemyBattlefieldState();
+        EnemyBattlefieldState state = new EnemyBattlefieldState(allyPassCost);
 
-        UnitInstance[] allUnits = Object.FindObjectsByType<UnitInstance>();
-
-        foreach (UnitInstance unit in allUnits)
+        foreach (UnitInstance unit in UnityEngine.Object.FindObjectsByType<UnitInstance>())
         {
-            if (unit == null)
-                continue;
-
-            if (unit.IsDead)
-                continue;
-
-            if (unit.currentTile == null)
+            if (!IsOnField(unit))
                 continue;
 
             switch (unit.Faction)
@@ -41,147 +52,151 @@ public class EnemyBattlefieldState
 
                 case UnitFaction.Player:
                     state.PlayerUnits.Add(unit);
+                    state.Targets.Add(unit);
                     break;
 
                 case UnitFaction.Villager:
                     state.Villagers.Add(unit);
+                    state.Targets.Add(unit);
                     break;
             }
         }
 
-        //---------------------------------------
-        // Reachable tiles
-        //---------------------------------------
-        foreach (UnitInstance unit in allUnits)
-        {
-            if (unit == null || unit.IsDead || unit.currentTile == null)
-                continue;
-
-            state.ReachableTiles[unit] =
-                HexPathfinder.GetReachableTiles(
-                    unit.currentTile,
-                    unit.movementRange)
-                .ToList();
-        }
-
-        //---------------------------------------
-        // Attackable targets
-        //---------------------------------------
-        foreach (UnitInstance enemy in state.EnemyUnits)
-        {
-            List<UnitInstance> attackable = new();
-
-            foreach (UnitInstance player in state.PlayerUnits)
-            {
-                int distance =
-                    HexCoordinates.GetDistance(
-                        enemy.currentTile.gridPosition,
-                        player.currentTile.gridPosition);
-
-                if (distance <= enemy.attackRange)
-                    attackable.Add(player);
-            }
-
-            state.AttackableTargets[enemy] = attackable;
-        }
-
-        //---------------------------------------
-        // Escape Tile
-        //---------------------------------------
-        state.EscapeTile = FindEscapeTile();
-
         return state;
+    }
+
+    public static bool IsOnField(UnitInstance unit)
+    {
+        return unit != null && unit.enabled && !unit.IsDead && !unit.IsExtracted && unit.currentTile != null;
+    }
+
+    //---------------------------------------
+    // Tile helpers
+    //---------------------------------------
+
+    /// HexTile.SetUnit clears isWalkable, so an occupied tile is still walkable terrain.
+    public static bool IsWalkableTerrain(HexTile tile)
+    {
+        return tile != null && (tile.isWalkable || tile.IsOccupied);
+    }
+
+    public static int EnterCost(HexTile tile)
+    {
+        return Mathf.Max(1, tile.movementCost);
+    }
+
+    private static bool IsEnemyOccupied(HexTile tile)
+    {
+        return tile.occupyingUnit != null && tile.occupyingUnit.Faction == UnitFaction.Enemy;
     }
 
     //---------------------------------------
     // Queries
     //---------------------------------------
 
-    public UnitInstance GetClosestPlayer(UnitInstance enemy)
+    /// Tiles reachable from start within movementRange (excluding start), with their
+    /// path cost. isBlocked decides which tiles can't be entered or passed through,
+    /// so the planner can account for tiles it has vacated or targets it has killed.
+    public static Dictionary<HexTile, int> GetReachable(HexTile start, int movementRange, Func<HexTile, bool> isBlocked)
     {
-        UnitInstance best = null;
-        int bestDistance = int.MaxValue;
+        Dictionary<HexTile, int> reachable = Dijkstra(
+            new[] { start },
+            movementRange,
+            tile => IsWalkableTerrain(tile) && !isBlocked(tile),
+            (from, to) => EnterCost(to));
 
-        foreach (UnitInstance player in PlayerUnits)
+        reachable.Remove(start);
+        return reachable;
+    }
+
+    /// Movement cost for a unit standing on 'from' to get within attackRange of target.
+    /// Returns 0 if it already is, or Unreachable if no path exists.
+    public int GetApproachCost(UnitInstance target, int attackRange, HexTile from)
+    {
+        if (HexCoordinates.GetDistance(from.gridPosition, target.currentTile.gridPosition) <= attackRange)
+            return 0;
+
+        var key = (target, attackRange);
+        if (!approachFields.TryGetValue(key, out Dictionary<HexTile, int> field))
         {
-            int distance =
-                HexCoordinates.GetDistance(
-                    enemy.currentTile.gridPosition,
-                    player.currentTile.gridPosition);
+            field = BuildApproachField(target, attackRange);
+            approachFields[key] = field;
+        }
 
-            if (distance < bestDistance)
+        return field.TryGetValue(from, out int cost) ? cost : Unreachable;
+    }
+
+    private Dictionary<HexTile, int> BuildApproachField(UnitInstance target, int attackRange)
+    {
+        // Tiles a non-enemy stands on are walls (FindPath won't cross them);
+        // tiles allies stand on are passable at a premium.
+        bool CanStand(HexTile tile) =>
+            IsWalkableTerrain(tile) && (tile.occupyingUnit == null || IsEnemyOccupied(tile));
+
+        List<HexTile> attackPositions = new List<HexTile>();
+        foreach (HexTile tile in HexPathfinder.GetAttackableTiles(target.currentTile, attackRange))
+        {
+            if (CanStand(tile))
+                attackPositions.Add(tile);
+        }
+
+        // Reverse search from the attack positions: stepping from 'to' onto 'from'
+        // on the real walk costs whatever it takes to enter 'from'.
+        return Dijkstra(
+            attackPositions,
+            Unreachable,
+            CanStand,
+            (from, to) => EnterCost(from) + (IsEnemyOccupied(from) ? allyPassCost : 0));
+    }
+
+    /// Bucket-queue Dijkstra over HexTile.neighbors. Edge costs are small positive
+    /// ints, so buckets beat a sorted open list on a grid this size.
+    private static Dictionary<HexTile, int> Dijkstra(
+        IEnumerable<HexTile> sources,
+        int maxCost,
+        Func<HexTile, bool> canEnter,
+        Func<HexTile, HexTile, int> edgeCost)
+    {
+        var cost = new Dictionary<HexTile, int>();
+        var buckets = new List<List<HexTile>>();
+
+        void Push(HexTile tile, int c)
+        {
+            while (buckets.Count <= c)
+                buckets.Add(new List<HexTile>());
+            buckets[c].Add(tile);
+        }
+
+        foreach (HexTile source in sources)
+        {
+            if (source == null || cost.ContainsKey(source)) continue;
+            cost[source] = 0;
+            Push(source, 0);
+        }
+
+        for (int c = 0; c < buckets.Count; c++)
+        {
+            foreach (HexTile current in buckets[c])
             {
-                best = player;
-                bestDistance = distance;
+                if (cost[current] != c) continue; // stale entry
+
+                foreach (HexTile neighbor in current.neighbors)
+                {
+                    if (neighbor == null || !canEnter(neighbor)) continue;
+
+                    int step = Mathf.Max(1, edgeCost(current, neighbor));
+                    long next = (long)c + step;
+                    if (next > maxCost) continue;
+
+                    if (!cost.TryGetValue(neighbor, out int existing) || next < existing)
+                    {
+                        cost[neighbor] = (int)next;
+                        Push(neighbor, (int)next);
+                    }
+                }
             }
         }
 
-        return best;
-    }
-
-    public int DistanceToEscape(UnitInstance unit)
-    {
-        if (EscapeTile == null)
-            return 999;
-
-        return HexCoordinates.GetDistance(
-            unit.currentTile.gridPosition,
-            EscapeTile.gridPosition);
-    }
-
-    public UnitInstance GetClosestEnemyToEscape()
-    {
-        UnitInstance best = null;
-        int bestDistance = int.MaxValue;
-
-        foreach (UnitInstance enemy in EnemyUnits)
-        {
-            int distance = DistanceToEscape(enemy);
-
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = enemy;
-            }
-        }
-
-        return best;
-    }
-
-    public int CountEnemyAttackers(UnitInstance target)
-    {
-        int attackers = 0;
-
-        foreach (UnitInstance enemy in EnemyUnits)
-        {
-            int distance =
-                HexCoordinates.GetDistance(
-                    enemy.currentTile.gridPosition,
-                    target.currentTile.gridPosition);
-
-            if (distance <= enemy.attackRange)
-                attackers++;
-        }
-
-        return attackers;
-    }
-
-    //---------------------------------------
-    // Replace this later
-    //---------------------------------------
-    private static HexTile FindEscapeTile()
-    {
-        HexTile[] tiles = Object.FindObjectsByType<HexTile>();
-
-        foreach (HexTile tile in tiles)
-        {
-            if (tile.gridPosition.x == 0 &&
-                tile.gridPosition.y == 0)
-            {
-                return tile;
-            }
-        }
-
-        return null;
+        return cost;
     }
 }

@@ -19,13 +19,5 @@
         <!-- Cards are instantiated from UnitCard.uxml by PlanningPhaseController -->
         <ui:ScrollView name="unit-list" class="unit-list"/>
 
-        <ui:VisualElement class="action-container">
-            <ui:Label name="selection-counter" text="0 / 5 SELECTED" class="selection-counter"/>
-            <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button">
-                <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-tr"/>
-                <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-bl"/>
-            </ui:Button>
-        </ui:VisualElement>
-
     </ui:VisualElement>
 </ui:UXML>

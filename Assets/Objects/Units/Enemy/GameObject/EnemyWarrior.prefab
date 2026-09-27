@@ -1,0 +1,166 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2781382901639996558
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2084727712776223458}
+  - component: {fileID: -4231889557748505475}
+  m_Layer: 0
+  m_Name: EnemyWarrior
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2084727712776223458
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2781382901639996558}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1623604513599144103}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-4231889557748505475
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2781382901639996558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efa5f58ee4eafa940903f1fa350e10ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitInstance
+  unitName: Warrior
+  Faction: 1
+  maxHealth: 25
+  currentHealth: 25
+  attackPower: 3
+  attackRange: 1
+  defensePower: 2
+  movementRange: 3
+  healsOthers: 0
+  visibilityRange: 3
+  colorScheme: 0
+  leftHand: {fileID: 7211117007116925571}
+  rightHand: {fileID: 702103425327298323}
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  currentTile: {fileID: 0}
+  maxActionsPerTurn: 2
+  actionsRemaining: 2
+  rescuedUnitData:
+  - {fileID: 0}
+  - {fileID: 0}
+  IsExtracted: 0
+  IsFortified: 0
+  IsRevealed: 0
+  lightHitThreshold: 0.15
+  heavyHitThreshold: 0.35
+  damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashOnDuration: 0.08
+  flashOffDuration: 0.08
+--- !u!1001 &1225694668355872588
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2084727712776223458}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.3
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_Name
+      value: Skeleton_Warrior
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 6a3d09f1786d664409dbec0be856250d, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+--- !u!1 &702103425327298323 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -7440837640338354081, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+  m_PrefabInstance: {fileID: 1225694668355872588}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1623604513599144103 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+  m_PrefabInstance: {fileID: 1225694668355872588}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &7211117007116925571 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -787705004876472881, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
+  m_PrefabInstance: {fileID: 1225694668355872588}
+  m_PrefabAsset: {fileID: 0}

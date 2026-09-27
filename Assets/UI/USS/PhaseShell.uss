@@ -53,6 +53,11 @@
 .screen-root { flex-grow: 1; padding: 0; justify-content: flex-start; }
 .screen-content { flex-grow: 1; }
 
+/* action-container (selection-counter + engage-button) is defined in
+   MapPhaseStyle.uss and, like stats-header/bottom-nav-bar, sits outside
+   content-slot as fixed shell chrome - pin it too so it can't be squeezed. */
+.action-container { flex-shrink: 0; }
+
 /* ---------- Shared typography utilities (used by every tab's content) ---------- */
 .label-caps {
     font-size: 10px;
@@ -99,6 +104,11 @@
     border-radius: 8px;
     padding: 12px;
     margin: 12px 20px 0 20px;
+    /* Pinned to its content size - without this, a tall tab's content-slot
+       (see below) can pressure screen-root's flex layout into shrinking this
+       instead of just scrolling the overflow, since Yoga has no default
+       flex-shrink weighting toward flex-grow:0 siblings. */
+    flex-shrink: 0;
 }
 .stats-header__row { flex-direction: row; justify-content: space-between; margin-bottom: 8px; }
 .stats-header__grid { flex-direction: row; }
@@ -123,6 +133,7 @@
     justify-content: space-around;
     align-items: center;
     height: 80px;
+    flex-shrink: 0;
     background-color: rgba(14, 20, 26, 0.92);
     border-top-width: 1px;
     border-top-color: rgba(0, 242, 255, 0.1);

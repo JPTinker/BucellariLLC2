@@ -112,6 +112,31 @@
 .info-line--positive { color: var(--color-primary-fixed); }
 .info-line--negative { color: var(--color-error); }
 
+/* ---------- Combat Vanguard (mirrors the Roster tab's live selection) ---------- */
+.vanguard-roster {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+.vanguard-chip {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--color-surface-container-highest);
+    border-radius: 4px;
+    padding: 4px 8px 4px 4px;
+    margin: 0 6px 6px 0;
+}
+.vanguard-chip__icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    background-color: var(--color-surface-container);
+    -unity-background-scale-mode: scale-and-crop;
+    margin-right: 6px;
+}
+.vanguard-chip__name { font-size: 11px; color: var(--color-on-surface); }
+.vanguard-empty-hint { margin-top: 4px; }
+
 .stepper {
     flex-direction: row;
     align-items: center;

@@ -31,6 +31,9 @@ public class UnitData : ScriptableObject
     public int healsOthers = 1;          // How much this unit heals others (if any)
     [Header("Faction & Classification")]
     public UnitFaction Faction;
+    [Header("Animation")]
+    [Tooltip("Selects the matching weapon-style branch in the unit animator.")]
+    public UnitAnimationStyle AnimationStyle;
 }
 
 public enum UnitFaction
@@ -39,6 +42,16 @@ public enum UnitFaction
     Enemy,
     Neutral,
     Villager
+}
+
+public enum UnitAnimationStyle
+{
+    None,
+    Bow,
+    Crossbow,
+    MeleeOneHanded,
+    MeleeTwoHanded,
+    Mage
 }
 
 public enum UnitColorScheme
@@ -64,6 +77,7 @@ public class Unit
 
     [Header("Persistent Stats")]
     public int MaxHP;
+    public int CurrentHP;
     public int BaseAttack;
     public int AttackRange;
     public int MoveRange;
@@ -92,6 +106,7 @@ public class Unit
         UnitID = archetype.UnitID;
         UnitName = archetype.UnitName;
         MaxHP = archetype.MaxHP;
+        CurrentHP = archetype.MaxHP;
         BaseAttack = archetype.BaseAttack;
         AttackRange = archetype.AttackRange;
         MoveRange = archetype.MoveSpeed;

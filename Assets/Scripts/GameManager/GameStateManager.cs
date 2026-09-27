@@ -41,26 +41,37 @@ public class GameStateManager : MonoBehaviour
     public enum Directive { Vanguard, Scavenge, Harvest, Expansion }
 
     /// <summary>
+    /// The player's chosen course for the upcoming cycle, picked on the
+    /// Campaign Map tab. Mutually exclusive - one applies per cycle, layered
+    /// on top of whatever Directive allocation is chosen on the Decision tab.
+    /// Consumed by ComputeForecast()/ExecuteCycle(), then reset to Travel once
+    /// the cycle commits so Stay Put/Rest have to be consciously repicked
+    /// rather than silently repeating.
+    /// </summary>
+    public enum CampaignAction { Travel, StayPut, Rest }
+
+    /// <summary>
     /// The player's in-progress, not-yet-committed allocation for this planning
     /// cycle. Adjusted live by the Decision screen via AdjustAllocation(), applied
-    /// to Settlement by ExecuteCycle(). VanguardUnits is a headcount of Units
-    /// (Population); ScavengeUnits/HarvestUnits/ExpansionUnits are headcounts of
-    /// Villagers despite the field name (kept for UXML/binding compatibility).
-    /// ExpansionUnits (Build a Ship) is special: TryAdjustAllocation only ever
-    /// lands it on 0 or Balance.ShipVillagerCost - it's a discrete, fixed-cost
-    /// directive, not a per-villager scaling one.
+    /// to Settlement by ExecuteCycle(). ScavengeUnits/HarvestUnits/ExpansionUnits
+    /// are headcounts of Villagers despite the field name (kept for UXML/binding
+    /// compatibility). ExpansionUnits (Build a Ship) is special: TryAdjustAllocation
+    /// only ever lands it on 0 or Balance.ShipVillagerCost - it's a discrete,
+    /// fixed-cost directive, not a per-villager scaling one.
+    ///
+    /// Vanguard has no field here - it's derived from ActiveTeam.Count (the
+    /// units picked on the Roster tab), not manually adjustable. See
+    /// TryAdjustAllocation() and ComputeForecast()/ExecuteCycle().
     /// </summary>
     [System.Serializable]
     public class CycleAllocation
     {
-        public int VanguardUnits;
         public int ScavengeUnits;
         public int HarvestUnits;
         public int ExpansionUnits;
 
         public int Get(Directive d) => d switch
         {
-            Directive.Vanguard => VanguardUnits,
             Directive.Scavenge => ScavengeUnits,
             Directive.Harvest => HarvestUnits,
             Directive.Expansion => ExpansionUnits,
@@ -71,16 +82,14 @@ public class GameStateManager : MonoBehaviour
         {
             switch (d)
             {
-                case Directive.Vanguard: VanguardUnits = value; break;
                 case Directive.Scavenge: ScavengeUnits = value; break;
                 case Directive.Harvest: HarvestUnits = value; break;
                 case Directive.Expansion: ExpansionUnits = value; break;
             }
         }
 
-        public void Reset(int vanguard = 0, int scavenge = 0, int harvest = 0, int expansion = 0)
+        public void Reset(int scavenge = 0, int harvest = 0, int expansion = 0)
         {
-            VanguardUnits = vanguard;
             ScavengeUnits = scavenge;
             HarvestUnits = harvest;
             ExpansionUnits = expansion;
@@ -186,6 +195,11 @@ public class GameStateManager : MonoBehaviour
     public CycleAllocation CurrentAllocation = new CycleAllocation();
     public CycleBalanceConfig Balance = new CycleBalanceConfig();
 
+    [Header("Campaign Map")]
+    public CampaignAction SelectedCampaignAction = CampaignAction.Travel;
+    public bool HasSelectedCampaignAction { get; private set; }
+    public int EvacuationCyclesRemaining = 5;
+
     // Roster of all owned units (the pool shown on the team-selection screen).
     public List<Unit> FullRoster = new List<Unit>();
 
@@ -203,11 +217,11 @@ public class GameStateManager : MonoBehaviour
     // calling QueueLevelUp() from wherever your XP/leveling logic lives.
     public Queue<LevelUpInfo> PendingLevelUps = new Queue<LevelUpInfo>();
 
-    // When populated, the team-selection screen shows a "pick 1 of N" draft overlay
-    // using these candidates. Call OfferUnitDraft() to populate it; the UI calls
-    // ResolveUnitDraft() with the player's choice.
+    // When populated, the team-selection screen shows two unit candidates. The
+    // player can also choose to add the saved person as a Villager instead.
     public List<UnitData> PendingDraftOptions = new List<UnitData>();
     public int PendingDraftsToOffer { get; private set; }
+    public bool CanDraftSavedVillager { get; private set; }
 
     [Header("Extraction & Combat Progress")]
     // Tracks units that successfully extracted during the current battle
@@ -304,7 +318,7 @@ public class GameStateManager : MonoBehaviour
         if (sceneName == "DecisionPhase")
         {
             if (FullRoster.Count == 0) GrantStarterUnits(startingCount);
-            OfferUnitDraft(3);
+            OfferUnitDraft(2, allowVillagerChoice: true);
             return;
         }
 
@@ -370,9 +384,10 @@ public class GameStateManager : MonoBehaviour
         SetActiveTeam(pool.GetRange(0, take));
     }
 
-    public void OfferUnitDraft(int optionCount = 3)
+    public void OfferUnitDraft(int optionCount = 2, bool allowVillagerChoice = false)
     {
         Debug.Log("Offering draft");
+        CanDraftSavedVillager = allowVillagerChoice;
         if (AvailablePlayerArchetypes == null || AvailablePlayerArchetypes.Count == 0)
         {
             Debug.LogError("No UnitData archetypes assigned in GameStateManager!");
@@ -410,15 +425,29 @@ public class GameStateManager : MonoBehaviour
     {
         if (PendingDraftsToOffer <= 0) return;
 
-        OfferUnitDraft(3);
+        OfferUnitDraft(2, allowVillagerChoice: true);
         PendingDraftsToOffer--;
     }
 
     public void ResolveUnitDraft(UnitData chosen)
     {
         PendingDraftOptions.Clear();
+        CanDraftSavedVillager = false;
         if (chosen == null) return;
         AddUnitToRoster(chosen, flagAsNew: true);
+    }
+
+    public void ResolveVillagerDraft()
+    {
+        if (!CanDraftSavedVillager)
+        {
+            Debug.LogWarning("ResolveVillagerDraft called when no saved-villager draft choice is active.");
+            return;
+        }
+
+        PendingDraftOptions.Clear();
+        CanDraftSavedVillager = false;
+        Settlement.Villagers++;
     }
 
     /// <summary>
@@ -556,6 +585,12 @@ public class GameStateManager : MonoBehaviour
         // 1. Set the unit as saved / extracted
         unitInstance.IsExtracted = true;
         CombatManager.Instance.HandleUnitExtract(unitInstance);
+
+        // Write the battle's damage back onto the persistent roster record
+        // before the UnitInstance is destroyed, so it carries over into the
+        // next battle instead of resetting to full - only Rest heals it back up.
+        if (unitInstance.PersistentUnit != null)
+            unitInstance.PersistentUnit.CurrentHP = unitInstance.currentHealth;
         // If your UnitInstance maps back to a persistent Unit data model, 
         // store or track it here so it's preserved for the next screen.
         // (Assuming UnitInstance has a reference to its underlying persistent 'Unit' or data)
@@ -628,8 +663,8 @@ public class GameStateManager : MonoBehaviour
     /// <summary>Total Units currently owned (population), independent of housing.</summary>
     public int Population => FullRoster.Count;
 
-    /// <summary>Units not currently assigned to Vanguard this cycle.</summary>
-    public int IdleUnits => Mathf.Max(0, Population - CurrentAllocation.VanguardUnits);
+    /// <summary>Units not currently picked for the Vanguard team (ActiveTeam, chosen on the Roster tab).</summary>
+    public int IdleUnits => Mathf.Max(0, Population - ActiveTeam.Count);
 
     /// <summary>Villagers not currently assigned to a labor directive this cycle.</summary>
     public int IdleVillagers => Mathf.Max(0, Settlement.Villagers - VillagersSent);
@@ -637,19 +672,28 @@ public class GameStateManager : MonoBehaviour
     /// <summary>Total Villagers committed across Scavenge/Harvest/Expansion this cycle.</summary>
     public int VillagersSent => CurrentAllocation.ScavengeUnits + CurrentAllocation.HarvestUnits + CurrentAllocation.ExpansionUnits;
 
+    public void SelectCampaignAction(CampaignAction action)
+    {
+        SelectedCampaignAction = action;
+        HasSelectedCampaignAction = true;
+    }
+
     /// <summary>
-    /// Attempts to move Units (Vanguard) or Villagers (Scavenge/Harvest) into/out
-    /// of a directive, one at a time. Fails silently (returns false) rather than
-    /// throwing, so the UI can just no-op a stepper tap that would go negative or
-    /// exceed the idle pool - mirrors the mock's adjustUnits(). Expansion (Build a
-    /// Ship) is routed to TryToggleShipBuild instead, since it's an all-or-nothing
-    /// fixed-cost directive rather than a per-unit/per-villager one.
+    /// Attempts to move Villagers (Scavenge/Harvest) into/out of a directive, one
+    /// at a time. Fails silently (returns false) rather than throwing, so the UI
+    /// can just no-op a stepper tap that would go negative or exceed the idle
+    /// pool - mirrors the mock's adjustUnits(). Expansion (Build a Ship) is
+    /// routed to TryToggleShipBuild instead, since it's an all-or-nothing
+    /// fixed-cost directive rather than a per-villager one. Vanguard is rejected
+    /// outright - it's derived from ActiveTeam (picked on the Roster tab), not a
+    /// steppable headcount.
     /// </summary>
     public bool TryAdjustAllocation(Directive directive, int delta)
     {
+        if (directive == Directive.Vanguard) return false;
         if (directive == Directive.Expansion) return TryToggleShipBuild(delta);
 
-        int idle = directive == Directive.Vanguard ? IdleUnits : IdleVillagers;
+        int idle = IdleVillagers;
         if (delta > 0 && idle < delta) return false;
 
         int newValue = CurrentAllocation.Get(directive) + delta;
@@ -693,20 +737,27 @@ public class GameStateManager : MonoBehaviour
         var a = CurrentAllocation;
         var b = Balance;
 
+        // Vanguard headcount is derived from ActiveTeam (units picked on the
+        // Roster tab), not a manually steppable allocation field.
+        int vanguardUnits = ActiveTeam.Count;
         int villagersSent = VillagersSent;
         bool willBuildShip = a.ExpansionUnits >= b.ShipVillagerCost;
 
+        // Stay Put (Campaign Map): the settlement isn't moving this cycle, so
+        // labor directives work the site twice as hard.
+        float yieldMultiplier = SelectedCampaignAction == CampaignAction.StayPut ? 2f : 1f;
+
         int foodDelta = Mathf.RoundToInt(
-            a.HarvestUnits * b.FoodPerHarvestVillager
-            - a.VanguardUnits * b.FoodCostPerVanguardUnit
+            a.HarvestUnits * b.FoodPerHarvestVillager * yieldMultiplier
+            - vanguardUnits * b.FoodCostPerVanguardUnit
             - villagersSent * b.FoodCostPerVillagerSent);
 
         int materialsDelta = Mathf.RoundToInt(
-            a.ScavengeUnits * b.MaterialsPerScavengeVillager
+            a.ScavengeUnits * b.MaterialsPerScavengeVillager * yieldMultiplier
             - (willBuildShip ? b.ShipMaterialsCost : 0));
 
         float moraleDelta =
-            - a.VanguardUnits * b.MoralePenaltyPerVanguardUnit
+            - vanguardUnits * b.MoralePenaltyPerVanguardUnit
             - villagersSent * b.MoralePenaltyPerVillagerSent;
 
         bool isOverBudget = willBuildShip && Settlement.Materials < b.ShipMaterialsCost;
@@ -755,17 +806,38 @@ public class GameStateManager : MonoBehaviour
             Settlement.VillagerCapacity += Balance.ShipVillagerCapacityGain;
         }
 
-        // Hand the Vanguard block off to combat. Which specific units fill that
-        // block is a team-composition decision this method doesn't make - wire
-        // your roster-selection UI's picks into SetActiveTeam() before calling
-        // ExecuteCycle(), or replace this with your own selection logic.
-        if (CurrentAllocation.VanguardUnits > 0 && ActiveTeam.Count > 0)
+        // Apply this cycle's Campaign Map course. Stay Put's yield doubling
+        // already happened above (it's baked into the forecast); Rest and
+        // Travel have their own effects to commit here.
+        switch (SelectedCampaignAction)
+        {
+            case CampaignAction.Rest:
+                RestAllUnits();
+                break;
+            case CampaignAction.Travel:
+                EvacuationCyclesRemaining = Mathf.Max(0, EvacuationCyclesRemaining - 1);
+                break;
+        }
+        SelectedCampaignAction = CampaignAction.Travel;
+        HasSelectedCampaignAction = false;
+
+        // Hand the Vanguard block off to combat - ActiveTeam already holds
+        // whichever units are picked on the Roster tab (kept live in sync by
+        // PlanningPhaseController.ToggleSelection).
+        if (ActiveTeam.Count > 0)
         {
             LoadCombatMap(battleSceneName);
         }
 
-        CurrentAllocation.Reset(0, 0, 0, 0);
+        CurrentAllocation.Reset(0, 0, 0);
         return true;
+    }
+
+    /// <summary>Heals every roster unit's persistent HP to full - the Campaign Map "Rest" action.</summary>
+    private void RestAllUnits()
+    {
+        foreach (Unit unit in FullRoster)
+            unit.CurrentHP = unit.MaxHP;
     }
 
     public void ApplyPostBattleResults()

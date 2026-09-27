@@ -15,7 +15,7 @@ MonoBehaviour:
   UnitID: 
   UnitName: Archer
   Description: 
-  UnitIcon: {fileID: 0}
+  UnitIcon: {fileID: 21300000, guid: b2da957826b07324fb1e61e377e65a28, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: 1e05f6ce39100134ba3d4819bc76565f, type: 3}
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: 1f3caeda272d7b04b82fe11d17382747, type: 3}
@@ -33,3 +33,4 @@ MonoBehaviour:
   defensePower: 2
   healsOthers: 1
   Faction: 0
+  AnimationStyle: 1

@@ -49,6 +49,7 @@ public class RosterPhaseController : MonoBehaviour
     private VisualElement _draftOverlay;
     private VisualElement _draftOptionsContainer;
     private UnitData _draftSelectedUnit;
+    private bool _draftSelectedVillager;
     private bool _draftSelectionMade;
 
     private Button _navRoster;
@@ -540,6 +541,7 @@ public class RosterPhaseController : MonoBehaviour
         _draftOverlay.RemoveFromClassList("hidden");
         _draftSelectionMade = false;
         _draftSelectedUnit = null;
+        _draftSelectedVillager = false;
 
         // Stagger each card's punch-in slightly so they don't all pop at once.
         for (int i = 0; i < draftCards.Count; i++)
@@ -553,10 +555,15 @@ public class RosterPhaseController : MonoBehaviour
         _draftOverlay.AddToClassList("hidden");
         _draftOptionsContainer.Clear();
 
-        GameStateManager.Instance.ResolveUnitDraft(_draftSelectedUnit);
+        var gsm = GameStateManager.Instance;
+        if (_draftSelectedVillager)
+            gsm.ResolveVillagerDraft();
+        else
+            gsm.ResolveUnitDraft(_draftSelectedUnit);
 
         RefreshRosterList();
         RefreshSelectionCounter();
+        PhaseShellController.Instance?.RefreshHeader();
 
         if (GameStateManager.Instance.PendingDraftsToOffer > 0)
         {
@@ -584,7 +591,41 @@ public class RosterPhaseController : MonoBehaviour
             built.Add(card);
         }
 
+        if (GameStateManager.Instance.CanDraftSavedVillager)
+        {
+            var villagerCard = BuildVillagerDraftCard();
+            _draftOptionsContainer.Add(villagerCard);
+            built.Add(villagerCard);
+        }
+
         return built;
+    }
+
+    private VisualElement BuildVillagerDraftCard()
+    {
+        var card = unitCardTemplate.Instantiate();
+        var cardRoot = card.Q<VisualElement>("card-root");
+        cardRoot.AddToClassList("draft-card");
+
+        PopulateCardTemplate(card, null, "Villager", 0, 0);
+        var statsRow = card.Q<VisualElement>("card-stats-row");
+        if (statsRow != null) statsRow.style.display = DisplayStyle.None;
+
+        var footerTag = card.Q<Label>("card-footer-tag");
+        if (footerTag != null)
+        {
+            footerTag.text = "[ +1 VILLAGER ]";
+            footerTag.style.display = DisplayStyle.Flex;
+        }
+
+        cardRoot.RegisterCallback<ClickEvent>(_ =>
+        {
+            _draftSelectedUnit = null;
+            _draftSelectedVillager = true;
+            _draftSelectionMade = true;
+        });
+
+        return card;
     }
 
     private VisualElement BuildDraftCard(UnitData unit)

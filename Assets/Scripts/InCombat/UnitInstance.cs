@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
- 
+ using System.Collections.Generic;
 
 /// <summary>
 /// A single unit on the grid (player or enemy). MVP scope: sit on a tile, take
@@ -56,12 +56,21 @@ public class UnitInstance : MonoBehaviour
     public bool IsFortified = false;
     public bool IsRevealed = false;
     public event Action<UnitInstance> OnStatsChanged;
+    private Animator _animator;
     private Renderer[] flashRenderers;
     private MaterialPropertyBlock flashPropertyBlock;
 
     private Coroutine flashRoutine;
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
     private static readonly int ColorId = Shader.PropertyToID("_Color");
+    private static readonly int WalkParameter = Animator.StringToHash("Walk");
+    private static readonly int AttackParameter = Animator.StringToHash("Attack");
+    private static readonly int TakeDamageParameter = Animator.StringToHash("TakeDamage");
+    private static readonly int BowParameter = Animator.StringToHash("Bow");
+    private static readonly int CrossbowParameter = Animator.StringToHash("Crossbow");
+    private static readonly int MageParameter = Animator.StringToHash("Mage");
+    private static readonly int MeleHandsParameter = Animator.StringToHash("MeleHands");
+    private static readonly int Spawn = Animator.StringToHash("Spawn");
     [Header("Damage Feedback")]
     [Tooltip("Damage at or below this percentage of max health is a 'light' hit (flashes once).")]
     [SerializeField] private float lightHitThreshold = 0.15f;
@@ -70,12 +79,16 @@ public class UnitInstance : MonoBehaviour
     [SerializeField] private Color damageFlashColor = Color.red;
     [SerializeField] private float flashOnDuration = 0.08f;
     [SerializeField] private float flashOffDuration = 0.08f;
-
+    private Coroutine movementCoroutine;
 
     private void Awake()
     {
         actionsRemaining = maxActionsPerTurn;
         currentHealth = maxHealth;
+
+        _animator = GetComponent<Animator>();
+        if (_animator == null)
+            _animator = GetComponentInChildren<Animator>(true);
 
         flashRenderers = GetComponentsInChildren<Renderer>(true);
         flashPropertyBlock = new MaterialPropertyBlock();
@@ -94,7 +107,9 @@ public class UnitInstance : MonoBehaviour
         Level = unit.Level;
         unitName = unit.UnitName;
         maxHealth = unit.MaxHP;
-        currentHealth = maxHealth;
+        // Carry damage over between battles rather than always spawning at full
+        // HP - Rest (Campaign Map) is what heals this back up, not a fresh spawn.
+        currentHealth = unit.CurrentHP > 0 ? Mathf.Min(unit.CurrentHP, maxHealth) : maxHealth;
         attackPower = unit.BaseAttack;
         attackRange = unit.AttackRange;
         defensePower = unit.DefensePower;
@@ -106,6 +121,7 @@ public class UnitInstance : MonoBehaviour
         Faction = unit.Faction;
         actionsRemaining = maxActionsPerTurn;
         ApplyColorScheme(unit.Archetype);
+        ConfigureAnimatorStyle(unit.Archetype);
         if (unit.WeaponPrefab != null && rightHand != null){
             GameObject.Instantiate(unit.WeaponPrefab, rightHand.transform, false);
         }
@@ -209,6 +225,65 @@ public class UnitInstance : MonoBehaviour
             OnTileHidden();
     }
 
+    private IEnumerator MoveAlongPathRoutine(List<HexTile> path)
+    {
+        // Free up the starting tile immediately so other units/pathfinding don't treat it as blocked
+        if (currentTile != null)
+        {
+            currentTile.RemoveUnit();
+        }
+
+        // Traverse each tile node in the path sequentially
+        for (int i = 1; i < path.Count; i++)
+        {
+            HexTile nextTile = path[i];
+            Vector3 startPos = transform.position;
+            Vector3 targetPos = nextTile.transform.position + Vector3.up * nextTile.heightOffset;
+
+            // Rotate smoothly or instantly towards the next waypoint
+            Vector3 moveDirection = targetPos - startPos;
+            moveDirection.y = 0f;
+            if (moveDirection.sqrMagnitude > 0f)
+            {
+                transform.rotation = Quaternion.LookRotation(moveDirection);
+            }
+
+            // Interpolate position over time (adjust speed multiplier as needed, e.g., 6f)
+            float moveSpeed = 6f;
+            float journeyLength = Vector3.Distance(startPos, targetPos);
+            float startTime = Time.time;
+
+            if (journeyLength > 0.001f)
+            {
+                float fractionTraveled = 0f;
+                while (fractionTraveled < 1f)
+                {
+                    float distCovered = (Time.time - startTime) * moveSpeed;
+                    fractionTraveled = distCovered / journeyLength;
+                    transform.position = Vector3.Lerp(startPos, targetPos, Mathf.Clamp01(fractionTraveled));
+                    yield return null;
+                }
+            }
+
+            transform.position = targetPos;
+        }
+
+        // Finalize arrival on the destination tile
+        HexTile destinationTile = path[path.Count - 1];
+        currentTile = destinationTile;
+        destinationTile.SetUnit(this);
+
+        // Update map visibility and fog of war
+        MapManager.Instance?.RevealAroundUnit(this);
+
+        if (!IsRevealed && destinationTile.isRevealed)
+            OnTileRevealed();
+        else if (IsRevealed && !destinationTile.isRevealed)
+            OnTileHidden();
+
+        movementCoroutine = null;
+    }
+
     /// Moves the unit along a path (e.g. from HexPathfinder.FindPath). MVP: snaps
     /// to the destination tile; swap in movement animation/tweening later.
     public bool MoveTo(HexTile destinationTile, int maxMovementCost = -1)
@@ -216,10 +291,21 @@ public class UnitInstance : MonoBehaviour
         if (currentTile == null || destinationTile == null) return false;
 
         var path = HexPathfinder.FindPath(currentTile, destinationTile, maxMovementCost >= 0 ? maxMovementCost : movementRange);
-        if (path == null || path.Count == 0) return false;
+        if (path == null || path.Count < 2) return false;
+
         Debug.Log($"{unitName} moving from {currentTile.gridPosition} to {destinationTile.gridPosition} via path of length {path.Count}");
-        PlaceOnTile(destinationTile);
-        MapManager.Instance?.RevealAroundUnit(this);
+
+        // Stop any active movement coroutine if a new move is triggered abruptly
+        if (movementCoroutine != null)
+        {
+            StopCoroutine(movementCoroutine);
+        }
+
+        PlayAnimatorAction(WalkParameter, "Walking_A");
+
+        // Start the smooth movement coroutine
+        movementCoroutine = StartCoroutine(MoveAlongPathRoutine(path));
+
         IsFortified = false;
         return true;
     }
@@ -240,23 +326,10 @@ public class UnitInstance : MonoBehaviour
     public bool Attack(UnitInstance target)
     {
         if (!CanAttack(target)) return false;
+        PlayAnimatorAction(AttackParameter, "Attack");
 
-        //int attackRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
-        //int defRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
-        int attackRoll = 10;
-        int defRoll = 10;
-
-        float terrainBonus = 1f+ (Mathf.Max(currentTile.attackBonus - target.currentTile.defenseBonus, 1f)/5f);
-        int flatAttack = Mathf.Max(attackPower - target.defensePower,1);
-        
-        if (IsFortified == true)
-        {
-            flatAttack += 3;
-        }
-
-        int damage = flatAttack * Mathf.RoundToInt(terrainBonus * (attackRoll / (float)defRoll));
-            //Mathf.RoundToInt(attackRoll + Mathf.Max((attackPower * (1.1f * attackRoll) * (1 + currentTile.attackBonus/5)) - (target.defensePower * (1.05f * defRoll) * (1 + target.currentTile.defenseBonus/5)), 0f));
-        Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage! (Attack Roll: {attackRoll}, Defense Roll: {defRoll}, terrainBonus: {terrainBonus})");
+        int damage = CalculateAttackDamage(target, currentTile);
+        Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage!");
         target.TakeDamage(damage);
         if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
         {
@@ -266,24 +339,64 @@ public class UnitInstance : MonoBehaviour
         }
         return true;
     }
+    /// Raw damage an attack on target would deal from attackFrom, before the
+    /// target's own mitigation. Shared by Attack() and the enemy AI's planning.
+    public int CalculateAttackDamage(UnitInstance target, HexTile attackFrom)
+    {
+        //int attackRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
+        //int defRoll = UnityEngine.Random.Range(1, 21); // Simulate a d20 roll
+        int attackRoll = 10;
+        int defRoll = 10;
 
+        int attackBonus = attackFrom != null ? attackFrom.attackBonus : 0;
+        int defenseBonus = target.currentTile != null ? target.currentTile.defenseBonus : 0;
+        float terrainBonus = 1f + (Mathf.Max(attackBonus - defenseBonus, 1f) / 5f);
+        int flatAttack = Mathf.Max(attackPower - target.defensePower, 1);
+
+        if (IsFortified == true)
+        {
+            flatAttack += 3;
+        }
+
+        return flatAttack * Mathf.RoundToInt(terrainBonus * (attackRoll / (float)defRoll));
+            //Mathf.RoundToInt(attackRoll + Mathf.Max((attackPower * (1.1f * attackRoll) * (1 + currentTile.attackBonus/5)) - (target.defensePower * (1.05f * defRoll) * (1 + target.currentTile.defenseBonus/5)), 0f));
+    }
+
+    /// Health target would actually lose if attacked from attackFrom (null = current tile).
+    public int PredictDamage(UnitInstance target, HexTile attackFrom = null)
+    {
+        return target.MitigateDamage(CalculateAttackDamage(target, attackFrom != null ? attackFrom : currentTile));
+    }
+
+    private int MitigateDamage(int amount)
+    {
+        // Fortified units shrug off 3 damage, but always take at least 1.
+        return IsFortified ? Mathf.Max(1, amount - 3) : amount;
+    }
+
+    public bool IsMoving => movementCoroutine != null;
+
+    public void playSpawnAnimation()
+    {
+        PlayAnimatorAction(Spawn, "Spawn");
+    }
     public void TakeDamage(int amount)
     {
         if (IsDead) return;
- 
-        if (IsFortified == true)
-        {
-            amount = Mathf.Min(1, amount - 3);
-        }
+
+        amount = MitigateDamage(amount);
 
         int healthBefore = currentHealth;
         currentHealth = Mathf.Max(0, currentHealth - amount);
         int damageTaken = healthBefore - currentHealth;
  
         NotifyStatsChanged();
- 
+
         if (damageTaken > 0)
+        {
+            PlayAnimatorAction(TakeDamageParameter, "Damaged");
             PlayDamageFlash(damageTaken);
+        }
  
         if (currentHealth <= 0)
             Die();
@@ -329,6 +442,51 @@ public class UnitInstance : MonoBehaviour
             flashPropertyBlock.SetColor(BaseColorId, color);
             renderer.SetPropertyBlock(flashPropertyBlock);
         }
+    }
+
+    private void ConfigureAnimatorStyle(UnitData archetype)
+    {
+        if (_animator == null || archetype == null) return;
+
+        UnitAnimationStyle style = archetype.AnimationStyle;
+        _animator.SetBool(BowParameter, style == UnitAnimationStyle.Bow);
+        _animator.SetBool(CrossbowParameter, style == UnitAnimationStyle.Crossbow);
+        _animator.SetBool(MageParameter, style == UnitAnimationStyle.Mage);
+        _animator.SetInteger(MeleHandsParameter, style switch
+        {
+            UnitAnimationStyle.MeleeOneHanded => 1,
+            UnitAnimationStyle.MeleeTwoHanded => 2,
+            _ => 0
+        });
+    }
+
+    private void PlayAnimatorAction(int parameter, string stateName)
+    {
+        if (_animator == null || !_animator.isActiveAndEnabled) return;
+
+        _animator.SetBool(parameter, true);
+        StartCoroutine(ResetAnimatorActionAfterStateStarts(parameter, stateName));
+    }
+
+    private IEnumerator ResetAnimatorActionAfterStateStarts(int parameter, string stateName)
+    {
+        const float stateEntryTimeout = 5f;
+        float elapsed = 0f;
+
+        while (_animator != null && _animator.isActiveAndEnabled && elapsed < stateEntryTimeout)
+        {
+            if (_animator.GetCurrentAnimatorStateInfo(0).IsName(stateName))
+            {
+                _animator.SetBool(parameter, false);
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        if (_animator != null)
+            _animator.SetBool(parameter, false);
     }
 
     private void Die()

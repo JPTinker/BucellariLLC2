@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -80,6 +81,10 @@ public class MapManager : MonoBehaviour
     private int villagerSpawnTarget;
     private int villagersSpawned;
 
+    // Gates the villager spawn-focus tour behind the player unit spawn-focus tour,
+    // so villagers only start their camera zoom-in after the players' has finished.
+    private bool initialUnitSpawnTourComplete = true;
+
     /// <summary>Fired when a unit successfully reaches an extraction point and leaves the map.</summary>
     public event Action<UnitInstance> UnitExtracted;
     public event Action<int, int> VillagerCountChanged;
@@ -136,7 +141,12 @@ public class MapManager : MonoBehaviour
         if (round <= 1 || (round - 1) % VillagerSpawnInterval != 0)
             return;
 
-        SpawnVillagers(1);
+        var newVillagers = SpawnVillagers(1);
+        if (newVillagers.Count > 0)
+        {
+            RevealAround(newVillagers[0].currentTile, 0);
+        }
+        
     }
 
     public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null)
@@ -436,12 +446,14 @@ public class MapManager : MonoBehaviour
         return farthestTile;
     }
 
-    private void placeUnits()
+    private List<UnitInstance> placeUnits()
     {
+        List<UnitInstance> spawnedUnits = new List<UnitInstance>();
+
         if (gameStateManager == null)
         {
             Debug.LogError("MapGenerator: GameStateManager instance is null. Cannot place units.");
-            return;
+            return spawnedUnits;
         }
 
         gameStateManager.EnsurePlayerHasTeam();
@@ -489,12 +501,46 @@ public class MapManager : MonoBehaviour
                 }
                 instance.Initialize(unit);
                 instance.PlaceOnTile(tile);
+                spawnedUnits.Add(instance);
             }
             else
             {
                 Debug.LogWarning($"No valid player spawn tile found near {preferredPosition} for unit {unit.UnitName}");
             }
         }
+
+        for (int i =0; i < spawnedUnits.Count; i++)
+        {
+            spawnedUnits[i].playSpawnAnimation();
+        }
+        StartCoroutine(PlayInitialUnitSpawnTour(spawnedUnits[0]));
+
+
+        return spawnedUnits;
+    }
+
+    private IEnumerator PlayInitialUnitSpawnTour( UnitInstance unit)
+    {
+        yield return PlayUnitSpawnFocusTour(unit);
+        initialUnitSpawnTourComplete = true;
+    }
+
+    // -----------------------
+    // Camera Spawn Focus
+    // -----------------------
+    private IEnumerator PlayUnitSpawnFocusTour(UnitInstance unit)
+    {
+        if (CameraController.Instance == null) yield break;
+        yield return CameraController.Instance.FocusOnUnit(unit.transform);
+    }
+
+    private IEnumerator PlayVillagerSpawnFocusTour(UnitInstance villager)
+    {
+        // Villagers wait for the initial player spawn tour to finish before starting their own.
+        while (!initialUnitSpawnTourComplete)
+            yield return null;
+
+        yield return PlayUnitSpawnFocusTour(villager);
     }
 
     private HexTile GetPlayerSpawnTile(Vector2Int preferredPosition)
@@ -596,6 +642,14 @@ public class MapManager : MonoBehaviour
             CombatManager.Instance.TrackAll(spawnedVillagers);
         VillagerCountChanged?.Invoke(villagersSpawned, villagerSpawnTarget);
 
+
+        if (spawnedVillagers.Count > 0){
+            for (int i = 0; i < count; i++)
+            {
+                spawnedVillagers[i].playSpawnAnimation();
+            }
+            StartCoroutine(PlayVillagerSpawnFocusTour(spawnedVillagers[0]));
+        }
         Debug.Log($"[MapGenerator] Spawned {spawnedVillagers.Count} villagers to rescue.");
         return spawnedVillagers;
     }

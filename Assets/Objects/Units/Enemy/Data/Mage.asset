@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a057b191fb73f114180dfc1e82a21a5d, type: 3}
+  m_Name: Mage
+  m_EditorClassIdentifier: Assembly-CSharp::UnitData
+  UnitID: EnemyMage
+  UnitName: EnemyMage
+  Description: 'A deadly magic user from the evil plane. '
+  UnitIcon: {fileID: 0}
+  ModelPrefab: {fileID: 2781382901639996558, guid: 92dfce8fc8bb4ec4bb03b0a13fadc751, type: 3}
+  weaponPrefabs:
+  - {fileID: 919132149155446097, guid: 9a3af17f8d08bd340850d2e4d3533347, type: 3}
+  equipmentPrefabs: []
+  ColorScheme: 0
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
+  MaxHP: 20
+  BaseAttack: 2
+  AttackRange: 2
+  MoveSpeed: 1
+  MaxMovementPoints: 2
+  VisibilityRange: 3
+  defensePower: 5
+  healsOthers: 10
+  Faction: 1
+  AnimationStyle: 5

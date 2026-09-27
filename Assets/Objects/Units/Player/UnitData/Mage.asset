@@ -15,7 +15,7 @@ MonoBehaviour:
   UnitID: 
   UnitName: Mage
   Description: 
-  UnitIcon: {fileID: 0}
+  UnitIcon: {fileID: 21300000, guid: b2da957826b07324fb1e61e377e65a28, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: adb8871f9b10baf40bd6d4be379d01e4, type: 3}
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: 65093afa9b2d18846a34801fcc10676d, type: 3}
@@ -42,3 +42,4 @@ MonoBehaviour:
   defensePower: 3
   healsOthers: 5
   Faction: 0
+  AnimationStyle: 5

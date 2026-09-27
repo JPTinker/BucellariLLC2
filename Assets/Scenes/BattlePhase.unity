@@ -751,7 +751,7 @@ Camera:
   far clip plane: 1000
   field of view: 26.991467
   orthographic: 1
-  orthographic size: 3.5
+  orthographic size: 5.5
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -775,15 +775,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.3420201, y: 0, z: 0, w: 0.9396927}
-  m_LocalPosition: {x: 3, y: 7.5, z: -6}
+  m_LocalRotation: {x: 0.42261827, y: 0, z: 0, w: 0.9063079}
+  m_LocalPosition: {x: 6.867837, y: 7.5, z: -2.3779273}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 226643594}
   - {fileID: 1014924429}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+  m_LocalEulerAnglesHint: {x: 50, y: 0, z: 0}
 --- !u!114 &961739754
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -798,12 +798,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
   moveSpeed: 20
   dragSpeed: 0.01
-  zoomSpeed: 0.1
+  zoomSpeed: 0.25
   minZoom: 2
   maxZoom: 15
   minBounds: {x: 3, y: -6}
   maxBounds: {x: 25, y: 25}
   useBounds: 0
+  spawnFocusZoom: 3
+  spawnPanInDuration: 0.5
+  spawnHoldDuration: 0.7
+  spawnPanOutDuration: 0.5
 --- !u!1 &1014924425
 GameObject:
   m_ObjectHideFlags: 0
@@ -1348,7 +1352,10 @@ MonoBehaviour:
     terrain: 4
   spawnVfxPrefab: {fileID: 0}
   AvailableEnemyArchetypes:
-  - {fileID: 11400000, guid: 3efd695141f148740a9e867e841a3d7d, type: 2}
+  - {fileID: 11400000, guid: 3a663e78d18a10a4895a56e5af9a1365, type: 2}
+  - {fileID: 11400000, guid: b49640a538cb5f344936d0121c4b1ece, type: 2}
+  - {fileID: 11400000, guid: 39634b9ab2ab047409704f3ffd41d947, type: 2}
+  - {fileID: 11400000, guid: eebb2c2877ca4ca44b62a7b39b76299b, type: 2}
   enemyGroupSize: 3
   enemySpawnCount: 20
   villagerArchetypes:
@@ -1381,6 +1388,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   enemyAI: {fileID: 2007730828}
+  reinforcementThreshold: 10
+  reinforcementTargetCount: 20
   combatUIManager: {fileID: 1221553267}
   notificationManager: {fileID: 1014924430}
 --- !u!114 &2007730828
@@ -1396,6 +1405,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAIController
   actionDelay: 0.05
+  moveTimeout: 5
+  logDecisions: 1
+  lookaheadTurns: 2
+  futureDiscount: 0.6
+  moveCandidatesPerStep: 6
+  playerWeight: 1
+  villagerWeight: 1.25
+  killBonus: 60
+  killThreatBonus: 4
+  focusFireWeight: 1
+  approachWeight: 0.15
+  defenseTerrainWeight: 0.5
+  rangedAdjacentPenalty: 2
+  allyPassCost: 2
 --- !u!1 &2116198337
 GameObject:
   m_ObjectHideFlags: 0

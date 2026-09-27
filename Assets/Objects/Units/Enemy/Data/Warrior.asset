@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a057b191fb73f114180dfc1e82a21a5d, type: 3}
+  m_Name: Warrior
+  m_EditorClassIdentifier: Assembly-CSharp::UnitData
+  UnitID: EnemyMage
+  UnitName: EnemyMage
+  Description: 'A deadly magic user from the evil plane. '
+  UnitIcon: {fileID: 0}
+  ModelPrefab: {fileID: 2781382901639996558, guid: 7c21cbc164b5ba7438111d908bd80280, type: 3}
+  weaponPrefabs:
+  - {fileID: 919132149155446097, guid: 5395e1dfb79056f4fa62bd65c7eb6b98, type: 3}
+  - {fileID: 919132149155446097, guid: 06acd524d45f63f48acfeb34fa121eac, type: 3}
+  equipmentPrefabs:
+  - {fileID: 919132149155446097, guid: ec48a112c7522a54191f313e0014b49a, type: 3}
+  - {fileID: 919132149155446097, guid: 5dc92312ddd08974a9b7f495c45958ac, type: 3}
+  - {fileID: 919132149155446097, guid: 077ca82c96df3684489922ee06327827, type: 3}
+  - {fileID: 919132149155446097, guid: 25932967535cce3459c8d644da435e10, type: 3}
+  ColorScheme: 0
+  ColorScheme1: {fileID: 0}
+  ColorScheme2: {fileID: 0}
+  ColorScheme3: {fileID: 0}
+  MaxHP: 20
+  BaseAttack: 2
+  AttackRange: 2
+  MoveSpeed: 1
+  MaxMovementPoints: 2
+  VisibilityRange: 3
+  defensePower: 5
+  healsOthers: 10
+  Faction: 1
+  AnimationStyle: 5

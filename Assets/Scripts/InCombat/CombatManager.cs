@@ -12,6 +12,12 @@ public class CombatManager : MonoBehaviour
 
 
     [SerializeField] private EnemyAIController enemyAI;
+
+    [Header("Enemy Reinforcements")]
+    [Tooltip("When living enemies drop below this count, reinforcements are spawned.")]
+    [SerializeField] private int reinforcementThreshold = 10;
+    [Tooltip("Reinforcements top the enemy count back up to this total.")]
+    [SerializeField] private int reinforcementTargetCount = 20;
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> enemyUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> villagerUnits = new List<UnitInstance>();
@@ -272,9 +278,26 @@ public class CombatManager : MonoBehaviour
                 unit.actionsRemaining = unit.maxActionsPerTurn;
         }
         notificationManager.ShowNotification("Enemy Turn ends");
+        SpawnEnemyReinforcements();
         currentRound++;
         combatUIManager?.SetRound(currentRound);
         OnRoundAdvanced?.Invoke(currentRound);
+    }
+
+    // Uses the same clustered edge spawn as the opening wave in MapManager.
+    private void SpawnEnemyReinforcements()
+    {
+        if (levelEnded || MapManager.Instance == null) return;
+
+        enemyUnits.RemoveAll(unit => unit == null || unit.IsDead);
+        if (enemyUnits.Count >= reinforcementThreshold) return;
+
+        int toSpawn = reinforcementTargetCount - enemyUnits.Count;
+        List<UnitInstance> reinforcements = MapManager.Instance.SpawnEnemyWave(toSpawn);
+        TrackAll(reinforcements);
+
+        if (reinforcements.Count > 0)
+            notificationManager.ShowNotification($"{reinforcements.Count} enemy reinforcements have arrived");
     }
 
     private void PreviewDestination(HexTile destination)

@@ -1,0 +1,87 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/CampaignMapContent.uss?fileID=7433441132597879392&amp;guid=7205fc4801e9411e98f1cb03c57a5978&amp;type=3#CampaignMapContent"/>
+    <Style src="project://database/Assets/UI/USS/PhaseShell.uss?fileID=7433441132597879392&amp;guid=43ba64f2b8dc16f4f86eed5a0667948b&amp;type=3#PhaseShell"/>
+    <Style src="project://database/Assets/UI/USS/DecisionContent.uss?fileID=7433441132597879392&amp;guid=ba0e156fc08a3fa408c60ca9594c1642&amp;type=3#DecisionContent"/>
+    <ui:VisualElement name="campaign-map-content" class="screen-content">
+        <ui:ScrollView name="content-scroll" mode="Vertical" class="content-scroll">
+            <ui:VisualElement name="phase-hud" class="panel phase-hud">
+                <ui:VisualElement class="row row--space-between">
+                    <ui:VisualElement class="row row--gap-sm">
+                        <ui:VisualElement class="pulse-dot"/>
+                        <ui:Label text="Campaign Map" class="label-caps text-primary-fixed"/>
+                    </ui:VisualElement>
+                    <ui:Label name="evacuation-status" text="5 Cycles Until Evacuation Zone" class="label-caps chip"/>
+                </ui:VisualElement>
+                <ui:Label text="Choose the Settlement&apos;s Course" class="headline"/>
+                <ui:Label text="One choice per cycle - it shapes what the Decision tab&apos;s directives yield this cycle, and whether the convoy presses on." class="body-text text-muted"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="campaign-map-hero" class="panel campaign-map-hero" style="background-image: url(&quot;project://database/Assets/UI/Images/7b88d403-49fd-4cfb-81f8-ad330120739e.png?fileID=2800000&amp;guid=4a3a4e847b477ec4d9ad8dbed43c2a5b&amp;type=3#7b88d403-49fd-4cfb-81f8-ad330120739e&quot;);">
+                <ui:VisualElement name="campaign-map-hero-image" class="campaign-map-hero__image"/>
+                <ui:VisualElement class="campaign-map-hero__caption">
+                    <ui:Label text="The Longship Convoy" class="label-caps text-primary"/>
+                    <ui:Label text="Adrift between the ruined coast and the evacuation zone." class="body-text text-muted"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement class="section-header-row">
+                <ui:Label text="This Cycle&apos;s Course" class="label-caps section-title"/>
+                <ui:Label text="Pick One" class="label-caps text-muted"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="option-list" class="directive-list">
+                <ui:Button name="option-stay-put" class="panel directive-card campaign-option">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-stay-put"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Stay Put" class="label-caps card-title"/>
+                                <ui:Label text="Hold position and work the site harder." class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="SELECTED" class="label-caps tag tag--info campaign-option__badge"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="x2 Food/Scrap from Decision directives" class="body-text info-line info-line--positive"/>
+                        <ui:Label text="No progress toward the evacuation zone" class="body-text info-line info-line--negative"/>
+                    </ui:VisualElement>
+                </ui:Button>
+                <ui:Button name="option-travel" class="panel directive-card campaign-option">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-travel"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Travel Towards the Evacuation Zone" class="label-caps card-title"/>
+                                <ui:Label text="Keep the convoy moving." class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="SELECTED" class="label-caps tag tag--info campaign-option__badge"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="-1 Cycle Until Evacuation Zone" class="body-text info-line info-line--positive"/>
+                        <ui:Label text="Standard yields, no bonus" class="body-text info-line"/>
+                    </ui:VisualElement>
+                </ui:Button>
+                <ui:Button name="option-rest" class="panel directive-card campaign-option">
+                    <ui:VisualElement class="row row--space-between">
+                        <ui:VisualElement class="row row--gap-sm">
+                            <ui:VisualElement class="icon-badge">
+                                <ui:VisualElement class="icon icon-rest"/>
+                            </ui:VisualElement>
+                            <ui:VisualElement>
+                                <ui:Label text="Rest" class="label-caps card-title"/>
+                                <ui:Label text="Break camp and tend to the wounded." class="body-text text-muted"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                        <ui:Label text="SELECTED" class="label-caps tag tag--info campaign-option__badge"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="card-info-grid">
+                        <ui:Label text="Heals all units to full HP" class="body-text info-line info-line--positive"/>
+                        <ui:Label text="No progress toward the evacuation zone" class="body-text info-line info-line--negative"/>
+                    </ui:VisualElement>
+                </ui:Button>
+            </ui:VisualElement>
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

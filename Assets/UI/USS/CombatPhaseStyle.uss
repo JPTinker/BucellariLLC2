@@ -23,16 +23,14 @@
     letter-spacing: 1px;
 }
 .location-name { font-size: 19px; -unity-font-style: bold; color: #e5d3b3; }
-.resource-group { flex-direction: row; align-items: center; }
-.resource-item { min-width: 106px; padding-left: 14px; border-left-width: 1px; border-left-color: #31211b; }
-.resource-value { font-size: 17px; -unity-font-style: bold; color: #e5d3b3; }
+.resource-group { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
+.resource-item { min-width: 84px; padding-left: 12px; margin-top: 4px; margin-bottom: 4px; border-left-width: 1px; border-left-color: #31211b; }
+.resource-value { font-size: 15px; -unity-font-style: bold; color: #e5d3b3; }
 .resource-value-positive { color: #8db58c; }
 .resource-value-gold { color: #d4a359; }
+.resource-item-divider { margin-left: 10px; padding-left: 22px; border-left-width: 1px; border-left-color: #4a525d; }
 .round-item { margin-left: 14px; padding-left: 18px; border-left-width: 1px; border-left-color: #c84b31; }
 .round-value { font-size: 26px; -unity-font-style: bold; color: #c84b31; }
-
-.settlement-bar { min-height: 58px; margin-top: 8px; border-bottom-color: #4a525d; }
-.settlement-subheading { font-size: 14px; color: #8c7b6c; }
 
 .play-area { flex-grow: 1; flex-direction: row; margin-top: 14px; margin-bottom: 14px; background-color: rgba(11, 13, 16, 0); }
 .unit-roster { width: 272px; padding: 14px; background-color: rgba(17, 21, 26, 0.82); border-width: 1px; border-color: #2a3038; }

@@ -10,7 +10,7 @@
                         <ui:VisualElement class="pulse-dot"/>
                         <ui:Label text="Cycle 14 // Pre-Deployment" class="label-caps text-primary-fixed"/>
                     </ui:VisualElement>
-                    <ui:Label text="Untimed Matrix" class="label-caps chip"/>
+                    <ui:Label name="course-status" text="Course: Traveling" class="label-caps chip"/>
                 </ui:VisualElement>
                 <ui:Label text="Planning Phase" class="headline"/>
                 <ui:Label text="Tactical Resource Distribution - Deliberate and allocate squad labor prior to breach resolution." class="body-text text-muted"/>
@@ -54,7 +54,7 @@
                                 <ui:Label text="Sector B-3 Outpost Perimeter" class="body-text text-muted"/>
                             </ui:VisualElement>
                         </ui:VisualElement>
-                        <ui:Label text="HIGH RISK" class="label-caps tag tag--danger"/>
+                        <ui:Label name="count-vanguard" text="0 Selected" class="label-caps tag tag--danger"/>
                     </ui:VisualElement>
                     <ui:VisualElement class="card-info-grid">
                         <ui:Label text="-20 Food per Unit" class="body-text info-line info-line--negative"/>
@@ -62,17 +62,8 @@
                         <ui:Label text="Casualty Risk (-10 Morale)" class="body-text info-line info-line--negative"/>
                         <ui:Label text="+0.25% Morale per Kill, +5% per Rescue" class="body-text info-line info-line--positive"/>
                     </ui:VisualElement>
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:VisualElement class="row row--gap-xs">
-                            <ui:Label text="[ CMD Vance ]" class="label-caps chip chip--muted"/>
-                            <ui:Label text="[ Alpha ]" class="label-caps chip chip--muted"/>
-                        </ui:VisualElement>
-                        <ui:VisualElement class="stepper">
-                            <ui:Button name="btn-vanguard-dec" text="-" class="stepper__btn"/>
-                            <ui:Label name="count-vanguard" text="4" class="stepper__value"/>
-                            <ui:Button name="btn-vanguard-inc" text="+" class="stepper__btn"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
+                    <ui:VisualElement name="vanguard-roster" class="vanguard-roster"/>
+                    <ui:Label name="vanguard-empty-hint" text="No units selected - pick your team on the Roster tab." class="body-text text-muted vanguard-empty-hint"/>
                 </ui:VisualElement>
                 <ui:VisualElement name="card-scavenge" class="panel directive-card">
                     <ui:VisualElement class="row row--space-between">

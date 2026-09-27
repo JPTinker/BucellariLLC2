@@ -1,3 +1,5 @@
+using System.Collections;
+using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -6,6 +8,8 @@ using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 
 public class CameraController : MonoBehaviour
 {
+    public static CameraController Instance { get; private set; }
+
     [Header("Movement")]
     public float moveSpeed = 10f;
     public float dragSpeed = 0.01f;
@@ -20,22 +24,47 @@ public class CameraController : MonoBehaviour
     public Vector2 maxBounds;
     public bool useBounds = false;
 
+    [Header("Spawn Focus")]
+    [Tooltip("Orthographic size used while focused on a spawning unit.")]
+    public float spawnFocusZoom = 6f;
+    [Tooltip("Seconds to pan/zoom in on the spawning unit.")]
+    public float spawnPanInDuration = 0.5f;
+    [Tooltip("Seconds to hold on the spawning unit before returning.")]
+    public float spawnHoldDuration = 0.6f;
+    [Tooltip("Seconds to pan/zoom back out to the default view.")]
+    public float spawnPanOutDuration = 0.5f;
+
     private Camera cam;
     private Vector2 lastTouchPosition;
+    private Vector3 defaultPosition;
+    private float defaultZoom;
+    private bool isFocusing = false;
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         cam = Camera.main;
+        defaultPosition = transform.position;
+        defaultZoom = cam.orthographicSize;
     }
 
     void Update()
     {
+        // User controls are suspended while the camera is focusing on a spawning unit.
+        if (isFocusing) return;
+
         HandleKeyboardMovement();
         HandleMouseZoom();
         // Mobile / Touch Controls
         #if UNITY_IOS || UNITY_ANDROID
         HandleTouchControls();
-        #endif 
+        #endif
         //ClampPosition();
         HandleMouseClick();
     }
@@ -182,5 +211,54 @@ public class CameraController : MonoBehaviour
             if (tile != null)
                 tile.OnTilePressed();
         }
+    }
+
+    // -----------------------
+    // Spawn Focus: pan/zoom in on a spawning unit, hold, then return to the
+    // default view. User controls are disabled for the duration. Callers
+    // (e.g. MapManager) should `yield return StartCoroutine(...)` this to
+    // sequence focus on multiple units one at a time.
+    // -----------------------
+    public IEnumerator FocusOnUnit(Transform target)
+    {
+        if (target == null) yield break;
+
+        // Wait out any focus already in progress so overlapping calls queue instead of clashing.
+        while (isFocusing)
+            yield return null;
+
+        isFocusing = true;
+
+        Vector3 startPosition = transform.position;
+        float startZoom = cam.orthographicSize;
+        Vector3 focusPosition = new Vector3(target.position.x, startPosition.y, target.position.z - 5.5f); //added in a camera offset so the object is in frame. 
+
+        yield return PanAndZoom(startPosition, focusPosition, startZoom, spawnFocusZoom, spawnPanInDuration);
+        yield return new WaitForSeconds(spawnHoldDuration);
+        yield return PanAndZoom(transform.position, defaultPosition, cam.orthographicSize, defaultZoom, spawnPanOutDuration);
+
+        isFocusing = false;
+    }
+    private IEnumerator PanAndZoom(Vector3 fromPosition, Vector3 toPosition, float fromZoom, float toZoom, float duration)
+    {
+        if (duration <= 0f)
+        {
+            transform.position = toPosition;
+            cam.orthographicSize = toZoom;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+            transform.position = Vector3.Lerp(fromPosition, toPosition, t);
+            cam.orthographicSize = Mathf.Lerp(fromZoom, toZoom, t);
+            yield return null;
+        }
+
+        transform.position = toPosition;
+        cam.orthographicSize = toZoom;
     }
 }

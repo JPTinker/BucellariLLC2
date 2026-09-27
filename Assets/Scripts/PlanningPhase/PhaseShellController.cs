@@ -11,10 +11,12 @@ using UnityEngine.UIElements;
 /// swaps which instantiated content tree is visible inside it.
 ///
 /// Attach this to the same GameObject as the UIDocument referencing
-/// PhaseShell.uxml, alongside a PlanningPhaseController and a
-/// DecisionPhaseController (plain components now - neither owns a
-/// UIDocument anymore). Assign RosterContent.uxml, DecisionContent.uxml and
-/// TabPlaceholder.uxml plus both controller references in the Inspector.
+/// PhaseShell.uxml, alongside a PlanningPhaseController, a
+/// DecisionPhaseController and a CampaignMapController (plain components now -
+/// none of them own a UIDocument anymore). Assign RosterContent.uxml,
+/// DecisionContent.uxml, CampaignMapContent.uxml and TabPlaceholder.uxml
+/// (still used for the not-yet-built Store tab) plus all three controller
+/// references in the Inspector.
 /// </summary>
 [RequireComponent(typeof(UIDocument))]
 public class PhaseShellController : MonoBehaviour
@@ -23,16 +25,21 @@ public class PhaseShellController : MonoBehaviour
 
     public enum Tab { Roster, Decision, Map, Store }
 
+    /// <summary>Lets other tabs (e.g. Decision's Combat Vanguard card) read the Roster tab's live selection.</summary>
+    public PlanningPhaseController RosterController => rosterController;
+
     [Header("Content templates")]
     [SerializeField] private VisualTreeAsset rosterContentTemplate;
     [SerializeField] private VisualTreeAsset decisionContentTemplate;
-    [Tooltip("TabPlaceholder.uxml. Reused for both Campaign Map and Store until each has real content.")]
+    [SerializeField] private VisualTreeAsset campaignMapContentTemplate;
+    [Tooltip("TabPlaceholder.uxml. Reused for Store until it has real content.")]
     [SerializeField] private VisualTreeAsset placeholderContentTemplate;
 
     [Header("Tab controllers")]
     [Tooltip("Plain component now - no longer requires its own UIDocument.")]
     [SerializeField] private PlanningPhaseController rosterController;
     [SerializeField] private DecisionPhaseController decisionController;
+    [SerializeField] private CampaignMapController campaignMapController;
 
     private UIDocument _document;
     private VisualElement _root;
@@ -40,7 +47,7 @@ public class PhaseShellController : MonoBehaviour
 
     private VisualElement _rosterRoot;
     private VisualElement _decisionRoot;
-    private VisualElement _mapPlaceholderRoot;
+    private VisualElement _mapRoot;
     private VisualElement _storePlaceholderRoot;
 
     // Header (Live Asset Ledger)
@@ -53,8 +60,23 @@ public class PhaseShellController : MonoBehaviour
 
     // Footer
     private Button _navRoster, _navDecision, _navMap, _navStore;
+    private Button _engageButton;
+    private VisualElement _actionContainer;
 
     public Tab CurrentTab { get; private set; } = Tab.Roster;
+
+    public bool CanEngage
+    {
+        get
+        {
+            var gsm = GameStateManager.Instance;
+            return gsm != null &&
+                gsm.HasSelectedCampaignAction &&
+                rosterController != null &&
+                rosterController.SelectedUnits.Count > 0 &&
+                gsm.IdleVillagers == 0;
+        }
+    }
 
     private void Awake()
     {
@@ -106,6 +128,9 @@ public class PhaseShellController : MonoBehaviour
         _navDecision = _root.Q<Button>("nav-decision");
         _navMap = _root.Q<Button>("nav-map");
         _navStore = _root.Q<Button>("nav-store");
+        _engageButton = _root.Q<Button>("btn-engage");
+        _engageButton?.SetEnabled(false);
+        _actionContainer = _root.Q<VisualElement>(className: "action-container");
     }
 
     /// <summary>
@@ -120,7 +145,8 @@ public class PhaseShellController : MonoBehaviour
     /// </summary>
     private void BuildContent()
     {
-        if (rosterContentTemplate == null || decisionContentTemplate == null || placeholderContentTemplate == null)
+        if (rosterContentTemplate == null || decisionContentTemplate == null ||
+            campaignMapContentTemplate == null || placeholderContentTemplate == null)
         {
             Debug.LogError("PhaseShellController: one or more content templates aren't assigned in the Inspector.");
             return;
@@ -128,22 +154,41 @@ public class PhaseShellController : MonoBehaviour
 
         _rosterRoot = rosterContentTemplate.Instantiate();
         _decisionRoot = decisionContentTemplate.Instantiate();
-        _mapPlaceholderRoot = placeholderContentTemplate.Instantiate();
+        _mapRoot = campaignMapContentTemplate.Instantiate();
         _storePlaceholderRoot = placeholderContentTemplate.Instantiate();
 
-        SetPlaceholderText(_mapPlaceholderRoot, "CAMPAIGN MAP", "Not built yet.");
         SetPlaceholderText(_storePlaceholderRoot, "STORE", "Not built yet.");
 
         _contentSlot.Add(_rosterRoot);
         _contentSlot.Add(_decisionRoot);
-        _contentSlot.Add(_mapPlaceholderRoot);
+        _contentSlot.Add(_mapRoot);
         _contentSlot.Add(_storePlaceholderRoot);
 
-        if (rosterController != null) rosterController.Initialize(_root);
+        // Each Initialize() call is wrapped so one tab throwing (e.g. a
+        // missing/renamed UXML element) can't abort the rest of BuildContent()/
+        // Start() - without this, an exception here would skip WireNav() and
+        // Show(Tab.Roster) entirely, leaving every tab stacked and visible at
+        // once with no nav button responding to clicks.
+        if (rosterController != null)
+        {
+            try { rosterController.Initialize(_root); }
+            catch (System.Exception e) { Debug.LogError($"PhaseShellController: Roster Controller threw during Initialize() - {e}"); }
+        }
         else Debug.LogError("PhaseShellController: Roster Controller isn't assigned in the Inspector.");
 
-        if (decisionController != null) decisionController.Initialize(_root);
+        if (decisionController != null)
+        {
+            try { decisionController.Initialize(_root); }
+            catch (System.Exception e) { Debug.LogError($"PhaseShellController: Decision Controller threw during Initialize() - {e}"); }
+        }
         else Debug.LogError("PhaseShellController: Decision Controller isn't assigned in the Inspector.");
+
+        if (campaignMapController != null)
+        {
+            try { campaignMapController.Initialize(_root); }
+            catch (System.Exception e) { Debug.LogError($"PhaseShellController: Campaign Map Controller threw during Initialize() - {e}"); }
+        }
+        else Debug.LogError("PhaseShellController: Campaign Map Controller isn't assigned in the Inspector.");
     }
 
     private static void SetPlaceholderText(VisualElement placeholderRoot, string title, string body)
@@ -179,13 +224,18 @@ public class PhaseShellController : MonoBehaviour
 
         SetVisible(_rosterRoot, tab == Tab.Roster);
         SetVisible(_decisionRoot, tab == Tab.Decision);
-        SetVisible(_mapPlaceholderRoot, tab == Tab.Map);
+        SetVisible(_mapRoot, tab == Tab.Map);
         SetVisible(_storePlaceholderRoot, tab == Tab.Store);
 
         SetActiveNav(_navRoster, tab == Tab.Roster);
         SetActiveNav(_navDecision, tab == Tab.Decision);
         SetActiveNav(_navMap, tab == Tab.Map);
         SetActiveNav(_navStore, tab == Tab.Store);
+
+        // The Campaign Map tab can change SelectedCampaignAction while the
+        // Decision tab isn't visible - re-sync its course label/forecast now
+        // rather than waiting for the next allocation tap.
+        if (tab == Tab.Decision) decisionController?.Refresh();
     }
 
     private static void SetVisible(VisualElement element, bool visible)
@@ -210,7 +260,12 @@ public class PhaseShellController : MonoBehaviour
     public void RefreshHeader()
     {
         var gsm = GameStateManager.Instance;
-        if (gsm == null) return;
+        if (gsm == null)
+        {
+            _engageButton?.SetEnabled(false);
+            SetVisible(_actionContainer, false);
+            return;
+        }
 
         var s = gsm.Settlement;
         var forecast = gsm.ComputeForecast();
@@ -235,6 +290,14 @@ public class PhaseShellController : MonoBehaviour
 
         _resMoraleVal.text = $"{s.Morale}%";
         SetDelta(_resMoraleDelta, forecast.MoraleDelta, suffix: "%");
+
+        // Shell-level chrome, not Roster-specific: stays hidden on every tab
+        // until the player has actually finished making selections (full
+        // squad + campaign action chosen, no idle villagers left), then
+        // appears regardless of which tab they're looking at.
+        bool canEngage = CanEngage;
+        _engageButton?.SetEnabled(canEngage);
+        SetVisible(_actionContainer, canEngage);
     }
 
     private static void SetDelta(Label label, int value, string suffix = "")

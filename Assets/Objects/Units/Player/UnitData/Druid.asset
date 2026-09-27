@@ -15,7 +15,7 @@ MonoBehaviour:
   UnitID: 
   UnitName: Druid
   Description: 
-  UnitIcon: {fileID: 0}
+  UnitIcon: {fileID: 21300000, guid: b2da957826b07324fb1e61e377e65a28, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: 1aa8fe58972640c429c50c22f7ae6197, type: 3}
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: 78b794aedb24015478cb7ed89bfc5a32, type: 3}
@@ -38,3 +38,4 @@ MonoBehaviour:
   defensePower: 4
   healsOthers: 10
   Faction: 0
+  AnimationStyle: 5

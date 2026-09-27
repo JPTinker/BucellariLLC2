@@ -31,8 +31,15 @@ public class DecisionPhaseController : MonoBehaviour
     // Directive counters
     private Label _countVanguard, _countScavenge, _countHarvest, _countExpansion;
 
+    // Combat Vanguard: mirrors the Roster tab's live selection rather than a stepper
+    private VisualElement _vanguardRoster;
+    private Label _vanguardEmptyHint;
+
     // Forecast
     private Label _forecastFood, _forecastScrap, _forecastVillagers, _forecastMorale;
+
+    // Campaign Map course (set on the Map tab, read here so it's visible without switching tabs)
+    private Label _courseStatus;
 
     // Buttons
     private Button _btnExecute, _btnReset;
@@ -82,10 +89,15 @@ public class DecisionPhaseController : MonoBehaviour
         _countHarvest = _root.Q<Label>("count-harvest");
         _countExpansion = _root.Q<Label>("count-expansion");
 
+        _vanguardRoster = _root.Q<VisualElement>("vanguard-roster");
+        _vanguardEmptyHint = _root.Q<Label>("vanguard-empty-hint");
+
         _forecastFood = _root.Q<Label>("forecast-food");
         _forecastScrap = _root.Q<Label>("forecast-scrap");
         _forecastVillagers = _root.Q<Label>("forecast-villagers");
         _forecastMorale = _root.Q<Label>("forecast-morale");
+
+        _courseStatus = _root.Q<Label>("course-status");
 
         _btnExecute = _root.Q<Button>("btn-execute-cycle");
         _btnReset = _root.Q<Button>("btn-reset");
@@ -93,8 +105,6 @@ public class DecisionPhaseController : MonoBehaviour
 
     private void BindButtons()
     {
-        RegisterStepper("btn-vanguard-dec", GameStateManager.Directive.Vanguard, -1);
-        RegisterStepper("btn-vanguard-inc", GameStateManager.Directive.Vanguard, 1);
         RegisterStepper("btn-scavenge-dec", GameStateManager.Directive.Scavenge, -1);
         RegisterStepper("btn-scavenge-inc", GameStateManager.Directive.Scavenge, 1);
         RegisterStepper("btn-harvest-dec", GameStateManager.Directive.Harvest, -1);
@@ -154,20 +164,31 @@ public class DecisionPhaseController : MonoBehaviour
     /// <summary>
     /// Re-reads GameStateManager (allocation counts + ComputeForecast()) and
     /// writes every label/class on screen. Call after any allocation change.
+    /// Public, and also called by PhaseShellController whenever this tab
+    /// becomes visible, since the Campaign Map tab can change
+    /// SelectedCampaignAction (affecting the course label and the forecast's
+    /// yield multiplier) while this tab isn't the one on screen.
     ///
     /// The Live Asset Ledger header itself is shared chrome now (visible on
     /// every tab), so PhaseShellController owns writing it - this just asks
     /// it to re-pull the same ComputeForecast() rather than duplicating that
     /// label-writing code here too.
     /// </summary>
-    private void Refresh()
+    public void Refresh()
     {
         var a = _gsm.CurrentAllocation;
         var forecast = _gsm.ComputeForecast();
 
         PhaseShellController.Instance?.RefreshHeader();
 
-        _countVanguard.text = a.VanguardUnits.ToString();
+        _courseStatus.text = _gsm.SelectedCampaignAction switch
+        {
+            GameStateManager.CampaignAction.StayPut => "Course: Staying Put (x2 Yields)",
+            GameStateManager.CampaignAction.Rest => "Course: Resting",
+            _ => "Course: Traveling"
+        };
+
+        RefreshVanguardRoster();
         _countScavenge.text = a.ScavengeUnits.ToString();
         _countHarvest.text = a.HarvestUnits.ToString();
         _countExpansion.text = a.ExpansionUnits.ToString();
@@ -184,6 +205,49 @@ public class DecisionPhaseController : MonoBehaviour
         // Disable "Execute Cycle" when a queued ship can't be paid for, rather
         // than letting ExecuteCycle() silently reject it.
         _btnExecute.SetEnabled(!forecast.IsOverBudget);
+    }
+
+    /// <summary>
+    /// Combat Vanguard has no stepper of its own - it mirrors whichever units
+    /// are currently picked on the Roster tab (GameStateManager.ActiveTeam,
+    /// kept live in sync by PlanningPhaseController.ToggleSelection). This just
+    /// rebuilds the small icon+name chip row and the "N Selected" count/empty
+    /// hint from that list; no game-state math happens here.
+    /// </summary>
+    private void RefreshVanguardRoster()
+    {
+        var activeTeam = _gsm.ActiveTeam;
+
+        if (_countVanguard != null) _countVanguard.text = $"{activeTeam.Count} Selected";
+
+        if (_vanguardRoster != null)
+        {
+            _vanguardRoster.Clear();
+            foreach (var unit in activeTeam)
+            {
+                if (unit != null) _vanguardRoster.Add(BuildVanguardChip(unit));
+            }
+        }
+
+        if (_vanguardEmptyHint != null)
+            _vanguardEmptyHint.style.display = activeTeam.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    private static VisualElement BuildVanguardChip(Unit unit)
+    {
+        var chip = new VisualElement();
+        chip.AddToClassList("vanguard-chip");
+
+        var icon = new VisualElement();
+        icon.AddToClassList("vanguard-chip__icon");
+        if (unit.UnitIcon != null) icon.style.backgroundImage = new StyleBackground(unit.UnitIcon);
+        chip.Add(icon);
+
+        var name = new Label(unit.UnitName);
+        name.AddToClassList("vanguard-chip__name");
+        chip.Add(name);
+
+        return chip;
     }
 
     private static void SetTone(Label label, bool positive)

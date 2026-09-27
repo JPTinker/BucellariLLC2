@@ -54,11 +54,15 @@ public class PlanningPhaseController : MonoBehaviour
     private VisualElement _draftOverlay;
     private VisualElement _draftOptionsContainer;
     private UnitData _draftSelectedUnit;
+    private bool _draftSelectedVillager;
     private bool _draftSelectionMade;
 
     // Selection state
     private readonly List<Unit> _selectedUnits = new List<Unit>();
     private readonly Dictionary<Unit, VisualElement> _cardsByUnit = new Dictionary<Unit, VisualElement>();
+
+    /// <summary>The units currently picked for the next battle. Read by the Decision tab's Combat Vanguard card.</summary>
+    public IReadOnlyList<Unit> SelectedUnits => _selectedUnits;
 
     // Reveal queue state
     private readonly Queue<Unit> _revealQueue = new Queue<Unit>();
@@ -306,6 +310,13 @@ public class PlanningPhaseController : MonoBehaviour
         }
 
         RefreshSelectionCounter();
+
+        // Mirror the live selection into ActiveTeam (not just on Engage) so the
+        // Decision tab's Combat Vanguard card - and the shared header's idle-unit
+        // count, which now derives from ActiveTeam rather than a manual stepper -
+        // both reflect who's picked without requiring a separate commit step.
+        GameStateManager.Instance.ActiveTeam = new List<Unit>(_selectedUnits);
+        PhaseShellController.Instance?.RefreshHeader();
     }
 
     private IEnumerator PulseDenied(VisualElement card)
@@ -319,14 +330,18 @@ public class PlanningPhaseController : MonoBehaviour
     {
         if (_selectionCounter != null)
             _selectionCounter.text = $"{_selectedUnits.Count} / {GameStateManager.MaxTeamSize} SELECTED";
-        _engageButton?.SetEnabled(_selectedUnits.Count > 0);
     }
 
     private void OnEngageClicked()
     {
-        if (GameStateManager.Instance.SetActiveTeam(_selectedUnits))
+        var gsm = GameStateManager.Instance;
+        if (gsm == null || PhaseShellController.Instance == null ||
+            !PhaseShellController.Instance.CanEngage)
+            return;
+
+        if (gsm.SetActiveTeam(_selectedUnits))
         {
-            GameStateManager.Instance.LoadCombatMap();
+            gsm.LoadCombatMap();
         }
     }
 
@@ -523,6 +538,7 @@ public class PlanningPhaseController : MonoBehaviour
         _draftOverlay.RemoveFromClassList("hidden");
         _draftSelectionMade = false;
         _draftSelectedUnit = null;
+        _draftSelectedVillager = false;
 
         // Stagger each card's punch-in slightly so they don't all pop at once.
         for (int i = 0; i < draftCards.Count; i++)
@@ -536,7 +552,11 @@ public class PlanningPhaseController : MonoBehaviour
         _draftOverlay.AddToClassList("hidden");
         _draftOptionsContainer.Clear();
 
-        GameStateManager.Instance.ResolveUnitDraft(_draftSelectedUnit);
+        var gsm = GameStateManager.Instance;
+        if (_draftSelectedVillager)
+            gsm.ResolveVillagerDraft();
+        else
+            gsm.ResolveUnitDraft(_draftSelectedUnit);
 
         RefreshRosterList();
         RefreshSelectionCounter();
@@ -570,7 +590,41 @@ public class PlanningPhaseController : MonoBehaviour
             built.Add(card);
         }
 
+        if (GameStateManager.Instance.CanDraftSavedVillager)
+        {
+            var villagerCard = BuildVillagerDraftCard();
+            _draftOptionsContainer.Add(villagerCard);
+            built.Add(villagerCard);
+        }
+
         return built;
+    }
+
+    private VisualElement BuildVillagerDraftCard()
+    {
+        var card = unitCardTemplate.Instantiate();
+        var cardRoot = card.Q<VisualElement>("card-root");
+        cardRoot.AddToClassList("draft-card");
+
+        PopulateCardTemplate(card, null, "Villager", 0, 0);
+        var statsRow = card.Q<VisualElement>("card-stats-row");
+        if (statsRow != null) statsRow.style.display = DisplayStyle.None;
+
+        var footerTag = card.Q<Label>("card-footer-tag");
+        if (footerTag != null)
+        {
+            footerTag.text = "[ +1 VILLAGER ]";
+            footerTag.style.display = DisplayStyle.Flex;
+        }
+
+        cardRoot.RegisterCallback<ClickEvent>(_ =>
+        {
+            _draftSelectedUnit = null;
+            _draftSelectedVillager = true;
+            _draftSelectionMade = true;
+        });
+
+        return card;
     }
 
     private VisualElement BuildDraftCard(UnitData unit)

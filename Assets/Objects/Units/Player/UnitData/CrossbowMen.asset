@@ -15,7 +15,7 @@ MonoBehaviour:
   UnitID: 
   UnitName: Crossbow Men
   Description: 
-  UnitIcon: {fileID: 0}
+  UnitIcon: {fileID: 21300000, guid: b2da957826b07324fb1e61e377e65a28, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: a1e8404917e7e64439141499ff75b0c4, type: 3}
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: fa1f668a2416cfd4abae717d4ca3adc9, type: 3}
@@ -35,3 +35,4 @@ MonoBehaviour:
   defensePower: 2
   healsOthers: 1
   Faction: 0
+  AnimationStyle: 2
