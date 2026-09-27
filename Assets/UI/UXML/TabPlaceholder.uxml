@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <!--
+      Generic "not built yet" stub, reused for both Campaign Map and Store.
+      PhaseShellController instantiates this once per placeholder tab and
+      sets placeholder-title/placeholder-body from code (see
+      PhaseShellController.SetPlaceholderText) - swap it out for a real
+      RosterContent/DecisionContent-style file per tab once each screen
+      actually exists, no other file needs to change.
+    -->
+    <ui:VisualElement name="placeholder-content" class="screen-content placeholder-content">
+        <ui:Label name="placeholder-title" text="CAMPAIGN MAP" class="placeholder-title" />
+        <ui:Label name="placeholder-body" text="Not built yet." class="placeholder-body" />
+    </ui:VisualElement>
+</ui:UXML>

@@ -31,13 +31,14 @@
 
             <!-- Bottom nav. Roster and Decision are both functional, switched by
                  PhaseTabSwitcher. Campaign Map (movement planning) and Inventory
-                 (supplies) are visible but disabled stubs until those screens exist. -->
+                 (supplies) are visible but disabled stubs until those screens exist. 
             <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar">
                 <ui:Button name="nav-roster" text="ROSTER" class="nav-button nav-button-active"/>
                 <ui:Button name="nav-decision" text="DECISION" class="nav-button"/>
                 <ui:Button name="nav-map" text="CAMPAIGN MAP" class="nav-button"/>
                 <ui:Button name="nav-inventory" text="INVENTORY" class="nav-button"/>
             </ui:VisualElement>
+            -->
         </ui:VisualElement>
 
         <!-- New-unit reveal overlay. Hidden by default; PlanningPhaseController shows/animates

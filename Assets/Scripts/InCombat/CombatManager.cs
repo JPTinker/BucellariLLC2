@@ -26,6 +26,8 @@ public class CombatManager : MonoBehaviour
 
     public CombatPhaseUIController combatUIManager;
 
+    public NotificationManager notificationManager;
+
     private void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -252,6 +254,7 @@ public class CombatManager : MonoBehaviour
 
         if (enemyAI != null)
         {
+            notificationManager.ShowNotification("Enemy Turn begins");
             enemyAI.ExecuteTurn(FinishEnemyTurn);
             return;
         }
@@ -268,7 +271,7 @@ public class CombatManager : MonoBehaviour
             if (unit != null && !unit.IsDead)
                 unit.actionsRemaining = unit.maxActionsPerTurn;
         }
-
+        notificationManager.ShowNotification("Enemy Turn ends");
         currentRound++;
         combatUIManager?.SetRound(currentRound);
         OnRoundAdvanced?.Invoke(currentRound);

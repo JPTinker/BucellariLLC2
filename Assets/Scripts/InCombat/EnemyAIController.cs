@@ -21,6 +21,9 @@ public class EnemyAIController : MonoBehaviour
     {
         turnInProgress = true;
 
+        EnemyBattlefieldState battlefield =
+            EnemyBattlefieldState.Build();
+
         UnitInstance[] enemies = FindObjectsByType<UnitInstance>();
         List<UnitInstance> activeEnemies = new List<UnitInstance>();
         foreach (UnitInstance enemy in enemies)
@@ -49,8 +52,18 @@ public class EnemyAIController : MonoBehaviour
 
             while (enemy != null && !enemy.IsDead && enemy.actionsRemaining > 0)
             {
-                List<UnitInstance> targets = GetActiveTargets();
+
+                List<UnitInstance> targets = new List<UnitInstance>();
+
+                targets.AddRange(battlefield.PlayerUnits);
+                targets.AddRange(battlefield.Villagers);
                 UnitInstance target = FindBestTarget(enemy, targets);
+
+                Debug.Log(
+                    $"Battlefield: " +
+                    $"{battlefield.EnemyUnits.Count} enemies, " +
+                    $"{battlefield.PlayerUnits.Count} players, " +
+                    $"{battlefield.Villagers.Count} villagers");
                 if (target == null) break; // nothing to fight, not a movement problem
 
                 if (enemy.CanAttack(target))
@@ -156,6 +169,10 @@ public class EnemyAIController : MonoBehaviour
         foreach (UnitInstance target in targets)
         {
             float score = GetTargetScore(enemy, target);
+            if (target.Faction == UnitFaction.Villager)
+            {
+                score += 50;
+            }
             if (score > bestScore)
             {
                 bestTarget = target;

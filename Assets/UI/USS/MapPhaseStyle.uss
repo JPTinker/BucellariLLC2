@@ -59,6 +59,7 @@
     flex-grow: 1;
     margin-top: 16px;
     margin-bottom: 16px;
+    padding: 0 20px;
 }
 
 /* Note: the ScrollView's row/wrap layout is set via
@@ -194,7 +195,7 @@
 
 /* ---------------- Action area ---------------- */
 .action-container {
-    padding-top: 8px;
+    padding: 8px 20px 16px 20px;
 }
 
 .selection-counter {

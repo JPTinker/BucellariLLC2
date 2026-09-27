@@ -29,6 +29,34 @@
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
+        <ui:VisualElement name="settlement-bar" class="resource-bar settlement-bar">
+            <ui:VisualElement class="resource-heading">
+                <ui:Label text="SETTLEMENT LEDGER" class="eyebrow"/>
+                <ui:Label text="While You Fight" class="location-name settlement-subheading"/>
+            </ui:VisualElement>
+            <ui:VisualElement class="resource-group">
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="UNITS" class="resource-label"/>
+                    <ui:Label name="settlement-units-value" text="5/5" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="VILLAGERS" class="resource-label"/>
+                    <ui:Label name="settlement-villagers-value" text="5/10" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="FOOD" class="resource-label"/>
+                    <ui:Label name="settlement-food-value" text="200" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="MATERIALS" class="resource-label"/>
+                    <ui:Label name="settlement-materials-value" text="185" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="resource-item">
+                    <ui:Label text="MORALE" class="resource-label"/>
+                    <ui:Label name="settlement-morale-value" text="84%" class="resource-value"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:VisualElement class="play-area">
             <ui:VisualElement name="unit-roster" class="unit-roster">
                 <ui:VisualElement class="panel-heading">

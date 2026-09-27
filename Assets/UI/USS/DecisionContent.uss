@@ -1,0 +1,176 @@
+/* DecisionContent.uss
+   Decision-tab-specific component styles only. Typography utilities
+   (label-caps, text-muted, stat-value, row/row--*...), the stats header, and
+   the bottom nav all moved to PhaseShell.uss, which is loaded higher up the
+   tree (on .phase-root) and cascades down into this instantiated content -
+   so those classes still resolve correctly even though they're not defined
+   here. Load order: PhaseShell.uss must be attached before this file's
+   classes are used, which is automatic since PhaseShell.uxml is the parent
+   document and DecisionContent.uxml is instantiated as its descendant.
+
+   Icon inventory - each ".icon-*" element in DecisionContent.uxml is an
+   empty placeholder. Assign a sprite/texture per class below (background-image)
+   or swap the VisualElement for a ui:Image and set its sprite from code.
+   Names match the Material Symbols glyphs used in the original HTML mock:
+     icon-vanguard      -> shield_with_house
+     icon-scavenge      -> precision_manufacturing
+     icon-harvest       -> energy_savings_leaf
+     icon-expansion     -> apartment
+     icon-kills         -> military_tech
+     icon-saved         -> volunteer_activism
+     icon-lost          -> heart_broken
+     icon-warning       -> domain_disabled
+     icon-shield-check  -> verified_user
+
+   NOT portable from the HTML version, by design limitation (see
+   PhaseShell.uss for the full list: no CSS Grid, no backdrop-filter,
+   no text-transform, box-shadow needs Unity 6+).
+*/
+
+.content-scroll { flex-grow: 1; padding: 16px 20px 96px 20px; }
+
+.panel {
+    background-color: var(--color-surface-container-low);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 12px;
+    /* box-shadow: 0 2px 8px rgba(0,0,0,0.25); Unity 6+ only */
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--color-primary-fixed);
+    margin-right: 6px;
+}
+
+/* ---------- Debrief ---------- */
+.debrief__grid { flex-direction: row; margin-top: 8px; }
+.debrief__stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: center;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 8px;
+    margin-right: 6px;
+}
+.debrief__stat:last-child { margin-right: 0; }
+
+/* ---------- Section headers ---------- */
+.section-header-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    margin-bottom: 8px;
+}
+.section-title { color: var(--color-on-surface); font-size: 12px; }
+
+/* ---------- Directive cards ---------- */
+.directive-list { flex-direction: column; }
+.directive-card { flex-direction: column; }
+
+.icon-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    background-color: var(--color-surface-container-highest);
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+.icon { width: 18px; height: 18px; }
+
+.card-title { font-size: 13px; -unity-font-style: bold; margin-bottom: 2px; }
+
+.tag {
+    font-size: 10px;
+    color: var(--color-on-surface-variant);
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 2px 8px;
+}
+.tag--danger { color: var(--color-on-error-container); background-color: var(--color-error-container); }
+.tag--info { color: var(--color-on-secondary-container); background-color: var(--color-secondary-container); }
+
+.card-info-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 8px;
+    margin: 10px 0;
+}
+.info-line {
+    flex-basis: 48%;
+    color: var(--color-on-surface-variant);
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+.info-line--positive { color: var(--color-primary-fixed); }
+.info-line--negative { color: var(--color-error); }
+
+.stepper {
+    flex-direction: row;
+    align-items: center;
+    background-color: var(--color-surface-container-highest);
+    border-radius: 4px;
+    padding: 2px;
+}
+.stepper__btn {
+    width: 28px;
+    height: 28px;
+    border-width: 0;
+    background-color: transparent;
+    color: var(--color-on-surface);
+    font-size: 16px;
+    -unity-font-style: bold;
+}
+.stepper__btn:hover { color: var(--color-primary); }
+.stepper__value {
+    width: 32px;
+    -unity-text-align: middle-center;
+    font-size: 13px;
+    -unity-font-style: bold;
+    color: var(--color-primary-fixed);
+}
+
+/* ---------- Forecast ---------- */
+.forecast__grid { flex-direction: row; flex-wrap: wrap; margin-top: 8px; }
+.forecast__cell {
+    flex-basis: 48%;
+    background-color: var(--color-surface-container);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 0 4px 8px 0;
+}
+
+.banner {
+    flex-direction: row;
+    align-items: flex-start;
+    background-color: var(--color-surface-container-high);
+    border-radius: 4px;
+    padding: 10px;
+    margin-top: 4px;
+}
+.banner--danger {
+    background-color: rgba(147, 0, 10, 0.15);
+    border-width: 1px;
+    border-color: rgba(255, 180, 171, 0.3);
+}
+
+/* ---------- Footer buttons ---------- */
+.action-footer { margin-top: 8px; }
+.btn {
+    height: 48px;
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 1.5px;
+    margin-bottom: 8px;
+}
+.btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
+.btn--ghost { background-color: var(--color-surface-container); color: var(--color-on-surface-variant); height: 40px; }

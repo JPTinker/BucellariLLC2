@@ -17,29 +17,38 @@ public class GameStateManager : MonoBehaviour
 
     /// <summary>
     /// The settlement's persistent economy. This is what the Decision (planning)
-    /// screen reads and writes. Population isn't stored here - it's FullRoster.Count,
-    /// since "units" are just the roster you already track.
+    /// screen reads and writes. Population (Units) isn't stored here - it's
+    /// FullRoster.Count. Villagers ARE stored here: unlike Units they aren't
+    /// individual Unit records with HP/Attack, just a headcount resource (like
+    /// Food/Materials) that gets sent out to labor directives each cycle.
     /// </summary>
     [System.Serializable]
     public class SettlementResources
     {
-        public int Food = 340;
+        public int Food = 200;
         public int Materials = 185;
         [Range(0, 100)] public int Morale = 84;
-        public int LaborCapacity = 50;   // total Labor AP available to spend each cycle
-        public int HousingCapacity = 24; // max units the settlement can support before overcrowding
+        public int Villagers = 5;          // current available villager headcount (labor pool)
+        public int VillagerCapacity = 10;  // max Villagers the settlement can support
+        public int UnitCapacity = 5;       // max Units (FullRoster) the settlement can support
     }
 
     /// <summary>
-    /// Which directive a block of units is assigned to for the upcoming cycle.
-    /// Mirrors the four cards on the Decision screen 1:1.
+    /// Which directive a block of Units/Villagers is assigned to for the upcoming
+    /// cycle. Mirrors the four cards on the Decision screen 1:1. Vanguard draws
+    /// from Units (Population); Scavenge/Harvest/Expansion draw from Villagers.
     /// </summary>
     public enum Directive { Vanguard, Scavenge, Harvest, Expansion }
 
     /// <summary>
     /// The player's in-progress, not-yet-committed allocation for this planning
     /// cycle. Adjusted live by the Decision screen via AdjustAllocation(), applied
-    /// to Settlement by ExecuteCycle().
+    /// to Settlement by ExecuteCycle(). VanguardUnits is a headcount of Units
+    /// (Population); ScavengeUnits/HarvestUnits/ExpansionUnits are headcounts of
+    /// Villagers despite the field name (kept for UXML/binding compatibility).
+    /// ExpansionUnits (Build a Ship) is special: TryAdjustAllocation only ever
+    /// lands it on 0 or Balance.ShipVillagerCost - it's a discrete, fixed-cost
+    /// directive, not a per-villager scaling one.
     /// </summary>
     [System.Serializable]
     public class CycleAllocation
@@ -48,8 +57,6 @@ public class GameStateManager : MonoBehaviour
         public int ScavengeUnits;
         public int HarvestUnits;
         public int ExpansionUnits;
-
-        public int Assigned => VanguardUnits + ScavengeUnits + HarvestUnits + ExpansionUnits;
 
         public int Get(Directive d) => d switch
         {
@@ -71,7 +78,7 @@ public class GameStateManager : MonoBehaviour
             }
         }
 
-        public void Reset(int vanguard = 4, int scavenge = 5, int harvest = 6, int expansion = 3)
+        public void Reset(int vanguard = 0, int scavenge = 0, int harvest = 0, int expansion = 0)
         {
             VanguardUnits = vanguard;
             ScavengeUnits = scavenge;
@@ -81,44 +88,36 @@ public class GameStateManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Tunable per-unit rates for the planning economy. Exposed so designers can
-    /// rebalance from the Inspector instead of editing code. Values default to
-    /// whatever the Decision screen mock was using.
+    /// Tunable rates for the planning economy. Exposed so designers can
+    /// rebalance from the Inspector instead of editing code.
     /// </summary>
     [System.Serializable]
     public class CycleBalanceConfig
     {
-        [Header("Food")]
-        public float FoodPerHarvestUnit = 14.16f;
-        public float FoodUpkeepBase = 42f;          // flat settlement upkeep per cycle
-        public float FoodPerVanguardUnit = 3.75f;    // rations consumed by deployed units
+        [Header("Food costs (paid when the cycle executes)")]
+        public int FoodCostPerVanguardUnit = 20;  // Food spent per Unit sent to battle (Vanguard)
+        public int FoodCostPerVillagerSent = 10;  // Food spent per Villager sent to ANY labor directive
 
-        [Header("Materials")]
-        public float MaterialsPerScavengeUnit = 12f;
-        public float MaterialsPerExpansionUnit = 26.66f;
+        [Header("Hunt and Gather (Food reward)")]
+        public float FoodPerHarvestVillager = 30f;
 
-        [Header("Labor (AP)")]
-        public int LaborPerScavengeUnit = 2;
-        public int LaborPerHarvestUnit = 2;
-        public int LaborPerExpansionUnit = 4;
+        [Header("Search for Materials (Scrap reward)")]
+        public float MaterialsPerScavengeVillager = 10f;
 
-        [Header("Housing")]
-        public int HousingGainPerExpansionUnit = 4; // capacity added once a Hab-Pod cycle completes
+        [Header("Build a Ship - discrete, fixed-cost directive (not per-villager)")]
+        public int ShipVillagerCost = 8;         // villagers consumed/crewed when the ship completes
+        public int ShipMaterialsCost = 150;
+        public int ShipUnitCapacityGain = 5;
+        public int ShipVillagerCapacityGain = 10;
 
-        [Header("Morale - activity bonuses (met at end of cycle)")]
-        public int VanguardMoraleThreshold = 4;
-        public int VanguardMoraleBonus = 5;
-        public int HarvestMoraleThreshold = 5;
-        public int HarvestMoraleBonus = 2;
-        public int ExpansionMoraleThreshold = 2;
-        public int ExpansionMoraleBonus = 3;
+        [Header("Morale - per-cycle allocation costs")]
+        public float MoralePenaltyPerVanguardUnit = 1f;   // -1% per Unit sent to battle
+        public float MoralePenaltyPerVillagerSent = 3f;   // -3% per Villager sent to any labor directive
 
-        [Header("Morale - shortfall penalties")]
-        public int FoodDeficitMoralePenalty = 8;         // flat hit if food delta this cycle is negative
-        public int OvercrowdingMoralePenaltyPerUnit = 3;  // per unit over HousingCapacity
+        [Header("Morale - post-battle bonuses/penalties")]
+        public float EnemyKilledMoraleBonus = 0.25f;      // per confirmed kill, applied post-battle
+        public int VillagerSavedMoraleBonus = 5;          // per rescued villager extracted, applied post-battle
         public int UnitLostMoralePenalty = 10;            // per casualty, applied post-battle
-        public int EnemyKilledMoraleBonus = 2;            // per confirmed kill, applied post-battle
-        public int VillagerSavedMoraleBonus = 5;          // per villager extracted, applied post-battle
     }
 
     /// <summary>
@@ -129,15 +128,14 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public struct CycleForecast
     {
-        public int AssignedUnits;
         public int IdleUnits;
+        public int VillagersSent;
+        public int IdleVillagers;
         public int FoodDelta;
         public int MaterialsDelta;
-        public int LaborUsed;
-        public int LaborRemaining;
         public int MoraleDelta;
-        public bool IsOverLaborBudget;
-        public bool WillOvercrowd; // population + would-be idle... see ComputeForecast for definition
+        public bool WillBuildShip;
+        public bool IsOverBudget; // a ship is queued but Settlement.Materials can't cover its cost
     }
 
     /// <summary>
@@ -269,8 +267,8 @@ public class GameStateManager : MonoBehaviour
         if (scene.name == "DecisionPhase")
         {
             Debug.Log(" Scene has been confirmed");
-            RosterPhaseController planningController =
-                GameObject.FindAnyObjectByType<RosterPhaseController>();
+            PlanningPhaseController planningController =
+                GameObject.FindAnyObjectByType<PlanningPhaseController>();
 
             // Resolve morale from whatever happened in the battle just finished
             // (kills, casualties, villagers saved) BEFORE the player sees the
@@ -620,30 +618,67 @@ public class GameStateManager : MonoBehaviour
     // ============================================================
     // SETTLEMENT / DECISION SCREEN
     // ============================================================
-    // Everything below backs the Decision (planning) tab: the player splits
-    // FullRoster across four directives (Vanguard / Scavenge / Harvest /
-    // Expansion), previews the effect on Food, Materials, Labor and Morale,
-    // then commits with ExecuteCycle(). The UI should call AdjustAllocation()
-    // and ComputeForecast() on every stepper tap and never do this math itself.
+    // Everything below backs the Decision (planning) tab: the player sends
+    // Units (Vanguard) into battle and Villagers into three labor directives
+    // (Scavenge/Search for Materials, Harvest/Hunt and Gather, Expansion/Build
+    // a Ship), previews the effect on Food, Materials and Morale, then commits
+    // with ExecuteCycle(). The UI should call TryAdjustAllocation() and
+    // ComputeForecast() on every stepper tap and never do this math itself.
 
-    /// <summary>Total units currently owned (population), independent of housing.</summary>
+    /// <summary>Total Units currently owned (population), independent of housing.</summary>
     public int Population => FullRoster.Count;
 
-    /// <summary>Units not currently assigned to a directive this cycle.</summary>
-    public int IdleUnits => Mathf.Max(0, Population - CurrentAllocation.Assigned);
+    /// <summary>Units not currently assigned to Vanguard this cycle.</summary>
+    public int IdleUnits => Mathf.Max(0, Population - CurrentAllocation.VanguardUnits);
+
+    /// <summary>Villagers not currently assigned to a labor directive this cycle.</summary>
+    public int IdleVillagers => Mathf.Max(0, Settlement.Villagers - VillagersSent);
+
+    /// <summary>Total Villagers committed across Scavenge/Harvest/Expansion this cycle.</summary>
+    public int VillagersSent => CurrentAllocation.ScavengeUnits + CurrentAllocation.HarvestUnits + CurrentAllocation.ExpansionUnits;
 
     /// <summary>
-    /// Attempts to move one unit into/out of a directive. Fails silently (returns
-    /// false) rather than throwing, so the UI can just no-op a stepper tap that
-    /// would go negative or exceed the idle pool - mirrors the mock's adjustUnits().
+    /// Attempts to move Units (Vanguard) or Villagers (Scavenge/Harvest) into/out
+    /// of a directive, one at a time. Fails silently (returns false) rather than
+    /// throwing, so the UI can just no-op a stepper tap that would go negative or
+    /// exceed the idle pool - mirrors the mock's adjustUnits(). Expansion (Build a
+    /// Ship) is routed to TryToggleShipBuild instead, since it's an all-or-nothing
+    /// fixed-cost directive rather than a per-unit/per-villager one.
     /// </summary>
     public bool TryAdjustAllocation(Directive directive, int delta)
     {
-        if (delta > 0 && IdleUnits < delta) return false;
+        if (directive == Directive.Expansion) return TryToggleShipBuild(delta);
+
+        int idle = directive == Directive.Vanguard ? IdleUnits : IdleVillagers;
+        if (delta > 0 && idle < delta) return false;
+
         int newValue = CurrentAllocation.Get(directive) + delta;
         if (newValue < 0) return false;
 
         CurrentAllocation.Set(directive, newValue);
+        return true;
+    }
+
+    /// <summary>
+    /// Build a Ship only ever costs exactly Balance.ShipVillagerCost Villagers -
+    /// there's no partial commitment. A positive delta queues it (if not already
+    /// queued and enough Villagers are idle); a non-positive delta cancels it.
+    /// </summary>
+    private bool TryToggleShipBuild(int delta)
+    {
+        int current = CurrentAllocation.ExpansionUnits;
+        int cost = Balance.ShipVillagerCost;
+
+        if (delta > 0)
+        {
+            if (current != 0) return false;
+            if (IdleVillagers < cost) return false;
+            CurrentAllocation.ExpansionUnits = cost;
+            return true;
+        }
+
+        if (current == 0) return false;
+        CurrentAllocation.ExpansionUnits = 0;
         return true;
     }
 
@@ -658,67 +693,67 @@ public class GameStateManager : MonoBehaviour
         var a = CurrentAllocation;
         var b = Balance;
 
-        int laborUsed = a.ScavengeUnits * b.LaborPerScavengeUnit
-                       + a.HarvestUnits * b.LaborPerHarvestUnit
-                       + a.ExpansionUnits * b.LaborPerExpansionUnit;
+        int villagersSent = VillagersSent;
+        bool willBuildShip = a.ExpansionUnits >= b.ShipVillagerCost;
 
         int foodDelta = Mathf.RoundToInt(
-            a.HarvestUnits * b.FoodPerHarvestUnit
-            - b.FoodUpkeepBase
-            - a.VanguardUnits * b.FoodPerVanguardUnit);
+            a.HarvestUnits * b.FoodPerHarvestVillager
+            - a.VanguardUnits * b.FoodCostPerVanguardUnit
+            - villagersSent * b.FoodCostPerVillagerSent);
 
         int materialsDelta = Mathf.RoundToInt(
-            a.ScavengeUnits * b.MaterialsPerScavengeUnit
-            - a.ExpansionUnits * b.MaterialsPerExpansionUnit);
+            a.ScavengeUnits * b.MaterialsPerScavengeVillager
+            - (willBuildShip ? b.ShipMaterialsCost : 0));
 
-        int moraleDelta = 0;
-        if (a.VanguardUnits >= b.VanguardMoraleThreshold) moraleDelta += b.VanguardMoraleBonus;
-        if (a.HarvestUnits >= b.HarvestMoraleThreshold) moraleDelta += b.HarvestMoraleBonus;
-        if (a.ExpansionUnits >= b.ExpansionMoraleThreshold) moraleDelta += b.ExpansionMoraleBonus;
-        if (foodDelta < 0) moraleDelta -= b.FoodDeficitMoralePenalty;
+        float moraleDelta =
+            - a.VanguardUnits * b.MoralePenaltyPerVanguardUnit
+            - villagersSent * b.MoralePenaltyPerVillagerSent;
 
-        // Overcrowding uses *current* population vs *current* housing - expanding
-        // this cycle doesn't relieve crowding until the pod actually finishes.
-        int overCap = Mathf.Max(0, Population - Settlement.HousingCapacity);
-        if (overCap > 0) moraleDelta -= overCap * b.OvercrowdingMoralePenaltyPerUnit;
+        bool isOverBudget = willBuildShip && Settlement.Materials < b.ShipMaterialsCost;
 
         return new CycleForecast
         {
-            AssignedUnits = a.Assigned,
             IdleUnits = IdleUnits,
+            VillagersSent = villagersSent,
+            IdleVillagers = IdleVillagers,
             FoodDelta = foodDelta,
             MaterialsDelta = materialsDelta,
-            LaborUsed = laborUsed,
-            LaborRemaining = Settlement.LaborCapacity - laborUsed,
-            MoraleDelta = moraleDelta,
-            IsOverLaborBudget = laborUsed > Settlement.LaborCapacity,
-            WillOvercrowd = overCap > 0
+            MoraleDelta = Mathf.RoundToInt(moraleDelta),
+            WillBuildShip = willBuildShip,
+            IsOverBudget = isOverBudget
         };
     }
 
     /// <summary>
     /// Commits the current allocation: applies the forecasted Food/Materials/
-    /// Labor/Morale deltas to Settlement, grows HousingCapacity from any
-    /// Expansion assignment, sends the Vanguard block into ActiveTeam, and
-    /// hands off to combat. Returns false (and applies nothing) if Labor is
-    /// over budget, so the UI should disable the "Execute Cycle" button
-    /// whenever forecast.IsOverLaborBudget is true rather than relying on this.
+    /// Morale deltas to Settlement, completes a queued ship (spending its
+    /// Villagers/Materials and growing UnitCapacity/VillagerCapacity), sends the
+    /// Vanguard block into ActiveTeam, and hands off to combat. Returns false
+    /// (and applies nothing) if a queued ship can't be paid for, so the UI
+    /// should disable the "Execute Cycle" button whenever forecast.IsOverBudget
+    /// is true rather than relying on this.
     /// </summary>
     public bool ExecuteCycle(string battleSceneName = "BattlePhase")
     {
         var forecast = ComputeForecast();
-        if (forecast.IsOverLaborBudget)
+        if (forecast.IsOverBudget)
         {
-            Debug.LogWarning("ExecuteCycle: Labor over budget, allocation not applied.");
+            Debug.LogWarning("ExecuteCycle: not enough Materials to complete the queued ship, allocation not applied.");
             return false;
         }
 
         Settlement.Food = Mathf.Max(0, Settlement.Food + forecast.FoodDelta);
         Settlement.Materials = Mathf.Max(0, Settlement.Materials + forecast.MaterialsDelta);
         Settlement.Morale = Mathf.Clamp(Settlement.Morale + forecast.MoraleDelta, 0, 100);
-        Settlement.HousingCapacity += CurrentAllocation.ExpansionUnits > 0
-            ? Balance.HousingGainPerExpansionUnit
-            : 0;
+
+        if (forecast.WillBuildShip)
+        {
+            // The 8 villagers crew the ship and leave the settlement's labor pool
+            // for good - only the capacity they unlock stays behind.
+            Settlement.Villagers = Mathf.Max(0, Settlement.Villagers - Balance.ShipVillagerCost);
+            Settlement.UnitCapacity += Balance.ShipUnitCapacityGain;
+            Settlement.VillagerCapacity += Balance.ShipVillagerCapacityGain;
+        }
 
         // Hand the Vanguard block off to combat. Which specific units fill that
         // block is a team-composition decision this method doesn't make - wire
@@ -737,11 +772,13 @@ public class GameStateManager : MonoBehaviour
 
     {
 
-        int delta = EnemiesKilledThisBattle * Balance.EnemyKilledMoraleBonus
+        int delta = Mathf.RoundToInt(
+
+                    EnemiesKilledThisBattle * Balance.EnemyKilledMoraleBonus
 
                   + SavedVillagersThisBattle * Balance.VillagerSavedMoraleBonus
 
-                  - CasualtiesThisBattle * Balance.UnitLostMoralePenalty;
+                  - CasualtiesThisBattle * Balance.UnitLostMoralePenalty);
 
 
 

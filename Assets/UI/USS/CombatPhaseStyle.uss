@@ -31,6 +31,9 @@
 .round-item { margin-left: 14px; padding-left: 18px; border-left-width: 1px; border-left-color: #c84b31; }
 .round-value { font-size: 26px; -unity-font-style: bold; color: #c84b31; }
 
+.settlement-bar { min-height: 58px; margin-top: 8px; border-bottom-color: #4a525d; }
+.settlement-subheading { font-size: 14px; color: #8c7b6c; }
+
 .play-area { flex-grow: 1; flex-direction: row; margin-top: 14px; margin-bottom: 14px; background-color: rgba(11, 13, 16, 0); }
 .unit-roster { width: 272px; padding: 14px; background-color: rgba(17, 21, 26, 0.82); border-width: 1px; border-color: #2a3038; }
 .panel-heading, .action-heading { flex-direction: row; justify-content: space-between; align-items: center; }

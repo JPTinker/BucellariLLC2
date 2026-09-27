@@ -25,6 +25,13 @@ public class CombatPhaseUIController : MonoBehaviour
     private Label roundLabel;
     private Label turnLabel;
 
+    // Settlement ledger (read-only snapshot of GameStateManager.Settlement while fighting)
+    private Label settlementUnitsLabel;
+    private Label settlementVillagersLabel;
+    private Label settlementFoodLabel;
+    private Label settlementMaterialsLabel;
+    private Label settlementMoraleLabel;
+
     // Action bar buttons
     private Button healButton;
     private Button fortifyButton;
@@ -113,6 +120,13 @@ public class CombatPhaseUIController : MonoBehaviour
         roundLabel = root.Q<Label>("round-value");
         turnLabel = root.Q<Label>("turn-label");
 
+        // Settlement ledger
+        settlementUnitsLabel = root.Q<Label>("settlement-units-value");
+        settlementVillagersLabel = root.Q<Label>("settlement-villagers-value");
+        settlementFoodLabel = root.Q<Label>("settlement-food-value");
+        settlementMaterialsLabel = root.Q<Label>("settlement-materials-value");
+        settlementMoraleLabel = root.Q<Label>("settlement-morale-value");
+
         // Action bar
         healButton = root.Q<Button>("action-heal");
         fortifyButton = root.Q<Button>("action-fortify");
@@ -138,6 +152,28 @@ public class CombatPhaseUIController : MonoBehaviour
         RefreshTownsfolkDisplay();
         SetRound(combatManager.currentRound);
         SetGold(GameStateManager.Instance.Resources.Gold);
+        RefreshSettlementLedger();
+    }
+
+    /// <summary>
+    /// Read-only snapshot of the settlement economy (GameStateManager.Settlement)
+    /// so the player can see what they're fighting for without leaving combat.
+    /// Food/Materials/Morale only change via ExecuteCycle/ApplyPostBattleResults
+    /// (neither runs mid-battle), but Units can drop mid-fight via casualties, so
+    /// this is re-pulled after every action alongside the roster/townsfolk panels.
+    /// </summary>
+    private void RefreshSettlementLedger()
+    {
+        GameStateManager gsm = GameStateManager.Instance;
+        if (gsm == null) return;
+
+        GameStateManager.SettlementResources s = gsm.Settlement;
+
+        if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.Population}/{s.UnitCapacity}";
+        if (settlementVillagersLabel != null) settlementVillagersLabel.text = $"{s.Villagers}/{s.VillagerCapacity}";
+        if (settlementFoodLabel != null) settlementFoodLabel.text = s.Food.ToString();
+        if (settlementMaterialsLabel != null) settlementMaterialsLabel.text = s.Materials.ToString();
+        if (settlementMoraleLabel != null) settlementMoraleLabel.text = $"{s.Morale}%";
     }
 
     private void HandleVillagerCountChanged(int spawned, int target)
@@ -269,6 +305,7 @@ public class CombatPhaseUIController : MonoBehaviour
         RefreshActionButtonStates();
         RefreshRoster();
         RefreshTownsfolkDisplay();
+        RefreshSettlementLedger();
     }
     private sealed class UnitCardView
     {
