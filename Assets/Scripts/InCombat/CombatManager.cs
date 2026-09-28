@@ -12,6 +12,7 @@ public class CombatManager : MonoBehaviour
 
 
     [SerializeField] private EnemyAIController enemyAI;
+    [SerializeField] private VillagerAIController villagerAI;
 
     [Header("Enemy Reinforcements")]
     [Tooltip("When living enemies drop below this count, reinforcements are spawned.")]
@@ -27,7 +28,7 @@ public class CombatManager : MonoBehaviour
     private UnitInstance selectedUnit;
     private HexTile pendingDestination;
     private bool levelEnded;
-    private bool enemyTurnInProgress;
+    private bool nonPlayerTurnInProgress;
     public int currentRound { get; private set; } = 1;
 
     public CombatPhaseUIController combatUIManager;
@@ -40,6 +41,8 @@ public class CombatManager : MonoBehaviour
         Instance = this;
         if (enemyAI == null) enemyAI = FindAnyObjectByType<EnemyAIController>();
         if (enemyAI == null) enemyAI = gameObject.AddComponent<EnemyAIController>();
+        if (villagerAI == null) villagerAI = FindAnyObjectByType<VillagerAIController>();
+        if (villagerAI == null) villagerAI = gameObject.AddComponent<VillagerAIController>();
     }
 
     private void OnEnable()
@@ -66,9 +69,6 @@ public class CombatManager : MonoBehaviour
 
         switch (action)
         {
-            case CombatPhaseUIController.CombatAction.Heal:
-                HandleHealClicked(unit);
-                break;
             case CombatPhaseUIController.CombatAction.Fortify:
                 HandleFortifyClicked(unit);
                 break;
@@ -79,12 +79,6 @@ public class CombatManager : MonoBehaviour
                 HandleScoutClicked(unit);
                 break;
         }
-    }
-
-    private static void HandleHealClicked(UnitInstance unit)
-    {
-        unit.onHeal();
-        Debug.Log($"CombatManager: Heal clicked for {unit.unitName}.");
     }
 
     private static void HandleFortifyClicked(UnitInstance unit)
@@ -117,7 +111,7 @@ public class CombatManager : MonoBehaviour
     public void SelectedTile(HexTile tile)
     {
         //Debug.Log($"CombatManager: SelectedTile called with {tile?.name ?? "null"}");
-        if (tile == null || levelEnded || enemyTurnInProgress) return;
+        if (tile == null || levelEnded || nonPlayerTurnInProgress) return;
         if (selectedUnit == null)
         {
             if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) {
@@ -252,10 +246,10 @@ public class CombatManager : MonoBehaviour
 
     private void EndTurn()
     {
-        if (enemyTurnInProgress) return;
+        if (nonPlayerTurnInProgress) return;
 
         Debug.Log("Ending player's turn and starting enemy's turn.");
-        enemyTurnInProgress = true;
+        nonPlayerTurnInProgress = true;
         ClearSelection();
 
         if (enemyAI != null)
@@ -270,17 +264,37 @@ public class CombatManager : MonoBehaviour
 
     private void FinishEnemyTurn()
     {
-        Debug.Log("Enemy turn completed. Resetting player units for next round.");
-        enemyTurnInProgress = false;
+        Debug.Log("Enemy turn completed. Starting villager turn.");
+        notificationManager.ShowNotification("Enemy Turn ends");
+        StartVillagerTurn();
+    }
+
+    private void StartVillagerTurn()
+    {
+        if (villagerAI != null)
+        {
+            notificationManager.ShowNotification("Villager Turn begins");
+            villagerAI.ExecuteTurn(FinishVillagerTurn);
+            return;
+        }
+
+        FinishVillagerTurn();
+    }
+
+    private void FinishVillagerTurn()
+    {
+        Debug.Log("Villager turn completed. Resetting player units for next round.");
+        notificationManager.ShowNotification("Villager Turn ends");
+        nonPlayerTurnInProgress = false;
         foreach (UnitInstance unit in playerUnits)
         {
             if (unit != null && !unit.IsDead)
                 unit.actionsRemaining = unit.maxActionsPerTurn;
         }
-        notificationManager.ShowNotification("Enemy Turn ends");
         SpawnEnemyReinforcements();
         currentRound++;
         combatUIManager?.SetRound(currentRound);
+        combatUIManager?.RefreshTownsfolkDisplay();
         OnRoundAdvanced?.Invoke(currentRound);
     }
 
@@ -362,6 +376,11 @@ public class CombatManager : MonoBehaviour
         if (unit == selectedUnit) ClearSelection();
         CheckLevelEnd();
         CheckTurnEnd();
+    }
+
+    public void HandleVillagerEvacuated(UnitInstance villager)
+    {
+        villagerUnits.Remove(villager);
     }
 
     private void CheckLevelEnd()

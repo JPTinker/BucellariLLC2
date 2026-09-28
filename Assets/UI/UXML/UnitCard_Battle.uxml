@@ -1,0 +1,34 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/UnitCardBattleStyle.uss?fileID=7433441132597879392&amp;guid=3f5f3777fe6e4cb386a51ecdf009f76a&amp;type=3#UnitCardBattleStyle"/>
+    <ui:VisualElement name="card-root" class="combat-unit-card">
+        <ui:VisualElement name="card-portrait" class="combat-unit-portrait">
+            <ui:Label name="card-badge" text="" class="combat-unit-badge"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="card-body" class="combat-unit-body">
+            <ui:VisualElement name="card-header-row" class="combat-unit-header-row">
+                <ui:Label name="card-name" text="UNIT NAME" class="combat-unit-name"/>
+                <ui:Label name="card-tag" text="" class="combat-unit-tag"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="card-health-row" class="combat-unit-health-row">
+                <ui:VisualElement name="card-health-track" class="combat-unit-health-track">
+                    <ui:VisualElement name="card-health-fill" class="combat-unit-health-fill"/>
+                </ui:VisualElement>
+                <ui:Label name="card-hp-value" text="0 / 0" class="combat-unit-hp-value"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="card-stats-row" class="combat-unit-stats-row">
+                <ui:VisualElement class="combat-unit-stat">
+                    <ui:Label text="ACT" class="combat-unit-stat-label"/>
+                    <ui:Label name="card-actions-value" text="0/0" class="combat-unit-stat-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="combat-unit-stat">
+                    <ui:Label text="RNG" class="combat-unit-stat-label"/>
+                    <ui:Label name="card-range-value" text="0" class="combat-unit-stat-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="combat-unit-stat">
+                    <ui:Label text="MOV" class="combat-unit-stat-label"/>
+                    <ui:Label name="card-move-value" text="0" class="combat-unit-stat-value"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

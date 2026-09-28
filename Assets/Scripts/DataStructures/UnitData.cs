@@ -28,12 +28,16 @@ public class UnitData : ScriptableObject
     public int MaxMovementPoints = 2;
     public int VisibilityRange = 3;
     public int defensePower = 1;
-    public int healsOthers = 1;          // How much this unit heals others (if any)
     [Header("Faction & Classification")]
     public UnitFaction Faction;
     [Header("Animation")]
     [Tooltip("Selects the matching weapon-style branch in the unit animator.")]
     public UnitAnimationStyle AnimationStyle;
+    [Header("Ranged Attack")]
+    [Tooltip("Spawned and flown at the target on every attack (arrow, magic missile). Leave empty for melee units.")]
+    public Projectile ProjectilePrefab;
+    [Tooltip("Seconds after the attack animation starts before the projectile is released - tune to the bow/cast release frame.")]
+    public float ProjectileLaunchDelay = 0.3f;
 }
 
 public enum UnitFaction
@@ -75,6 +79,12 @@ public class Unit
     public int Level = 1;
     public int Experience;
 
+    [Header("Scars of Battle")]
+    [Tooltip("Permanent negative levels - one is gained each time this unit takes WoundDamageFraction of its max HP in damage.")]
+    public int Wounds;
+    [Tooltip("Damage taken since the last wound. Carries over between battles.")]
+    public int DamageTowardNextWound;
+
     [Header("Persistent Stats")]
     public int MaxHP;
     public int CurrentHP;
@@ -83,7 +93,6 @@ public class Unit
     public int MoveRange;
     public int DefensePower;
     public int VisibilityRange;
-    public int HealingPower;
     public int MaxMovementPoints;
     public UnitColorScheme ColorScheme;
     public UnitFaction Faction;
@@ -113,7 +122,6 @@ public class Unit
         MaxMovementPoints = archetype.MaxMovementPoints;
         VisibilityRange = archetype.VisibilityRange;
         DefensePower = archetype.defensePower;
-        HealingPower = archetype.healsOthers;
         ColorScheme = archetype.ColorScheme;
         Faction = archetype.Faction;
         WeaponPrefab = archetype.weaponPrefabs != null && archetype.weaponPrefabs.Length > 0 ? archetype.weaponPrefabs[0] : null;
@@ -121,14 +129,50 @@ public class Unit
         
     }
 
+    /// <summary>Share of max HP a unit must lose (cumulatively) to gain one wound.</summary>
+    public const float WoundDamageFraction = 0.10f;
+
+    public int WoundThreshold => Mathf.Max(1, Mathf.CeilToInt(MaxHP * WoundDamageFraction));
+
     public void ApplyLevelUp()
     {
         Level++;
         BaseAttack++;
         DefensePower++;
-        HealingPower++;
 
         if (UnityEngine.Random.value < 0.5f)
             MaxHP += 5;
+    }
+
+    /// <summary>
+    /// Tallies damage toward the next wound and applies every wound it earns.
+    /// Returns how many wounds were gained.
+    /// </summary>
+    public int RecordDamage(int damage)
+    {
+        if (damage <= 0) return 0;
+
+        DamageTowardNextWound += damage;
+        int woundsGained = 0;
+        while (DamageTowardNextWound >= WoundThreshold)
+        {
+            DamageTowardNextWound -= WoundThreshold;
+            ApplyWound();
+            woundsGained++;
+        }
+        return woundsGained;
+    }
+
+    /// <summary>A wound is a negative level - the mirror image of ApplyLevelUp().</summary>
+    public void ApplyWound()
+    {
+        Wounds++;
+        BaseAttack = Mathf.Max(1, BaseAttack - 1);
+        DefensePower = Mathf.Max(0, DefensePower - 1);
+
+        if (UnityEngine.Random.value < 0.5f)
+            MaxHP = Mathf.Max(1, MaxHP - 5);
+
+        CurrentHP = Mathf.Min(CurrentHP, MaxHP);
     }
 }

@@ -619,6 +619,26 @@ public class GameStateManager : MonoBehaviour
         CheckForCombatEnd();
     }
 
+    /// <summary>Called by VillagerAIController when a villager reaches the evacuation zone under its own power.</summary>
+    public void ProcessVillagerEvacuation(UnitInstance villager)
+    {
+        if (villager == null || villager.IsExtracted) return;
+
+        villager.IsExtracted = true;
+        CombatManager.Instance?.HandleVillagerEvacuated(villager);
+
+        if (villager.currentTile != null)
+        {
+            villager.currentTile.RemoveUnit();
+            villager.currentTile = null;
+        }
+
+        SavedVillagersThisBattle++;
+        Debug.Log($"GameStateManager: {villager.unitName} reached the evacuation zone and was saved!");
+
+        Destroy(villager.gameObject);
+    }
+
     private void CheckForCombatEnd(String sceneName = "DecisionPhase")
     {
         // Find all remaining active player units on the field

@@ -1,0 +1,106 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/UnitCardStyle.uss?fileID=7433441132597879392&amp;guid=6b3ef8e88e484222a5a61e50f6c8329a&amp;type=3#UnitCardStyle"/>
+    <ui:VisualElement name="player-card" class="player-card">
+        <ui:VisualElement name="player-card-body" class="player-card-body">
+            <ui:VisualElement name="portrait-column" class="portrait-column">
+                <ui:VisualElement name="portrait-frame" class="portrait-frame">
+                    <ui:VisualElement name="character-portrait" class="character-portrait"/>
+                    <ui:VisualElement name="portrait-vignette" class="portrait-vignette"/>
+                    <ui:VisualElement name="corner-top-left" class="corner-bracket corner-top-left"/>
+                    <ui:VisualElement name="corner-top-right" class="corner-bracket corner-top-right"/>
+                    <ui:VisualElement name="corner-bottom-left" class="corner-bracket corner-bottom-left"/>
+                    <ui:VisualElement name="corner-bottom-right" class="corner-bracket corner-bottom-right"/>
+                    <ui:Label name="level-label" text="LVL 48" class="level-label"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="portrait-status-row" class="portrait-status-row">
+                    <ui:VisualElement name="morale-status" class="morale-status">
+                        <ui:VisualElement name="morale-dot" class="morale-dot"/>
+                        <ui:Label name="morale-label" text="STEADFAST" class="morale-label"/>
+                    </ui:VisualElement>
+                    <ui:Label name="faction-label" text="VALGARD" class="faction-label"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:VisualElement name="unit-info" class="unit-info">
+                <ui:VisualElement name="unit-header" class="unit-header">
+                    <ui:VisualElement name="unit-name-container" class="unit-name-container">
+                        <ui:Label name="unit-name" text="ILSA // FROSTBLADE" class="unit-name"/>
+                        <ui:Label name="unit-designation" text="VANGUARD OF THE ETERNAL WINTER" class="unit-designation"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="unit-class-emblem" class="unit-class-emblem">
+                        <ui:Label name="unit-class-icon" text="❄" class="unit-class-icon"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="health-panel" class="stat-panel health-panel">
+                    <ui:VisualElement name="health-header" class="health-header">
+                        <ui:VisualElement name="health-title-container" class="stat-title-container">
+                            <ui:Label name="health-icon" text="♥" class="stat-icon health-icon"/>
+                            <ui:Label name="health-title" text="HEALTH POINTS" class="stat-title"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="health-values" class="health-values">
+                            <ui:Label name="current-hp" text="4,420" class="current-hp"/>
+                            <ui:Label name="hp-divider" text=" / " class="hp-divider"/>
+                            <ui:Label name="max-hp" text="5,200" class="max-hp"/>
+                            <ui:Label name="hp-percentage" text="(85%)" class="hp-percentage"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="health-bar" class="health-bar">
+                        <ui:VisualElement name="health-fill" class="health-fill"/>
+                        <ui:VisualElement name="health-ticks" class="health-ticks">
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                            <ui:VisualElement class="health-tick"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="combat-stats" class="combat-stats">
+                    <ui:VisualElement name="attack-range-panel" class="combat-stat-panel">
+                        <ui:VisualElement name="attack-range-icon-container" class="combat-stat-icon">
+                            <ui:Label name="attack-range-icon" text="⌖" class="combat-icon"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="attack-range-info" class="combat-stat-info">
+                            <ui:Label name="attack-range-title" text="ATTACK RANGE" class="combat-stat-title"/>
+                            <ui:VisualElement name="attack-range-value-container" class="combat-stat-value-container">
+                                <ui:Label name="attack-range-value" text="1 - 2" class="combat-stat-value"/>
+                                <ui:Label name="attack-range-unit" text="HEXES" class="combat-stat-unit"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="movement-range-panel" class="combat-stat-panel">
+                        <ui:VisualElement name="movement-range-icon-container" class="combat-stat-icon">
+                            <ui:Label name="movement-range-icon" text="➤" class="combat-icon"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="movement-range-info" class="combat-stat-info">
+                            <ui:Label name="movement-range-title" text="MAX MOVE RANGE" class="combat-stat-title"/>
+                            <ui:VisualElement name="movement-range-value-container" class="combat-stat-value-container">
+                                <ui:Label name="movement-range-value" text="5" class="combat-stat-value"/>
+                                <ui:Label name="movement-range-unit" text="TILES" class="combat-stat-unit"/>
+                            </ui:VisualElement>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="actions-panel" class="actions-panel">
+                    <ui:VisualElement name="actions-label-container" class="actions-label-container">
+                        <ui:VisualElement name="actions-status-dot" class="actions-status-dot"/>
+                        <ui:Label name="actions-label" text="ACTIONS REMAINING:" class="actions-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement name="action-pips" class="action-pips">
+                        <ui:VisualElement name="action-pip-1" class="action-pip pip-active">
+                            <ui:VisualElement name="action-pip-dot-1" class="action-pip-dot"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="action-pip-2" class="action-pip pip-active">
+                            <ui:VisualElement name="action-pip-dot-2" class="action-pip-dot"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement name="action-pip-3" class="action-pip pip-empty"/>
+                        <ui:Label name="action-points-text" text="2 / 3 AP" class="action-points-text"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

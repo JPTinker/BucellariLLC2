@@ -17,7 +17,7 @@ using UnityEngine.UIElements;
 public class PlanningPhaseController : MonoBehaviour
 {
     [Header("UXML Template")]
-    [Tooltip("Assign UnitCard.uxml here. Each roster/draft card is instantiated from this template.")]
+    [Tooltip("Assign UnitCard_updated.uxml here. Each roster/draft card is instantiated from this template.")]
     [SerializeField] private VisualTreeAsset unitCardTemplate;
 
     [Header("Fanfare Timing")]
@@ -129,12 +129,13 @@ public class PlanningPhaseController : MonoBehaviour
         if (unitCardTemplate == null)
         {
             Debug.LogError("PlanningPhaseController: 'Unit Card Template' is not assigned in the Inspector. " +
-                            "Drag UnitCard.uxml into that field.");
+                            "Drag UnitCard_updated.uxml into that field.");
         }
 
-        // Cards read/wrap in a row rather than stacking vertically, since the
-        // ScrollView's internal content-container class isn't stable across
-        // Unity versions to target from USS.
+        // Cards flow left-to-right and wrap onto a new line once a row runs out
+        // of width, rather than stacking in a single column. Set via code, not
+        // USS, since the ScrollView's internal content-container class isn't
+        // stable across Unity versions.
         if (_unitList != null)
         {
             _unitList.contentContainer.style.flexDirection = FlexDirection.Row;
@@ -252,12 +253,12 @@ public class PlanningPhaseController : MonoBehaviour
     private VisualElement BuildUnitCard(Unit unit)
     {
         var card = unitCardTemplate.Instantiate();
-        var cardRoot = card.Q<VisualElement>("card-root");
+        var cardRoot = card.Q<VisualElement>("player-card");
 
-        PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, unit.MaxHP, unit.BaseAttack);
+        PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, unit.Level, unit.CurrentHP, unit.MaxHP,
+            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, unit.Wounds);
 
-        var footerTag = card.Q<Label>("card-footer-tag");
-        if (footerTag != null) footerTag.text = "[ \u2713 SELECTED ]";
+        SetCardTag(card, "[ \u2713 SELECTED ]");
 
         cardRoot.RegisterCallback<ClickEvent>(_ => ToggleSelection(unit, cardRoot));
 
@@ -265,25 +266,88 @@ public class PlanningPhaseController : MonoBehaviour
     }
 
     /// <summary>
-    /// Fills in the shared UnitCard.uxml template's icon/name/stat fields.
-    /// Plain numbers, no bars/pips - stats are shown as raw values.
+    /// Fills in the shared UnitCard_updated.uxml template's portrait/identity/stat
+    /// fields. The template has no dedicated footer-tag element (that concept comes
+    /// from the old UnitCard.uxml), so selection/draft state is shown via the
+    /// actions-panel row instead - see SetCardTag.
     /// </summary>
-    private void PopulateCardTemplate(VisualElement card, Sprite icon, string unitName, int hp, int atk)
+    private void PopulateCardTemplate(VisualElement card, Sprite icon, string unitName, int level, int currentHp,
+        int maxHp, int atk, int attackRange, int moveRange, UnitFaction faction, int wounds = 0)
     {
-        var iconFrame = card.Q<VisualElement>("card-icon-frame");
-        if (iconFrame != null && icon != null)
+        var portrait = card.Q<VisualElement>("character-portrait");
+        if (portrait != null && icon != null)
         {
-            iconFrame.style.backgroundImage = new StyleBackground(icon);
+            portrait.style.backgroundImage = new StyleBackground(icon);
         }
 
-        var nameLabel = card.Q<Label>("card-name");
+        var levelLabel = card.Q<Label>("level-label");
+        if (levelLabel != null) levelLabel.text = $"LVL {level}";
+
+        var nameLabel = card.Q<Label>("unit-name");
         if (nameLabel != null) nameLabel.text = unitName.ToUpperInvariant();
 
-        var hpValue = card.Q<Label>("card-hp-value");
-        if (hpValue != null) hpValue.text = hp.ToString();
+        var designationLabel = card.Q<Label>("unit-designation");
+        if (designationLabel != null) designationLabel.text = attackRange > 1 ? "RANGED ATTACKER" : "FRONTLINE FIGHTER";
 
-        var atkValue = card.Q<Label>("card-atk-value");
-        if (atkValue != null) atkValue.text = atk.ToString();
+        // No per-class icon glyphs yet - hide the emblem rather than show a wrong one.
+        var classEmblem = card.Q<VisualElement>("unit-class-emblem");
+        if (classEmblem != null) classEmblem.style.display = DisplayStyle.None;
+
+        var moraleLabel = card.Q<Label>("morale-label");
+        var moraleDot = card.Q<VisualElement>("morale-dot");
+        if (moraleLabel != null)
+        {
+            moraleLabel.text = wounds > 0 ? $"{wounds} WOUND{(wounds == 1 ? "" : "S")}" : "UNWOUNDED";
+        }
+        if (moraleDot != null)
+        {
+            moraleDot.style.backgroundColor = wounds > 0 ? new Color(0.87f, 0.35f, 0.31f) : new Color(0.44f, 0.89f, 0.71f);
+        }
+
+        var factionLabel = card.Q<Label>("faction-label");
+        if (factionLabel != null) factionLabel.text = faction.ToString().ToUpperInvariant();
+
+        int clampedMax = Mathf.Max(1, maxHp);
+        int clampedCurrent = Mathf.Clamp(currentHp, 0, clampedMax);
+        int pct = Mathf.RoundToInt(100f * clampedCurrent / clampedMax);
+
+        var currentHpLabel = card.Q<Label>("current-hp");
+        if (currentHpLabel != null) currentHpLabel.text = clampedCurrent.ToString();
+
+        var maxHpLabel = card.Q<Label>("max-hp");
+        if (maxHpLabel != null) maxHpLabel.text = clampedMax.ToString();
+
+        var hpPercentLabel = card.Q<Label>("hp-percentage");
+        if (hpPercentLabel != null) hpPercentLabel.text = $"({pct}%)";
+
+        var healthFill = card.Q<VisualElement>("health-fill");
+        if (healthFill != null) healthFill.style.width = new Length(pct, LengthUnit.Percent);
+
+        var attackRangeValue = card.Q<Label>("attack-range-value");
+        if (attackRangeValue != null) attackRangeValue.text = attackRange.ToString();
+
+        var movementRangeValue = card.Q<Label>("movement-range-value");
+        if (movementRangeValue != null) movementRangeValue.text = moveRange.ToString();
+
+        // The template has no raw attack-power field; fold it into the designation
+        // row so the number the old card always showed (ATK) is still visible.
+        if (designationLabel != null) designationLabel.text += $"  \u00b7  ATK {atk}";
+
+        // Pre-combat cards have no action economy yet - the actions-panel is
+        // repurposed as a status/tag strip instead (see SetCardTag).
+        var actionPips = card.Q<VisualElement>("action-pips");
+        if (actionPips != null) actionPips.style.display = DisplayStyle.None;
+    }
+
+    /// <summary>
+    /// Shows short status text (selection state, draft prompt, etc.) in the
+    /// actions-panel strip at the bottom of the card - the closest equivalent
+    /// the new template has to the old card-footer-tag label.
+    /// </summary>
+    private void SetCardTag(VisualElement card, string text)
+    {
+        var tagLabel = card.Q<Label>("actions-label");
+        if (tagLabel != null) tagLabel.text = text;
     }
 
     // ---------------------------------------------------------------
@@ -603,19 +667,35 @@ public class PlanningPhaseController : MonoBehaviour
     private VisualElement BuildVillagerDraftCard()
     {
         var card = unitCardTemplate.Instantiate();
-        var cardRoot = card.Q<VisualElement>("card-root");
+        var cardRoot = card.Q<VisualElement>("player-card");
         cardRoot.AddToClassList("draft-card");
 
-        PopulateCardTemplate(card, null, "Villager", 0, 0);
-        var statsRow = card.Q<VisualElement>("card-stats-row");
-        if (statsRow != null) statsRow.style.display = DisplayStyle.None;
+        var nameLabel = card.Q<Label>("unit-name");
+        if (nameLabel != null) nameLabel.text = "VILLAGER";
 
-        var footerTag = card.Q<Label>("card-footer-tag");
-        if (footerTag != null)
-        {
-            footerTag.text = "[ +1 VILLAGER ]";
-            footerTag.style.display = DisplayStyle.Flex;
-        }
+        var designationLabel = card.Q<Label>("unit-designation");
+        if (designationLabel != null) designationLabel.text = "SETTLER";
+
+        var levelLabel = card.Q<Label>("level-label");
+        if (levelLabel != null) levelLabel.style.display = DisplayStyle.None;
+
+        // A villager has no combat stats at all - hide every panel built for them.
+        var healthPanel = card.Q<VisualElement>("health-panel");
+        if (healthPanel != null) healthPanel.style.display = DisplayStyle.None;
+
+        var combatStats = card.Q<VisualElement>("combat-stats");
+        if (combatStats != null) combatStats.style.display = DisplayStyle.None;
+
+        var classEmblem = card.Q<VisualElement>("unit-class-emblem");
+        if (classEmblem != null) classEmblem.style.display = DisplayStyle.None;
+
+        var statusRow = card.Q<VisualElement>("portrait-status-row");
+        if (statusRow != null) statusRow.style.display = DisplayStyle.None;
+
+        var actionPips = card.Q<VisualElement>("action-pips");
+        if (actionPips != null) actionPips.style.display = DisplayStyle.None;
+
+        SetCardTag(card, "[ +1 VILLAGER ]");
 
         cardRoot.RegisterCallback<ClickEvent>(_ =>
         {
@@ -630,17 +710,14 @@ public class PlanningPhaseController : MonoBehaviour
     private VisualElement BuildDraftCard(UnitData unit)
     {
         var card = unitCardTemplate.Instantiate();
-        var cardRoot = card.Q<VisualElement>("card-root");
+        var cardRoot = card.Q<VisualElement>("player-card");
         cardRoot.AddToClassList("draft-card");
 
-        PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, unit.MaxHP, unit.BaseAttack);
+        // A fresh recruit hasn't fought yet - full health, level 1, no wounds.
+        PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
+            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction);
 
-        var footerTag = card.Q<Label>("card-footer-tag");
-        if (footerTag != null)
-        {
-            footerTag.text = "[ CHOOSE ]";
-            footerTag.style.display = DisplayStyle.Flex;
-        }
+        SetCardTag(card, "[ CHOOSE ]");
 
         cardRoot.RegisterCallback<ClickEvent>(_ =>
         {

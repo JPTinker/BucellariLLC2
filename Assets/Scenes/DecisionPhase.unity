@@ -358,7 +358,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 64e80015fdf07324eaf87b2329d43a15, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlanningPhaseController
-  unitCardTemplate: {fileID: 9197481963319205126, guid: 11aa7cefe8ddc314dbad98090373df22, type: 3}
+  unitCardTemplate: {fileID: 9197481963319205126, guid: f9743c6cef975bd4aa6ef941424f7850, type: 3}
   revealHoldSeconds: 1.6
   levelUpHoldSeconds: 1.6
   punchInDuration: 0.32

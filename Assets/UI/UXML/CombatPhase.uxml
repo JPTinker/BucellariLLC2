@@ -64,7 +64,6 @@
                 <ui:Label text="AVAILABLE ACTIONS" class="panel-title"/>
             </ui:VisualElement>
             <ui:VisualElement class="action-buttons">
-                <ui:Button name="action-heal" text="HEAL" class="action-button action-button-heal"/>
                 <ui:Button name="action-fortify" text="FORTIFY" class="action-button"/>
                 <ui:Button name="action-extract" text="EXTRACT" class="action-button action-button-extract"/>
                 <ui:Button name="action-scout" text="SCOUT" class="action-button"/>

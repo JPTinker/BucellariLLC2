@@ -1027,7 +1027,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4f283056ea246fe478db35b006672296, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatPhaseUIController
-  unitCardAsset: {fileID: 9197481963319205126, guid: 11aa7cefe8ddc314dbad98090373df22, type: 3}
+  unitCardAsset: {fileID: 9197481963319205126, guid: 8152f74529894083939e2137cbed78c6, type: 3}
   extractionPoint: {x: 0, y: 0}
 --- !u!114 &1221553268
 MonoBehaviour:
@@ -1296,6 +1296,7 @@ GameObject:
   - component: {fileID: 2007730825}
   - component: {fileID: 2007730827}
   - component: {fileID: 2007730828}
+  - component: {fileID: 2007730829}
   m_Layer: 0
   m_Name: MapPhaseData
   m_TagString: Untagged
@@ -1388,6 +1389,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   enemyAI: {fileID: 2007730828}
+  villagerAI: {fileID: 2007730829}
   reinforcementThreshold: 10
   reinforcementTargetCount: 20
   combatUIManager: {fileID: 1221553267}
@@ -1419,6 +1421,20 @@ MonoBehaviour:
   defenseTerrainWeight: 0.5
   rangedAdjacentPenalty: 2
   allyPassCost: 2
+--- !u!114 &2007730829
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2007730824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e19b37eeeb945f44adb4f6cf511f5f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VillagerAIController
+  actionDelay: 0.1
+  moveTimeout: 5
 --- !u!1 &2116198337
 GameObject:
   m_ObjectHideFlags: 0

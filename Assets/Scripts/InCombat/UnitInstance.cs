@@ -15,6 +15,7 @@ public class UnitInstance : MonoBehaviour
     public Unit PersistentUnit { get; private set; }
     public int Experience { get; private set; }
     public int Level { get; private set; } = 1;
+    public int Wounds => PersistentUnit != null ? PersistentUnit.Wounds : 0;
 
     private const int ExperiencePerLevel = 100;
     private const int AttackExperience = 10;
@@ -30,12 +31,18 @@ public class UnitInstance : MonoBehaviour
     public int attackRange = 1;
     public int defensePower = 1;
     public int movementRange = 3;
-    public int healsOthers = 0; // How much this unit heals others (if any)
     public int visibilityRange = 3;
     public UnitColorScheme colorScheme = UnitColorScheme.Scheme1;
 
     public GameObject leftHand;
     public GameObject rightHand;
+
+    [Header("Projectiles")]
+    [Tooltip("Where arrows / magic missiles leave from. Falls back to aimHeight above the unit's feet.")]
+    public Transform projectileSpawnPoint;
+    [Tooltip("Height above the unit's feet that incoming projectiles aim for.")]
+    [SerializeField] private float aimHeight = 1f;
+    public Vector3 AimPoint => transform.position + Vector3.up * aimHeight;
 
     public Texture2D ColorScheme1;
     public Texture2D ColorScheme2;
@@ -108,13 +115,12 @@ public class UnitInstance : MonoBehaviour
         unitName = unit.UnitName;
         maxHealth = unit.MaxHP;
         // Carry damage over between battles rather than always spawning at full
-        // HP - Rest (Campaign Map) is what heals this back up, not a fresh spawn.
+        // HP - there is no healing, so lost HP stays lost.
         currentHealth = unit.CurrentHP > 0 ? Mathf.Min(unit.CurrentHP, maxHealth) : maxHealth;
         attackPower = unit.BaseAttack;
         attackRange = unit.AttackRange;
         defensePower = unit.DefensePower;
         movementRange = unit.MoveRange;
-        healsOthers = unit.HealingPower;
         visibilityRange = unit.VisibilityRange;
         colorScheme = unit.ColorScheme;
         maxActionsPerTurn = Mathf.Max(1, unit.MaxMovementPoints);
@@ -166,14 +172,32 @@ public class UnitInstance : MonoBehaviour
     private void LevelUp()
     {
         PersistentUnit.ApplyLevelUp();
+        SyncProgressionStats();
+        Debug.Log($"{unitName} reached level {Level}.");
+    }
+
+    /// Player units carry the scars of battle: every WoundDamageFraction of max
+    /// HP lost adds a wound (a negative level) to the persistent roster record.
+    private void RecordWounds(int damageTaken)
+    {
+        if (Faction != UnitFaction.Player || PersistentUnit == null) return;
+
+        int woundsGained = PersistentUnit.RecordDamage(damageTaken);
+        if (woundsGained <= 0) return;
+
+        SyncProgressionStats();
+        Debug.Log($"{unitName} suffered {woundsGained} wound(s) ({Wounds} total).");
+    }
+
+    /// Copies level-up / wound stat changes from the persistent Unit onto this instance.
+    private void SyncProgressionStats()
+    {
         Level = PersistentUnit.Level;
         maxHealth = PersistentUnit.MaxHP;
+        currentHealth = Mathf.Min(currentHealth, maxHealth);
         attackPower = PersistentUnit.BaseAttack;
         defensePower = PersistentUnit.DefensePower;
-        healsOthers = PersistentUnit.HealingPower;
-        currentHealth = Mathf.Min(maxHealth, currentHealth + 5);
         NotifyStatsChanged();
-        Debug.Log($"{unitName} reached level {Level}.");
     }
 
     private void ApplyColorScheme(UnitData archetype)
@@ -326,11 +350,16 @@ public class UnitInstance : MonoBehaviour
     public bool Attack(UnitInstance target)
     {
         if (!CanAttack(target)) return false;
+        FaceTowards(target.transform.position);
         PlayAnimatorAction(AttackParameter, "Attack");
+
+        // Damage resolves now so turn logic stays synchronous; the target's hit
+        // reaction waits until the projectile (if any) actually lands.
+        float hitDelay = FireProjectile(target);
 
         int damage = CalculateAttackDamage(target, currentTile);
         Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage!");
-        target.TakeDamage(damage);
+        target.TakeDamage(damage, hitDelay);
         if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
         {
             AddExperience(AttackExperience);
@@ -339,6 +368,40 @@ public class UnitInstance : MonoBehaviour
         }
         return true;
     }
+
+    private void FaceTowards(Vector3 worldPosition)
+    {
+        Vector3 direction = worldPosition - transform.position;
+        direction.y = 0f;
+        if (direction.sqrMagnitude > 0f)
+            transform.rotation = Quaternion.LookRotation(direction);
+    }
+
+    /// Launches this unit's projectile (arrow, magic missile) at target, if its
+    /// archetype has one. Returns seconds until it lands (0 for melee).
+    private float FireProjectile(UnitInstance target)
+    {
+        UnitData archetype = PersistentUnit != null ? PersistentUnit.Archetype : null;
+        if (archetype == null || archetype.ProjectilePrefab == null) return 0f;
+
+        // Capture both ends now - the target may be destroyed before impact.
+        Vector3 start = projectileSpawnPoint != null ? projectileSpawnPoint.position : AimPoint;
+        Vector3 end = target.AimPoint;
+        float launchDelay = Mathf.Max(0f, archetype.ProjectileLaunchDelay);
+
+        StartCoroutine(LaunchProjectileAfterDelay(archetype.ProjectilePrefab, start, end, launchDelay));
+        return launchDelay + archetype.ProjectilePrefab.GetFlightTime(start, end);
+    }
+
+    private IEnumerator LaunchProjectileAfterDelay(Projectile prefab, Vector3 start, Vector3 end, float delay)
+    {
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        Projectile projectile = Instantiate(prefab, start, Quaternion.identity);
+        projectile.Launch(start, end);
+    }
+
     /// Raw damage an attack on target would deal from attackFrom, before the
     /// target's own mitigation. Shared by Attack() and the enemy AI's planning.
     public int CalculateAttackDamage(UnitInstance target, HexTile attackFrom)
@@ -380,7 +443,9 @@ public class UnitInstance : MonoBehaviour
     {
         PlayAnimatorAction(Spawn, "Spawn");
     }
-    public void TakeDamage(int amount)
+    /// hitDelay postpones the visible reaction (flash, damage anim, removal on
+    /// death) so it lines up with a projectile landing; the damage itself is immediate.
+    public void TakeDamage(int amount, float hitDelay = 0f)
     {
         if (IsDead) return;
 
@@ -389,17 +454,36 @@ public class UnitInstance : MonoBehaviour
         int healthBefore = currentHealth;
         currentHealth = Mathf.Max(0, currentHealth - amount);
         int damageTaken = healthBefore - currentHealth;
- 
+
         NotifyStatsChanged();
 
         if (damageTaken > 0)
         {
-            PlayAnimatorAction(TakeDamageParameter, "Damaged");
-            PlayDamageFlash(damageTaken);
+            if (hitDelay > 0f && gameObject.activeInHierarchy)
+                StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay));
+            else
+                PlayHitReaction(damageTaken);
         }
- 
+
         if (currentHealth <= 0)
-            Die();
+        {
+            Die(hitDelay);
+            return;
+        }
+
+        RecordWounds(damageTaken);
+    }
+
+    private IEnumerator PlayHitReactionAfterDelay(int damageTaken, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        PlayHitReaction(damageTaken);
+    }
+
+    private void PlayHitReaction(int damageTaken)
+    {
+        PlayAnimatorAction(TakeDamageParameter, "Damaged");
+        PlayDamageFlash(damageTaken);
     }
 
     private void PlayDamageFlash(int damageTaken)
@@ -489,7 +573,9 @@ public class UnitInstance : MonoBehaviour
             _animator.SetBool(parameter, false);
     }
 
-    private void Die()
+    /// The unit leaves the grid immediately; destroyDelay only keeps the body
+    /// around long enough for an incoming projectile to visibly hit it.
+    private void Die(float destroyDelay = 0f)
     {
         if (currentTile != null)
         {
@@ -498,7 +584,7 @@ public class UnitInstance : MonoBehaviour
         }
 
         OnDeath?.Invoke(this);
-        Destroy(gameObject);
+        Destroy(gameObject, destroyDelay);
     }
 
     // ---------------------------
@@ -584,12 +670,6 @@ public class UnitInstance : MonoBehaviour
             AddExperience(RescueExperience);
         Debug.Log($"{unitName} has rescued {villager.unitName}!");
         return true;
-    }
-    public void onHeal()
-    {
-        currentHealth = Mathf.Min(maxHealth, currentHealth + healsOthers);
-        NotifyStatsChanged();
-        CombatManager.Instance?.TakeAction(this);
     }
     public void onFortify()
     {

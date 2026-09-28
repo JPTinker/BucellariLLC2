@@ -1,0 +1,424 @@
+/* Tactical unit card: hard-edged navy surfaces with ice-blue accents. */
+
+.player-card {
+    width: 560px;
+    padding: 12px;
+    background-color: rgb(8, 18, 31);
+    border-width: 1px;
+    border-color: rgb(57, 132, 164);
+    transition-property: border-color, background-color;
+    transition-duration: 0.15s;
+}
+
+.player-card.unit-card-selected {
+    border-width: 2px;
+    border-color: rgb(0, 219, 231);
+    background-color: rgba(0, 219, 231, 0.08);
+}
+
+.player-card.unit-card-denied {
+    border-color: rgb(255, 180, 171);
+}
+
+.player-card .player-card-body {
+    flex-direction: row;
+    align-items: stretch;
+}
+
+/* Portrait */
+.player-card .portrait-column {
+    width: 138px;
+    flex-shrink: 0;
+    margin-right: 14px;
+}
+
+.player-card .portrait-frame {
+    position: relative;
+    width: 138px;
+    height: 158px;
+    overflow: hidden;
+    background-color: rgb(17, 37, 56);
+    border-width: 1px;
+    border-color: rgb(70, 154, 187);
+}
+
+.player-card .character-portrait {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.player-card .portrait-vignette {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(4, 12, 22, 0.22);
+}
+
+.player-card .corner-bracket {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    border-color: rgb(123, 225, 255);
+}
+
+.player-card .corner-top-left {
+    left: 4px;
+    top: 4px;
+    border-left-width: 2px;
+    border-top-width: 2px;
+}
+
+.player-card .corner-top-right {
+    right: 4px;
+    top: 4px;
+    border-right-width: 2px;
+    border-top-width: 2px;
+}
+
+.player-card .corner-bottom-left {
+    left: 4px;
+    bottom: 4px;
+    border-left-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.player-card .corner-bottom-right {
+    right: 4px;
+    bottom: 4px;
+    border-right-width: 2px;
+    border-bottom-width: 2px;
+}
+
+.player-card .level-label {
+    position: absolute;
+    left: 7px;
+    bottom: 7px;
+    padding: 3px 5px;
+    background-color: rgba(5, 15, 25, 0.88);
+    color: rgb(151, 226, 255);
+    font-size: 10px;
+    -unity-font-style: bold;
+}
+
+.player-card .portrait-status-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.player-card .morale-status {
+    flex-direction: row;
+    align-items: center;
+}
+
+.player-card .morale-dot,
+.player-card .actions-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 3px;
+    background-color: rgb(111, 228, 180);
+}
+
+.player-card .morale-dot {
+    margin-right: 4px;
+}
+
+.player-card .morale-label {
+    color: rgb(135, 222, 184);
+    font-size: 8px;
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+}
+
+.player-card .faction-label {
+    color: rgb(111, 160, 188);
+    font-size: 8px;
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+}
+
+/* Unit identity and class */
+.player-card .unit-info {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: column;
+}
+
+.player-card .unit-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(87, 158, 190, 0.48);
+}
+
+.player-card .unit-name-container {
+    flex-grow: 1;
+    flex-basis: 0;
+    margin-right: 10px;
+}
+
+.player-card .unit-name {
+    color: rgb(218, 242, 255);
+    font-size: 19px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+.player-card .unit-designation {
+    margin-top: 3px;
+    color: rgb(112, 169, 198);
+    font-size: 9px;
+    letter-spacing: 0.7px;
+}
+
+.player-card .unit-class-emblem {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgb(16, 38, 57);
+    border-width: 1px;
+    border-color: rgb(55, 124, 157);
+}
+
+.player-card .unit-class-icon {
+    color: rgb(133, 220, 255);
+    font-size: 23px;
+    -unity-text-align: middle-center;
+}
+
+/* Health */
+.player-card .stat-panel {
+    padding: 8px;
+    background-color: rgb(13, 29, 45);
+    border-width: 1px;
+    border-color: rgba(67, 128, 157, 0.55);
+}
+
+.player-card .health-panel {
+    margin-bottom: 8px;
+}
+
+.player-card .health-header,
+.player-card .health-title-container,
+.player-card .health-values {
+    flex-direction: row;
+    align-items: center;
+}
+
+.player-card .health-header {
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.player-card .stat-icon {
+    margin-right: 5px;
+    font-size: 12px;
+    -unity-font-style: bold;
+}
+
+.player-card .health-icon {
+    color: rgb(255, 112, 126);
+}
+
+.player-card .stat-title {
+    color: rgb(132, 173, 196);
+    font-size: 9px;
+    -unity-font-style: bold;
+    letter-spacing: 0.8px;
+}
+
+.player-card .current-hp {
+    color: rgb(220, 244, 255);
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.player-card .hp-divider,
+.player-card .max-hp {
+    color: rgb(120, 157, 179);
+    font-size: 11px;
+}
+
+.player-card .hp-percentage {
+    margin-left: 5px;
+    color: rgb(109, 216, 255);
+    font-size: 9px;
+}
+
+.player-card .health-bar {
+    position: relative;
+    height: 11px;
+    overflow: hidden;
+    background-color: rgb(5, 14, 24);
+    border-width: 1px;
+    border-color: rgb(38, 76, 98);
+}
+
+.player-card .health-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 85%;
+    background-color: rgb(61, 190, 224);
+}
+
+.player-card .health-ticks {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.player-card .health-tick {
+    width: 1px;
+    height: 100%;
+    background-color: rgba(5, 14, 24, 0.75);
+}
+
+/* Combat ranges */
+.player-card .combat-stats {
+    flex-direction: row;
+    margin-bottom: 8px;
+}
+
+.player-card .combat-stat-panel {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: row;
+    align-items: center;
+    padding: 7px;
+    background-color: rgb(13, 29, 45);
+    border-width: 1px;
+    border-color: rgba(67, 128, 157, 0.55);
+}
+
+.player-card .combat-stat-panel:first-child {
+    margin-right: 6px;
+}
+
+.player-card .combat-stat-icon {
+    width: 27px;
+    height: 27px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    margin-right: 7px;
+    background-color: rgb(20, 47, 68);
+}
+
+.player-card .combat-icon {
+    color: rgb(107, 205, 239);
+    font-size: 16px;
+    -unity-text-align: middle-center;
+}
+
+.player-card .combat-stat-info {
+    flex-grow: 1;
+}
+
+.player-card .combat-stat-title {
+    color: rgb(123, 164, 186);
+    font-size: 8px;
+    -unity-font-style: bold;
+    letter-spacing: 0.4px;
+}
+
+.player-card .combat-stat-value-container {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.player-card .combat-stat-value {
+    color: rgb(220, 244, 255);
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+.player-card .combat-stat-unit {
+    margin-left: 4px;
+    color: rgb(103, 151, 178);
+    font-size: 8px;
+}
+
+/* Remaining action points */
+.player-card .actions-panel {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 8px;
+    background-color: rgb(11, 25, 39);
+    border-width: 1px;
+    border-color: rgba(67, 128, 157, 0.45);
+}
+
+.player-card .actions-label-container {
+    flex-direction: row;
+    align-items: center;
+}
+
+.player-card .actions-status-dot {
+    margin-right: 6px;
+}
+
+.player-card .actions-label {
+    color: rgb(132, 173, 196);
+    font-size: 9px;
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+}
+
+.player-card .action-pips {
+    flex-direction: row;
+    align-items: center;
+}
+
+.player-card .action-pip {
+    width: 12px;
+    height: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 4px;
+    border-width: 1px;
+    border-color: rgb(72, 128, 157);
+    background-color: rgb(13, 29, 45);
+}
+
+.player-card .action-pip-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: rgb(130, 220, 255);
+}
+
+.player-card .pip-active {
+    border-color: rgb(100, 195, 229);
+    background-color: rgb(25, 72, 96);
+}
+
+.player-card .pip-empty .action-pip-dot {
+    display: none;
+}
+
+.player-card .action-points-text {
+    margin-left: 4px;
+    color: rgb(146, 213, 241);
+    font-size: 10px;
+    -unity-font-style: bold;
+}

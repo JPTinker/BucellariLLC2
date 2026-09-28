@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 public class CombatPhaseUIController : MonoBehaviour
 {
     [Header("Unit Card Template")]
-    [Tooltip("Assign the unit-card.uxml VisualTreeAsset here.")]
+    [Tooltip("Assign UnitCard_Battle.uxml here - the compact card sized for the roster sidebar.")]
     [SerializeField] private VisualTreeAsset unitCardAsset;
 
     [Header("Extraction")]
@@ -33,7 +33,6 @@ public class CombatPhaseUIController : MonoBehaviour
     private Label settlementMoraleLabel;
 
     // Action bar buttons
-    private Button healButton;
     private Button fortifyButton;
     private Button extractButton;
     private Button scoutButton;
@@ -87,7 +86,6 @@ public class CombatPhaseUIController : MonoBehaviour
 
     public enum CombatAction
     {
-        Heal,
         Fortify,
         Extract,
         Scout,
@@ -128,13 +126,11 @@ public class CombatPhaseUIController : MonoBehaviour
         settlementMoraleLabel = root.Q<Label>("settlement-morale-value");
 
         // Action bar
-        healButton = root.Q<Button>("action-heal");
         fortifyButton = root.Q<Button>("action-fortify");
         extractButton = root.Q<Button>("action-extract");
         scoutButton = root.Q<Button>("action-scout");
         endTurnButton = root.Q<Button>("end-turn");
 
-        healButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Heal));
         fortifyButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Fortify));
         extractButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Extract));
         scoutButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Scout));
@@ -182,7 +178,7 @@ public class CombatPhaseUIController : MonoBehaviour
         SetTownsfolkSaved(GameStateManager.Instance.SavedVillagersThisBattle, target);
     }
 
-    private void RefreshTownsfolkDisplay()
+    public void RefreshTownsfolkDisplay()
     {
         if (MapManager.Instance == null || GameStateManager.Instance == null)
             return;
@@ -267,7 +263,6 @@ public class CombatPhaseUIController : MonoBehaviour
         // Rule 1: If they have no actions (or no unit selected), all action buttons are disabled
         if (!hasActions)
         {
-            healButton?.SetEnabled(false);
             fortifyButton?.SetEnabled(false);
             extractButton?.SetEnabled(false);
             scoutButton?.SetEnabled(false);
@@ -285,11 +280,7 @@ public class CombatPhaseUIController : MonoBehaviour
         }
         extractButton?.SetEnabled(isAdjacentToOrigin);
 
-        // Rule 3: If the unit is not below its max health then heal is disabled
-        bool isBelowMaxHealth = unit.currentHealth < unit.maxHealth;
-        healButton?.SetEnabled(isBelowMaxHealth);
-
-        // Rule 4: If the unit is already fortified then fortify is disabled
+        // Rule 3: If the unit is already fortified then fortify is disabled
         // (Change 'isFortified' to 'IsFortified' if your property casing differs)
         bool isFortified = unit.IsFortified; 
         fortifyButton?.SetEnabled(!isFortified);
@@ -312,11 +303,16 @@ public class CombatPhaseUIController : MonoBehaviour
         public VisualElement Root { get; }
 
         private readonly UnitInstance unit;
+        private readonly VisualElement cardRoot;
+        private readonly VisualElement portrait;
         private readonly Label nameLabel;
+        private readonly Label tagLabel;
         private readonly Label hpValueLabel;
-        private readonly Label atkValueLabel;
+        private readonly VisualElement healthFill;
+        private readonly Label actionsValueLabel;
+        private readonly Label rangeValueLabel;
+        private readonly Label moveValueLabel;
         private readonly Label badgeLabel;
-        private readonly Label footerTagLabel;
 
         public UnitCardView(UnitInstance unit, VisualTreeAsset cardAsset)
         {
@@ -324,40 +320,72 @@ public class CombatPhaseUIController : MonoBehaviour
 
             if (cardAsset != null)
             {
+                // Keep Root pointing at the TemplateContainer Instantiate() returns rather
+                // than drilling into "card-root" - the <Style src> stylesheet declared in
+                // the UXML is attached to that outer container, not to card-root itself, so
+                // replacing Root with just card-root (as this used to do) would silently
+                // strip the card's styling once it's parented into the roster ScrollView.
                 Root = cardAsset.Instantiate();
-                VisualElement cardRoot = Root.Q<VisualElement>("card-root") ?? Root;
-                Root = cardRoot;
+                cardRoot = Root.Q<VisualElement>("card-root") ?? Root;
             }
             else
             {
                 Root = new VisualElement();
-                Root.AddToClassList("unit-card");
+                Root.AddToClassList("combat-unit-card");
+                cardRoot = Root;
                 Debug.LogWarning("CombatPhaseUIController: unitCardAsset not assigned, falling back to a blank card.");
             }
 
+            portrait = Root.Q<VisualElement>("card-portrait");
             nameLabel = Root.Q<Label>("card-name");
+            tagLabel = Root.Q<Label>("card-tag");
             hpValueLabel = Root.Q<Label>("card-hp-value");
-            atkValueLabel = Root.Q<Label>("card-atk-value");
+            healthFill = Root.Q<VisualElement>("card-health-fill");
+            actionsValueLabel = Root.Q<Label>("card-actions-value");
+            rangeValueLabel = Root.Q<Label>("card-range-value");
+            moveValueLabel = Root.Q<Label>("card-move-value");
             badgeLabel = Root.Q<Label>("card-badge");
-            footerTagLabel = Root.Q<Label>("card-footer-tag");
 
             Refresh();
         }
 
         public void Refresh()
         {
-            if (nameLabel != null) nameLabel.text = unit.unitName.ToUpperInvariant();
-            if (hpValueLabel != null) hpValueLabel.text = $"{unit.currentHealth}/{unit.maxHealth}";
-            if (atkValueLabel != null) atkValueLabel.text = unit.attackPower.ToString();
-            if (footerTagLabel != null) footerTagLabel.text = unit.attackRange > 1 ? "RANGED" : "FRONTLINE";
-            if (badgeLabel != null) badgeLabel.text = unit.actionsRemaining <= 0 ? "OUT" : "";
+            if (portrait != null && unit.PersistentUnit?.UnitIcon != null)
+                portrait.style.backgroundImage = new StyleBackground(unit.PersistentUnit.UnitIcon);
 
-            Root.EnableInClassList("unit-card-exhausted", unit.actionsRemaining <= 0);
+            if (nameLabel != null) nameLabel.text = unit.unitName.ToUpperInvariant();
+
+            if (tagLabel != null)
+            {
+                string role = unit.attackRange > 1 ? "RANGED" : "FRONTLINE";
+                tagLabel.text = unit.Wounds > 0 ? $"{role} · {unit.Wounds} WOUND{(unit.Wounds == 1 ? "" : "S")}" : role;
+            }
+
+            if (hpValueLabel != null) hpValueLabel.text = $"{unit.currentHealth} / {unit.maxHealth}";
+            if (healthFill != null)
+            {
+                int maxHealth = Mathf.Max(1, unit.maxHealth);
+                float pct = 100f * Mathf.Clamp(unit.currentHealth, 0, maxHealth) / maxHealth;
+                healthFill.style.width = new Length(pct, LengthUnit.Percent);
+            }
+
+            if (actionsValueLabel != null) actionsValueLabel.text = $"{unit.actionsRemaining}/{unit.maxActionsPerTurn}";
+            if (rangeValueLabel != null) rangeValueLabel.text = unit.attackRange.ToString();
+            if (moveValueLabel != null) moveValueLabel.text = unit.movementRange.ToString();
+
+            if (badgeLabel != null)
+            {
+                badgeLabel.text = unit.actionsRemaining <= 0 ? "OUT" : "";
+                badgeLabel.style.display = unit.actionsRemaining <= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            cardRoot.EnableInClassList("unit-card-exhausted", unit.actionsRemaining <= 0);
         }
 
         public void SetSelected(bool selected)
         {
-            Root.EnableInClassList("unit-card-selected", selected);
+            cardRoot.EnableInClassList("unit-card-selected", selected);
         }
     }
 }

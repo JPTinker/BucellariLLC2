@@ -1,0 +1,136 @@
+/* Compact in-combat unit card: sized for the ~272px battle-screen roster
+   sidebar (Assets/UI/UXML/CombatPhase.uxml's .unit-roster), unlike the large
+   UnitCard_updated.uxml profile card. Same navy/ice-blue tactical language. */
+
+.combat-unit-card {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: rgb(13, 29, 45);
+    border-width: 1px;
+    border-color: rgba(67, 128, 157, 0.55);
+    transition-property: border-color, background-color;
+    transition-duration: 0.15s;
+}
+
+.combat-unit-card.unit-card-selected {
+    border-width: 2px;
+    border-color: rgb(61, 190, 224);
+    background-color: rgba(61, 190, 224, 0.10);
+}
+
+.combat-unit-card.unit-card-exhausted {
+    opacity: 0.48;
+}
+
+.combat-unit-portrait {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    margin-right: 8px;
+    background-color: rgb(17, 37, 56);
+    border-width: 1px;
+    border-color: rgb(70, 154, 187);
+    -unity-background-scale-mode: scale-and-crop;
+}
+
+.combat-unit-badge {
+    display: none;
+    position: absolute;
+    right: -3px;
+    bottom: -3px;
+    padding: 1px 3px;
+    background-color: rgb(255, 112, 126);
+    color: rgb(8, 18, 31);
+    font-size: 7px;
+    -unity-font-style: bold;
+}
+
+.combat-unit-body {
+    flex-grow: 1;
+    flex-basis: 0;
+}
+
+.combat-unit-header-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.combat-unit-name {
+    flex-grow: 1;
+    flex-basis: 0;
+    color: rgb(218, 242, 255);
+    font-size: 11px;
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.combat-unit-tag {
+    margin-left: 4px;
+    color: rgb(109, 216, 255);
+    font-size: 8px;
+    -unity-font-style: bold;
+    letter-spacing: 0.4px;
+}
+
+.combat-unit-health-row {
+    flex-direction: row;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.combat-unit-health-track {
+    flex-grow: 1;
+    flex-basis: 0;
+    height: 6px;
+    overflow: hidden;
+    background-color: rgb(5, 14, 24);
+    border-width: 1px;
+    border-color: rgb(38, 76, 98);
+}
+
+.combat-unit-health-fill {
+    height: 100%;
+    width: 100%;
+    background-color: rgb(61, 190, 224);
+}
+
+.combat-unit-hp-value {
+    margin-left: 6px;
+    min-width: 42px;
+    color: rgb(180, 214, 232);
+    font-size: 9px;
+    -unity-text-align: middle-right;
+}
+
+.combat-unit-stats-row {
+    flex-direction: row;
+    margin-top: 5px;
+}
+
+.combat-unit-stat {
+    flex-grow: 1;
+    flex-basis: 0;
+    align-items: flex-start;
+}
+
+.combat-unit-stat-label {
+    color: rgb(103, 151, 178);
+    font-size: 7px;
+    -unity-font-style: bold;
+    letter-spacing: 0.5px;
+}
+
+.combat-unit-stat-value {
+    margin-top: 1px;
+    color: rgb(220, 244, 255);
+    font-size: 10px;
+    -unity-font-style: bold;
+}
