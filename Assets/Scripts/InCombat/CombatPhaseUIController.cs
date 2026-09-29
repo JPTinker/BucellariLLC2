@@ -346,6 +346,8 @@ public class CombatPhaseUIController : MonoBehaviour
             moveValueLabel = Root.Q<Label>("card-move-value");
             badgeLabel = Root.Q<Label>("card-badge");
 
+            cardRoot.AddToClassList(UnitRarityTable.GetUssClass(unit.Rarity));
+
             Refresh();
         }
 
@@ -359,6 +361,8 @@ public class CombatPhaseUIController : MonoBehaviour
             if (tagLabel != null)
             {
                 string role = unit.attackRange > 1 ? "RANGED" : "FRONTLINE";
+                if (unit.Rarity != UnitRarity.Common)
+                    role = $"{UnitRarityTable.GetDisplayName(unit.Rarity)} · {role}";
                 tagLabel.text = unit.Wounds > 0 ? $"{role} · {unit.Wounds} WOUND{(unit.Wounds == 1 ? "" : "S")}" : role;
             }
 

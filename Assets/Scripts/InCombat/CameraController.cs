@@ -1,5 +1,4 @@
 using System.Collections;
-using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
@@ -18,6 +17,7 @@ public class CameraController : MonoBehaviour
     public float zoomSpeed = 5f;
     public float minZoom = 5f;
     public float maxZoom = 25f;
+    public float pinchZoomSpeed = 0.02f;
 
     [Header("Bounds (Optional)")]
     public Vector2 minBounds;
@@ -36,6 +36,7 @@ public class CameraController : MonoBehaviour
 
     private Camera cam;
     private Vector2 lastTouchPosition;
+    private int lastTouchCount = 0;
     private Vector3 defaultPosition;
     private float defaultZoom;
     private bool isFocusing = false;
@@ -54,6 +55,18 @@ public class CameraController : MonoBehaviour
         defaultZoom = cam.orthographicSize;
     }
 
+    void OnEnable()
+    {
+        if (!EnhancedTouchSupport.enabled)
+            EnhancedTouchSupport.Enable();
+    }
+
+    void OnDisable()
+    {
+        if (EnhancedTouchSupport.enabled)
+            EnhancedTouchSupport.Disable();
+    }
+
     void Update()
     {
         // User controls are suspended while the camera is focusing on a spawning unit.
@@ -61,8 +74,8 @@ public class CameraController : MonoBehaviour
 
         HandleKeyboardMovement();
         HandleMouseZoom();
-        // Mobile / Touch Controls
-        #if UNITY_IOS || UNITY_ANDROID
+        // Mobile / Touch Controls (also compiled in-editor so it can be tested via the Device Simulator)
+        #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
         HandleTouchControls();
         #endif
         //ClampPosition();
@@ -134,19 +147,16 @@ public class CameraController : MonoBehaviour
     // -----------------------
     void HandleTouchControls()
     {
-    // Ensure EnhancedTouch is active before reading touches
-    if (!EnhancedTouchSupport.enabled)
-    {
-        EnhancedTouchSupport.Enable();
-    }
+        var activeTouches = Touch.activeTouches;
+        int touchCount = activeTouches.Count;
 
-    var activeTouches = Touch.activeTouches;
-
-        if (activeTouches.Count == 1)
+        if (touchCount == 1)
         {
             Touch touch = activeTouches[0];
 
-            if (touch.phase == TouchPhase.Began)
+            // Also resync on the first frame we drop back to one finger (e.g. after a pinch),
+            // otherwise the pan would jump using a stale lastTouchPosition from before the pinch.
+            if (touch.phase == TouchPhase.Began || lastTouchCount != 1)
             {
                 lastTouchPosition = touch.screenPosition;
             }
@@ -166,24 +176,30 @@ public class CameraController : MonoBehaviour
                 lastTouchPosition = currentPos;
             }
         }
-        else if (activeTouches.Count == 2)
+        else if (touchCount == 2)
         {
             // Pinch zoom
             Touch t0 = activeTouches[0];
             Touch t1 = activeTouches[1];
 
-            // Access previous position via touch.history or (screenPosition - delta)
-            Vector2 prev0 = t0.screenPosition - t0.delta;
-            Vector2 prev1 = t1.screenPosition - t1.delta;
+            // Skip the frame either finger first touches down: its delta is zero, which would
+            // otherwise be read as the previous pinch distance and cause a zoom jolt.
+            if (lastTouchCount == 2 && t0.phase != TouchPhase.Began && t1.phase != TouchPhase.Began)
+            {
+                Vector2 prev0 = t0.screenPosition - t0.delta;
+                Vector2 prev1 = t1.screenPosition - t1.delta;
 
-            float prevDist = Vector2.Distance(prev0, prev1);
-            float currDist = Vector2.Distance(t0.screenPosition, t1.screenPosition);
+                float prevDist = Vector2.Distance(prev0, prev1);
+                float currDist = Vector2.Distance(t0.screenPosition, t1.screenPosition);
 
-            float delta = currDist - prevDist;
+                float delta = currDist - prevDist;
 
-            cam.orthographicSize -= delta * dragSpeed;
-            cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+                cam.orthographicSize -= delta * pinchZoomSpeed;
+                cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
+            }
         }
+
+        lastTouchCount = touchCount;
     }
 
     // -----------------------

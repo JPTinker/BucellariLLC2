@@ -11,6 +11,7 @@
                     <ui:VisualElement name="corner-bottom-left" class="corner-bracket corner-bottom-left"/>
                     <ui:VisualElement name="corner-bottom-right" class="corner-bracket corner-bottom-right"/>
                     <ui:Label name="level-label" text="LVL 48" class="level-label"/>
+                    <ui:Label name="rarity-label" text="COMMON" class="rarity-label"/>
                 </ui:VisualElement>
                 <ui:VisualElement name="portrait-status-row" class="portrait-status-row">
                     <ui:VisualElement name="morale-status" class="morale-status">

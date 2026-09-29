@@ -54,6 +54,7 @@ public class PlanningPhaseController : MonoBehaviour
     private VisualElement _draftOverlay;
     private VisualElement _draftOptionsContainer;
     private UnitData _draftSelectedUnit;
+    private UnitRarity _draftSelectedRarity;
     private bool _draftSelectedVillager;
     private bool _draftSelectionMade;
 
@@ -256,7 +257,7 @@ public class PlanningPhaseController : MonoBehaviour
         var cardRoot = card.Q<VisualElement>("player-card");
 
         PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, unit.Level, unit.CurrentHP, unit.MaxHP,
-            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, unit.Wounds);
+            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, unit.Rarity, unit.Wounds);
 
         SetCardTag(card, "[ \u2713 SELECTED ]");
 
@@ -272,8 +273,15 @@ public class PlanningPhaseController : MonoBehaviour
     /// actions-panel row instead - see SetCardTag.
     /// </summary>
     private void PopulateCardTemplate(VisualElement card, Sprite icon, string unitName, int level, int currentHp,
-        int maxHp, int atk, int attackRange, int moveRange, UnitFaction faction, int wounds = 0)
+        int maxHp, int atk, int attackRange, int moveRange, UnitFaction faction, UnitRarity rarity, int wounds = 0)
     {
+        // Rarity drives the frame/label accent via a "rarity-<tier>" modifier class.
+        var cardRoot = card.Q<VisualElement>("player-card");
+        cardRoot?.AddToClassList(UnitRarityTable.GetUssClass(rarity));
+
+        var rarityLabel = card.Q<Label>("rarity-label");
+        if (rarityLabel != null) rarityLabel.text = UnitRarityTable.GetDisplayName(rarity);
+
         var portrait = card.Q<VisualElement>("character-portrait");
         if (portrait != null && icon != null)
         {
@@ -295,13 +303,16 @@ public class PlanningPhaseController : MonoBehaviour
 
         var moraleLabel = card.Q<Label>("morale-label");
         var moraleDot = card.Q<VisualElement>("morale-dot");
+        bool ignoresWounds = rarity == UnitRarity.Mythical;
         if (moraleLabel != null)
         {
-            moraleLabel.text = wounds > 0 ? $"{wounds} WOUND{(wounds == 1 ? "" : "S")}" : "UNWOUNDED";
+            if (ignoresWounds) moraleLabel.text = "UNSCARRABLE";
+            else moraleLabel.text = wounds > 0 ? $"{wounds} WOUND{(wounds == 1 ? "" : "S")}" : "UNWOUNDED";
         }
         if (moraleDot != null)
         {
-            moraleDot.style.backgroundColor = wounds > 0 ? new Color(0.87f, 0.35f, 0.31f) : new Color(0.44f, 0.89f, 0.71f);
+            if (ignoresWounds) moraleDot.style.backgroundColor = UnitRarityTable.GetColor(rarity);
+            else moraleDot.style.backgroundColor = wounds > 0 ? new Color(0.87f, 0.35f, 0.31f) : new Color(0.44f, 0.89f, 0.71f);
         }
 
         var factionLabel = card.Q<Label>("faction-label");
@@ -513,6 +524,7 @@ public class PlanningPhaseController : MonoBehaviour
     private void PopulateRevealCard(Unit unit)
     {
         _revealName.text = unit.UnitName.ToUpperInvariant();
+        _revealName.style.color = UnitRarityTable.GetColor(unit.Rarity);
         if (unit.UnitIcon != null)
         {
             _revealIcon.style.backgroundImage = new StyleBackground(unit.UnitIcon);
@@ -574,7 +586,11 @@ public class PlanningPhaseController : MonoBehaviour
     {
         if (info.Unit == null) return;
 
-        if (_levelUpName != null) _levelUpName.text = info.Unit.UnitName.ToUpperInvariant();
+        if (_levelUpName != null)
+        {
+            _levelUpName.text = info.Unit.UnitName.ToUpperInvariant();
+            _levelUpName.style.color = UnitRarityTable.GetColor(info.Unit.Rarity);
+        }
         if (info.Unit.UnitIcon != null && _levelUpIcon != null)
         {
             _levelUpIcon.style.backgroundImage = new StyleBackground(info.Unit.UnitIcon);
@@ -620,7 +636,7 @@ public class PlanningPhaseController : MonoBehaviour
         if (_draftSelectedVillager)
             gsm.ResolveVillagerDraft();
         else
-            gsm.ResolveUnitDraft(_draftSelectedUnit);
+            gsm.ResolveUnitDraft(_draftSelectedUnit, _draftSelectedRarity);
 
         RefreshRosterList();
         RefreshSelectionCounter();
@@ -646,10 +662,11 @@ public class PlanningPhaseController : MonoBehaviour
 
         _draftOptionsContainer.Clear();
 
-        foreach (var unit in options)
+        for (int i = 0; i < options.Count; i++)
         {
+            var unit = options[i];
             if (unit == null) continue;
-            var card = BuildDraftCard(unit);
+            var card = BuildDraftCard(unit, GameStateManager.Instance.GetDraftRarity(i));
             _draftOptionsContainer.Add(card);
             built.Add(card);
         }
@@ -679,6 +696,9 @@ public class PlanningPhaseController : MonoBehaviour
         var levelLabel = card.Q<Label>("level-label");
         if (levelLabel != null) levelLabel.style.display = DisplayStyle.None;
 
+        var rarityLabel = card.Q<Label>("rarity-label");
+        if (rarityLabel != null) rarityLabel.style.display = DisplayStyle.None;
+
         // A villager has no combat stats at all - hide every panel built for them.
         var healthPanel = card.Q<VisualElement>("health-panel");
         if (healthPanel != null) healthPanel.style.display = DisplayStyle.None;
@@ -707,7 +727,7 @@ public class PlanningPhaseController : MonoBehaviour
         return card;
     }
 
-    private VisualElement BuildDraftCard(UnitData unit)
+    private VisualElement BuildDraftCard(UnitData unit, UnitRarity rarity)
     {
         var card = unitCardTemplate.Instantiate();
         var cardRoot = card.Q<VisualElement>("player-card");
@@ -715,13 +735,14 @@ public class PlanningPhaseController : MonoBehaviour
 
         // A fresh recruit hasn't fought yet - full health, level 1, no wounds.
         PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
-            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction);
+            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, rarity);
 
         SetCardTag(card, "[ CHOOSE ]");
 
         cardRoot.RegisterCallback<ClickEvent>(_ =>
         {
             _draftSelectedUnit = unit;
+            _draftSelectedRarity = rarity;
             _draftSelectionMade = true;
         });
 

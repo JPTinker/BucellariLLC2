@@ -37,6 +37,23 @@
     -unity-background-scale-mode: scale-and-crop;
 }
 
+/* Rarity - tier-colored portrait frame and left edge. */
+.combat-unit-card.rarity-uncommon .combat-unit-portrait { border-color: rgb(102, 217, 115); }
+.combat-unit-card.rarity-uncommon { border-left-width: 3px; border-left-color: rgb(102, 217, 115); }
+
+.combat-unit-card.rarity-rare .combat-unit-portrait { border-color: rgb(77, 153, 255); }
+.combat-unit-card.rarity-rare { border-left-width: 3px; border-left-color: rgb(77, 153, 255); }
+
+.combat-unit-card.rarity-epic .combat-unit-portrait { border-width: 2px; border-color: rgb(179, 102, 242); }
+.combat-unit-card.rarity-epic { border-left-width: 3px; border-left-color: rgb(179, 102, 242); }
+
+.combat-unit-card.rarity-legendary .combat-unit-portrait { border-width: 2px; border-color: rgb(255, 153, 38); }
+.combat-unit-card.rarity-legendary { border-left-width: 3px; border-left-color: rgb(255, 153, 38); }
+
+.combat-unit-card.rarity-mythical .combat-unit-portrait { border-width: 2px; border-color: rgb(255, 217, 77); }
+.combat-unit-card.rarity-mythical { border-left-width: 4px; border-left-color: rgb(255, 217, 77); }
+.combat-unit-card.rarity-mythical .combat-unit-tag { color: rgb(255, 217, 77); }
+
 .combat-unit-badge {
     display: none;
     position: absolute;

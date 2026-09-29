@@ -6,7 +6,7 @@
                 <ui:Label text="BATTLEFIELD STATUS" class="eyebrow"/>
                 <ui:Label text="THE OLD QUARRY" class="location-name"/>
             </ui:VisualElement>
-            <ui:VisualElement name="VisualElement" class="resource-group">
+            <ui:VisualElement name="VisualElement" class="resource-group" style="align-items: stretch;">
                 <ui:VisualElement class="resource-item">
                     <ui:Label text="SPAWNED" class="resource-label"/>
                     <ui:Label name="townsfolk-spawned-value" text="0 / 0" class="resource-value"/>
@@ -15,14 +15,6 @@
                     <ui:Label text="TOWNSFOLK SAVED" class="resource-label"/>
                     <ui:Label name="townsfolk-saved-value" text="0 / 0" class="resource-value resource-value-positive"/>
                 </ui:VisualElement>
-                <ui:VisualElement class="resource-item">
-                    <ui:Label text="WAR BAND" class="resource-label"/>
-                    <ui:Label name="unit-count-value" text="3 UNITS" class="resource-value"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="resource-item">
-                    <ui:Label text="GOLD" class="resource-label"/>
-                    <ui:Label name="gold-value" text="100" class="resource-value resource-value-gold"/>
-                </ui:VisualElement>
                 <ui:VisualElement class="resource-item resource-item-divider">
                     <ui:Label text="UNITS" class="resource-label"/>
                     <ui:Label name="settlement-units-value" text="5/5" class="resource-value"/>
@@ -30,14 +22,6 @@
                 <ui:VisualElement class="resource-item">
                     <ui:Label text="VILLAGERS" class="resource-label"/>
                     <ui:Label name="settlement-villagers-value" text="5/10" class="resource-value"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="resource-item">
-                    <ui:Label text="FOOD" class="resource-label"/>
-                    <ui:Label name="settlement-food-value" text="200" class="resource-value"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="resource-item">
-                    <ui:Label text="MATERIALS" class="resource-label"/>
-                    <ui:Label name="settlement-materials-value" text="185" class="resource-value"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="resource-item">
                     <ui:Label text="MORALE" class="resource-label"/>

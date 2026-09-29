@@ -220,6 +220,9 @@ public class GameStateManager : MonoBehaviour
     // When populated, the team-selection screen shows two unit candidates. The
     // player can also choose to add the saved person as a Villager instead.
     public List<UnitData> PendingDraftOptions = new List<UnitData>();
+    // Rarity pre-rolled for each draft option (same index) so the card can show
+    // it before the pick, and the recruited unit matches what was shown.
+    public List<UnitRarity> PendingDraftRarities = new List<UnitRarity>();
     public int PendingDraftsToOffer { get; private set; }
     public bool CanDraftSavedVillager { get; private set; }
 
@@ -311,7 +314,12 @@ public class GameStateManager : MonoBehaviour
         // directly instead of owned Unit records.
         FullRoster.RemoveAll(unit => unit == null || unit.Archetype == null);
         PendingReveal.RemoveAll(unit => unit == null || unit.Archetype == null);
-        PendingDraftOptions.RemoveAll(archetype => archetype == null);
+        for (int i = PendingDraftOptions.Count - 1; i >= 0; i--)
+        {
+            if (PendingDraftOptions[i] != null) continue;
+            PendingDraftOptions.RemoveAt(i);
+            if (i < PendingDraftRarities.Count) PendingDraftRarities.RemoveAt(i);
+        }
 
         string sceneName = SceneManager.GetActiveScene().name;
 
@@ -419,6 +427,14 @@ public class GameStateManager : MonoBehaviour
 
         int count = Mathf.Min(optionCount, pool.Count);
         PendingDraftOptions = pool.GetRange(0, count);
+        PendingDraftRarities.Clear();
+        for (int i = 0; i < count; i++) PendingDraftRarities.Add(UnitRarityTable.Roll());
+    }
+
+    /// <summary>The pre-rolled rarity for the draft option at <paramref name="index"/>.</summary>
+    public UnitRarity GetDraftRarity(int index)
+    {
+        return index >= 0 && index < PendingDraftRarities.Count ? PendingDraftRarities[index] : UnitRarity.Common;
     }
 
     public void OfferNextUnitDraft()
@@ -431,10 +447,16 @@ public class GameStateManager : MonoBehaviour
 
     public void ResolveUnitDraft(UnitData chosen)
     {
+        ResolveUnitDraft(chosen, GetDraftRarity(PendingDraftOptions.IndexOf(chosen)));
+    }
+
+    public void ResolveUnitDraft(UnitData chosen, UnitRarity rarity)
+    {
         PendingDraftOptions.Clear();
+        PendingDraftRarities.Clear();
         CanDraftSavedVillager = false;
         if (chosen == null) return;
-        AddUnitToRoster(chosen, flagAsNew: true);
+        AddUnitToRoster(chosen, flagAsNew: true, rarity: rarity);
     }
 
     public void ResolveVillagerDraft()
@@ -446,6 +468,7 @@ public class GameStateManager : MonoBehaviour
         }
 
         PendingDraftOptions.Clear();
+        PendingDraftRarities.Clear();
         CanDraftSavedVillager = false;
         Settlement.Villagers++;
     }
@@ -455,21 +478,22 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     /// <param name="flagAsNew">If true, the units are queued for the reveal animation
     /// the next time the team-selection screen is shown.</param>
-    public void AddUnitsToRoster(List<UnitData> archetypes, bool flagAsNew = true)
+    /// <param name="rarity">Rarity for every added unit; null rolls one per unit.</param>
+    public void AddUnitsToRoster(List<UnitData> archetypes, bool flagAsNew = true, UnitRarity? rarity = null)
     {
         if (archetypes == null) return;
         foreach (UnitData archetype in archetypes)
         {
             if (archetype == null) continue;
-            Unit unit = new Unit(archetype);
+            Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
             FullRoster.Add(unit);
             if (flagAsNew) PendingReveal.Add(unit);
         }
     }
 
-    public void AddUnitToRoster(UnitData archetype, bool flagAsNew = true)
+    public void AddUnitToRoster(UnitData archetype, bool flagAsNew = true, UnitRarity? rarity = null)
     {
-        AddUnitsToRoster(new List<UnitData> { archetype }, flagAsNew);
+        AddUnitsToRoster(new List<UnitData> { archetype }, flagAsNew, rarity);
     }
 
     /// <summary>

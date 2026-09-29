@@ -106,6 +106,56 @@
     -unity-font-style: bold;
 }
 
+/* Rarity - label ribbon on the portrait plus a tier-colored frame. Kept off
+   the card's outer border so the selected-state highlight still reads. */
+.player-card .rarity-label {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    padding: 2px 0;
+    -unity-text-align: middle-center;
+    background-color: rgba(5, 15, 25, 0.82);
+    color: rgb(191, 199, 209);
+    font-size: 9px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+.player-card.rarity-common .portrait-frame { border-color: rgb(191, 199, 209); }
+.player-card.rarity-common .corner-bracket { border-color: rgb(191, 199, 209); }
+
+.player-card.rarity-uncommon .portrait-frame { border-color: rgb(102, 217, 115); }
+.player-card.rarity-uncommon .corner-bracket { border-color: rgb(102, 217, 115); }
+.player-card.rarity-uncommon .rarity-label { color: rgb(102, 217, 115); }
+
+.player-card.rarity-rare .portrait-frame { border-color: rgb(77, 153, 255); }
+.player-card.rarity-rare .corner-bracket { border-color: rgb(77, 153, 255); }
+.player-card.rarity-rare .rarity-label { color: rgb(77, 153, 255); }
+
+.player-card.rarity-epic .portrait-frame { border-width: 2px; border-color: rgb(179, 102, 242); }
+.player-card.rarity-epic .corner-bracket { border-color: rgb(179, 102, 242); }
+.player-card.rarity-epic .rarity-label { color: rgb(179, 102, 242); }
+
+.player-card.rarity-legendary .portrait-frame { border-width: 2px; border-color: rgb(255, 153, 38); }
+.player-card.rarity-legendary .corner-bracket { border-color: rgb(255, 153, 38); }
+.player-card.rarity-legendary .rarity-label {
+    color: rgb(20, 12, 4);
+    background-color: rgba(255, 153, 38, 0.9);
+}
+
+.player-card.rarity-mythical .portrait-frame {
+    border-width: 3px;
+    border-color: rgb(255, 217, 77);
+    background-color: rgb(48, 40, 18);
+}
+.player-card.rarity-mythical .corner-bracket { border-color: rgb(255, 245, 200); }
+.player-card.rarity-mythical .rarity-label {
+    color: rgb(28, 20, 4);
+    background-color: rgb(255, 217, 77);
+}
+.player-card.rarity-mythical .morale-label { color: rgb(255, 217, 77); }
+
 .player-card .portrait-status-row {
     flex-direction: row;
     justify-content: space-between;

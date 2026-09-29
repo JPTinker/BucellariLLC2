@@ -16,6 +16,7 @@ public class UnitInstance : MonoBehaviour
     public int Experience { get; private set; }
     public int Level { get; private set; } = 1;
     public int Wounds => PersistentUnit != null ? PersistentUnit.Wounds : 0;
+    public UnitRarity Rarity => PersistentUnit != null ? PersistentUnit.Rarity : UnitRarity.Common;
 
     private const int ExperiencePerLevel = 100;
     private const int AttackExperience = 10;

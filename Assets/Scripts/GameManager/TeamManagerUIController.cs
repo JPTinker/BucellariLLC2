@@ -93,14 +93,22 @@ public class TeamManagerUIController : MonoBehaviour
         VisualElement header = new VisualElement();
         header.AddToClassList("unit-header");
 
+        card.AddToClassList(UnitRarityTable.GetUssClass(unit.Rarity));
+
         Label nameLabel = new Label(unit.UnitName);
         nameLabel.AddToClassList("unit-name");
+        nameLabel.style.color = UnitRarityTable.GetColor(unit.Rarity);
+
+        Label rarityLabel = new Label(UnitRarityTable.GetDisplayName(unit.Rarity));
+        rarityLabel.AddToClassList("rarity-label");
+        rarityLabel.style.color = UnitRarityTable.GetColor(unit.Rarity);
 
         Label badge = new Label("READY");
         badge.AddToClassList("status-badge");
         badge.AddToClassList("status-badge-active");
 
         header.Add(nameLabel);
+        header.Add(rarityLabel);
         header.Add(badge);
 
         VisualElement hpRow = CreateStatBar("HP", unit.MaxHP, unit.MaxHP, "hp-fill");
