@@ -1,0 +1,106 @@
+/* TitleScreen.uss
+   Standalone - the title scene doesn't load PhaseShell.uss, so the color
+   tokens it needs are redeclared here with the same values. */
+
+.title-root {
+    --color-surface: #0E141A;
+    --color-surface-container: #1A2027;
+    --color-surface-container-high: #252B31;
+    --color-primary: #E1FDFF;
+    --color-primary-fixed-dim: #00DBE7;
+    --color-primary-container: #00F2FF;
+    --color-on-primary: #00363A;
+    --color-on-surface: #DDE3EC;
+    --color-on-surface-variant: #B9CACB;
+    --color-outline-variant: #3A494B;
+
+    flex-grow: 1;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-surface);
+    color: var(--color-on-surface);
+}
+
+.title-panel {
+    width: 360px;
+    max-width: 90%;
+    align-items: stretch;
+}
+
+.title-eyebrow {
+    font-size: 11px;
+    letter-spacing: 4px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: var(--color-primary-fixed-dim);
+}
+
+.title-heading {
+    font-size: 40px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    color: var(--color-primary);
+    margin-top: 6px;
+    margin-bottom: 40px;
+    white-space: normal;
+}
+
+.btn {
+    height: 48px;
+    border-radius: 4px;
+    border-width: 0;
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 1.5px;
+    margin: 0 0 10px 0;
+}
+.btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
+.btn--primary:hover { background-color: var(--color-primary-fixed-dim); }
+.btn--ghost {
+    background-color: var(--color-surface-container);
+    color: var(--color-on-surface-variant);
+    border-width: 1px;
+    border-color: var(--color-outline-variant);
+}
+.btn--ghost:hover { background-color: var(--color-surface-container-high); }
+.btn:disabled { opacity: 0.35; }
+
+.save-hint {
+    font-size: 10px;
+    letter-spacing: 1px;
+    -unity-text-align: middle-center;
+    color: var(--color-on-surface-variant);
+    margin-top: 4px;
+}
+
+/* ---------- New Game confirmation ---------- */
+.confirm-overlay {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+.confirm-card {
+    width: 340px;
+    max-width: 90%;
+    padding: 24px;
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: var(--color-outline-variant);
+    background-color: var(--color-surface-container);
+}
+.confirm-title {
+    font-size: 16px;
+    -unity-font-style: bold;
+    color: var(--color-primary);
+    margin-bottom: 8px;
+}
+.confirm-body {
+    font-size: 12px;
+    white-space: normal;
+    color: var(--color-on-surface-variant);
+    margin-bottom: 20px;
+}
+
+.hidden { display: none; }

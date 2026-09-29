@@ -269,6 +269,16 @@ public class GameStateManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // Title screen's Continue button: restore the saved campaign instead
+        // of rolling a fresh starter squad + draft.
+        if (SaveSystem.LoadOnNextStart)
+        {
+            SaveSystem.LoadOnNextStart = false;
+            if (SaveSystem.TryRead(out SaveData save) && ApplySaveData(save))
+                return;
+            Debug.LogWarning("GameStateManager: couldn't load save file, starting a new game instead.");
+        }
+
         EnsurePlayerHasTeam();
     }
     private void OnEnable()
@@ -347,7 +357,7 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// Grants `count` random starter units into FullRoster. These skip the
     /// "new unit" reveal animation since they're the player's default squad,
-    /// not something they just earned.
+    /// not something they just earned. Starter units are always Legendary.
     /// </summary>
     private void GrantStarterUnits(int count)
     {
@@ -365,7 +375,7 @@ public class GameStateManager : MonoBehaviour
             starters.Add(AvailablePlayerArchetypes[randomIndex]);
         }
 
-        AddUnitsToRoster(starters, flagAsNew: false);
+        AddUnitsToRoster(starters, flagAsNew: false, rarity: UnitRarity.Legendary);
     }
 
     /// <summary>
@@ -929,6 +939,118 @@ public class GameStateManager : MonoBehaviour
     }
 
 
+
+    // ============================================================
+    // SAVE / LOAD
+    // ============================================================
+
+    /// <summary>Writes the current campaign to the single save slot. Called from the Decision tab's Save button.</summary>
+    public bool SaveGame()
+    {
+        var data = new SaveData
+        {
+            Resources = Resources,
+            Settlement = Settlement,
+            CurrentAllocation = CurrentAllocation,
+            SelectedCampaignAction = SelectedCampaignAction,
+            HasSelectedCampaignAction = HasSelectedCampaignAction,
+            EvacuationCyclesRemaining = EvacuationCyclesRemaining,
+            PendingDraftRarities = new List<UnitRarity>(PendingDraftRarities),
+            PendingDraftsToOffer = PendingDraftsToOffer,
+            CanDraftSavedVillager = CanDraftSavedVillager,
+            LastCycleKills = LastCycleKills,
+            LastCycleVillagersSaved = LastCycleVillagersSaved,
+            LastCycleCasualties = LastCycleCasualties,
+            LastCycleMoraleDelta = LastCycleMoraleDelta
+        };
+
+        foreach (Unit unit in FullRoster)
+        {
+            if (unit != null && unit.Archetype != null) data.Roster.Add(UnitSaveData.From(unit));
+        }
+        foreach (Unit unit in PendingReveal)
+        {
+            if (unit != null) data.PendingRevealIds.Add(unit.InstanceID);
+        }
+        foreach (UnitData archetype in PendingDraftOptions)
+        {
+            data.PendingDraftArchetypes.Add(archetype != null ? archetype.name : null);
+        }
+
+        return SaveSystem.Write(data);
+    }
+
+    /// <summary>
+    /// Restores a campaign from a SaveData. ActiveTeam is left empty on
+    /// purpose: the Roster tab always starts with no units selected, so a
+    /// restored team would be out of sync with what the player sees.
+    /// </summary>
+    private bool ApplySaveData(SaveData d)
+    {
+        if (d == null) return false;
+
+        if (d.Resources != null) Resources = d.Resources;
+        if (d.Settlement != null) Settlement = d.Settlement;
+        CurrentAllocation = d.CurrentAllocation ?? new CycleAllocation();
+        SelectedCampaignAction = d.SelectedCampaignAction;
+        HasSelectedCampaignAction = d.HasSelectedCampaignAction;
+        EvacuationCyclesRemaining = d.EvacuationCyclesRemaining;
+
+        FullRoster.Clear();
+        ActiveTeam.Clear();
+        PendingReveal.Clear();
+        PendingLevelUps.Clear();
+
+        var byId = new Dictionary<string, Unit>();
+        foreach (UnitSaveData saved in d.Roster)
+        {
+            UnitData archetype = FindArchetype(saved.ArchetypeName);
+            if (archetype == null)
+            {
+                Debug.LogWarning($"GameStateManager: saved unit '{saved.UnitName}' uses unknown archetype '{saved.ArchetypeName}', skipping.");
+                continue;
+            }
+            Unit unit = saved.ToUnit(archetype);
+            FullRoster.Add(unit);
+            if (!string.IsNullOrEmpty(unit.InstanceID)) byId[unit.InstanceID] = unit;
+        }
+
+        foreach (string id in d.PendingRevealIds)
+        {
+            if (id != null && byId.TryGetValue(id, out Unit unit)) PendingReveal.Add(unit);
+        }
+
+        PendingDraftOptions.Clear();
+        PendingDraftRarities.Clear();
+        for (int i = 0; i < d.PendingDraftArchetypes.Count; i++)
+        {
+            UnitData archetype = FindArchetype(d.PendingDraftArchetypes[i]);
+            if (archetype == null) continue;
+            PendingDraftOptions.Add(archetype);
+            PendingDraftRarities.Add(i < d.PendingDraftRarities.Count ? d.PendingDraftRarities[i] : UnitRarity.Common);
+        }
+        PendingDraftsToOffer = d.PendingDraftsToOffer;
+        CanDraftSavedVillager = d.CanDraftSavedVillager && PendingDraftOptions.Count > 0;
+
+        LastCycleKills = d.LastCycleKills;
+        LastCycleVillagersSaved = d.LastCycleVillagersSaved;
+        LastCycleCasualties = d.LastCycleCasualties;
+        LastCycleMoraleDelta = d.LastCycleMoraleDelta;
+
+        // A save with an empty roster (e.g. every unit fell) still needs a squad to play.
+        if (FullRoster.Count == 0) GrantStarterUnits(2);
+        return true;
+    }
+
+    private UnitData FindArchetype(string archetypeName)
+    {
+        if (string.IsNullOrEmpty(archetypeName) || AvailablePlayerArchetypes == null) return null;
+        foreach (UnitData archetype in AvailablePlayerArchetypes)
+        {
+            if (archetype != null && archetype.name == archetypeName) return archetype;
+        }
+        return null;
+    }
 
     /// <summary>Call from CombatManager when a player unit dies (not extracted).</summary>
     public void RegisterCasualty(Unit unit)

@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/USS/TitleScreen.uss?fileID=7433441132597879392&amp;guid=ee7e4db464f14d7babd1eea9c294cda7&amp;type=3#TitleScreen"/>
+    <ui:VisualElement name="title-root" class="title-root">
+        <ui:VisualElement class="title-panel">
+            <ui:Label text="ESCAPE PARTY" class="title-eyebrow"/>
+            <ui:Label name="title-heading" text="BUCELLARI" class="title-heading"/>
+            <ui:Button name="btn-continue" text="CONTINUE" class="btn btn--primary"/>
+            <ui:Button name="btn-new-game" text="NEW GAME" class="btn btn--ghost"/>
+            <ui:Label name="save-hint" text="No saved game found" class="save-hint"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="confirm-overlay" class="confirm-overlay hidden">
+            <ui:VisualElement class="confirm-card">
+                <ui:Label text="Start a new game?" class="confirm-title"/>
+                <ui:Label text="Your saved game stays on disk until you save again, which overwrites it." class="confirm-body"/>
+                <ui:Button name="btn-confirm-new" text="START NEW GAME" class="btn btn--primary"/>
+                <ui:Button name="btn-cancel-new" text="CANCEL" class="btn btn--ghost"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

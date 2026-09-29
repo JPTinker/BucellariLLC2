@@ -57,6 +57,7 @@ public class PhaseShellController : MonoBehaviour
     private Label _resVillagersVal, _resVillagersCap, _resVillagersDelta;
     private Label _resMoraleVal, _resMoraleDelta;
     private Label _ledgerSyncStatus;
+    private Button _saveButton;
 
     // Footer
     private Button _navRoster, _navDecision, _navMap, _navStore;
@@ -120,6 +121,7 @@ public class PhaseShellController : MonoBehaviour
         _resMoraleVal = _root.Q<Label>("res-morale-val");
         _resMoraleDelta = _root.Q<Label>("res-morale-delta");
         _ledgerSyncStatus = _root.Q<Label>("ledger-sync-status");
+        _saveButton = _root.Q<Button>("btn-save-game");
     }
 
     private void QueryFooter()
@@ -205,6 +207,14 @@ public class PhaseShellController : MonoBehaviour
         if (_navDecision != null) _navDecision.clicked += () => Show(Tab.Decision);
         if (_navMap != null) _navMap.clicked += () => Show(Tab.Map);
         if (_navStore != null) _navStore.clicked += () => Show(Tab.Store);
+        if (_saveButton != null) _saveButton.clicked += SaveGame;
+    }
+
+    private void SaveGame()
+    {
+        var gsm = GameStateManager.Instance;
+        bool saved = gsm != null && gsm.SaveGame();
+        FlashSyncStatus(saved ? "[ GAME SAVED ]" : "[ SAVE FAILED ]");
     }
 
     public void ShowRoster() => Show(Tab.Roster);
@@ -308,12 +318,13 @@ public class PhaseShellController : MonoBehaviour
         label.AddToClassList(value >= 0 ? "text-positive" : "text-negative");
     }
 
-    /// <summary>Called by DecisionPhaseController after a successful ExecuteCycle().</summary>
-    public void FlashSyncStatus()
+    /// <summary>Called by DecisionPhaseController after a successful ExecuteCycle() or Save Game.</summary>
+    public void FlashSyncStatus(string message = "[ CYCLE EXECUTED ]")
     {
         if (_ledgerSyncStatus == null) return;
 
-        _ledgerSyncStatus.text = "[ CYCLE EXECUTED ]";
+        CancelInvoke(nameof(ResetSyncStatus));
+        _ledgerSyncStatus.text = message;
         _ledgerSyncStatus.RemoveFromClassList("text-primary-fixed-dim");
         _ledgerSyncStatus.AddToClassList("text-primary-container");
 
