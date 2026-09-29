@@ -50,7 +50,39 @@
    Roster and Decision out of alignment with each other. Zeroed out so there
    is exactly one place (20px, matching stats-header's side margin below)
    that defines the shared horizontal inset. */
-.screen-root { flex-grow: 1; padding: 0; justify-content: flex-start; }
+.screen-root { flex-grow: 1; padding: 0; justify-content: flex-start; flex-direction: row; }
+
+/* Landscape layout: fixed-width left sidebar (stats, action, nav) with the
+   swappable content-slot filling the rest. Sidebar scrolls if a short screen
+   can't fit it. */
+.shell-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--color-surface-container-low);
+    border-right-width: 1px;
+    border-right-color: rgba(0, 242, 255, 0.1);
+}
+.shell-sidebar .stats-header { margin: 12px; }
+.shell-sidebar .stats-header__grid { flex-direction: row; flex-wrap: wrap; }
+.shell-sidebar .stats-header__cell {
+    width: 47%;
+    flex-grow: 0;
+    flex-basis: auto;
+    margin-right: 6px;
+    margin-bottom: 6px;
+    min-height: 56px;
+}
+.shell-sidebar .action-container { padding: 8px 12px; }
+.shell-sidebar .bottom-nav-bar {
+    flex-direction: column;
+    height: auto;
+    margin-top: 0;
+    padding-top: 0;
+    justify-content: flex-start;
+}
+.shell-sidebar .nav-button { height: 44px; flex-grow: 0; flex-shrink: 0; font-size: 12px; }
 .screen-content { flex-grow: 1; }
 
 /* action-container (selection-counter + engage-button) is defined in

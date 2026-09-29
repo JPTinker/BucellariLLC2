@@ -3,6 +3,7 @@
     <Style src="project://database/Assets/UI/USS/PhaseShell.uss?fileID=7433441132597879392&amp;guid=43ba64f2b8dc16f4f86eed5a0667948b&amp;type=3#PhaseShell"/>
     <ui:VisualElement name="phase-root" class="phase-root">
         <ui:VisualElement class="screen-root">
+          <ui:VisualElement name="shell-sidebar" class="shell-sidebar">
             <ui:VisualElement name="stats-header" class="stats-header">
                 <ui:VisualElement class="stats-header__row">
                     <ui:Label name="ledger-sync-status" text="[Escape Party Stable ]" class="label-caps text-primary-fixed-dim"/>
@@ -44,7 +45,6 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
-            <ui:VisualElement name="content-slot" class="content-slot" style="background-position-y: bottom 0;"/>
             <ui:VisualElement class="action-container">
                 <ui:Label name="selection-counter" text="0 / 5 SELECTED" class="selection-counter"/>
                 <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button">
@@ -58,6 +58,8 @@
                 <ui:Button name="nav-map" text="CAMPAIGN MAP" class="nav-button"/>
                 <ui:Button name="nav-store" text="STORE" class="nav-button"/>
             </ui:VisualElement>
+          </ui:VisualElement>
+          <ui:VisualElement name="content-slot" class="content-slot"/>
         </ui:VisualElement>
         <ui:VisualElement name="reveal-overlay" class="reveal-overlay hidden">
             <ui:VisualElement name="reveal-flash" picking-mode="Ignore" class="reveal-flash"/>

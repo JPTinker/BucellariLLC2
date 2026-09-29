@@ -104,6 +104,29 @@ public class PhaseShellController : MonoBehaviour
 
         RefreshHeader();
         Show(Tab.Roster);
+
+        // Keep chrome out from under the notch / home indicator on real devices.
+        _root.RegisterCallback<GeometryChangedEvent>(_ => ApplySafeArea());
+        ApplySafeArea();
+    }
+
+    /// <summary>Pads the shell's phase-root by Screen.safeArea, converted from screen pixels to panel units.</summary>
+    private void ApplySafeArea()
+    {
+        var phaseRoot = _root.Q<VisualElement>("phase-root");
+        if (phaseRoot == null || Screen.width <= 0) return;
+
+        // Panel units per screen pixel. Skip until the root has been laid out.
+        float ratio = _root.layout.width / Screen.width;
+        if (float.IsNaN(ratio) || ratio <= 0f) return;
+
+        Rect safe = Screen.safeArea;
+        // Clamp so a bad safe-area value can never collapse the layout.
+        float maxInset = _root.layout.width * 0.15f;
+        phaseRoot.style.paddingLeft = Mathf.Clamp(safe.xMin * ratio, 0, maxInset);
+        phaseRoot.style.paddingRight = Mathf.Clamp((Screen.width - safe.xMax) * ratio, 0, maxInset);
+        phaseRoot.style.paddingBottom = Mathf.Clamp(safe.yMin * ratio, 0, maxInset);
+        phaseRoot.style.paddingTop = Mathf.Clamp((Screen.height - safe.yMax) * ratio, 0, maxInset);
     }
 
     private void QueryHeader()

@@ -74,11 +74,13 @@ public class UnitInstance : MonoBehaviour
     private static readonly int WalkParameter = Animator.StringToHash("Walk");
     private static readonly int AttackParameter = Animator.StringToHash("Attack");
     private static readonly int TakeDamageParameter = Animator.StringToHash("TakeDamage");
+    private static readonly int DamageTakenParameter = Animator.StringToHash("DamageTaken");
     private static readonly int BowParameter = Animator.StringToHash("Bow");
     private static readonly int CrossbowParameter = Animator.StringToHash("Crossbow");
     private static readonly int MageParameter = Animator.StringToHash("Mage");
     private static readonly int MeleHandsParameter = Animator.StringToHash("MeleHands");
     private static readonly int Spawn = Animator.StringToHash("Spawn");
+    private string attackAnimationState;
     [Header("Damage Feedback")]
     [Tooltip("Damage at or below this percentage of max health is a 'light' hit (flashes once).")]
     [SerializeField] private float lightHitThreshold = 0.15f;
@@ -352,7 +354,8 @@ public class UnitInstance : MonoBehaviour
     {
         if (!CanAttack(target)) return false;
         FaceTowards(target.transform.position);
-        PlayAnimatorAction(AttackParameter, "Attack");
+        if (!string.IsNullOrEmpty(attackAnimationState))
+            PlayAnimatorAction(AttackParameter, attackAnimationState);
 
         // Damage resolves now so turn logic stays synchronous; the target's hit
         // reaction waits until the projectile (if any) actually lands.
@@ -483,7 +486,10 @@ public class UnitInstance : MonoBehaviour
 
     private void PlayHitReaction(int damageTaken)
     {
-        PlayAnimatorAction(TakeDamageParameter, "Damaged");
+        if (_animator != null)
+            _animator.SetInteger(DamageTakenParameter, damageTaken);
+
+        PlayAnimatorAction(TakeDamageParameter, damageTaken < 10 ? "Hit_A" : "Hit_B");
         PlayDamageFlash(damageTaken);
     }
 
@@ -534,6 +540,16 @@ public class UnitInstance : MonoBehaviour
         if (_animator == null || archetype == null) return;
 
         UnitAnimationStyle style = archetype.AnimationStyle;
+        attackAnimationState = style switch
+        {
+            UnitAnimationStyle.Bow => "Ranged_Bow_Draw",
+            UnitAnimationStyle.Crossbow => "Ranged_2H_Aiming",
+            UnitAnimationStyle.Mage => "Ranged_Magic_Spellcasting",
+            UnitAnimationStyle.MeleeOneHanded => "Melee_1H_Attack_Jump_Chop",
+            UnitAnimationStyle.MeleeTwoHanded => "Melee_2H_Attack_Slice",
+            _ => null
+        };
+
         _animator.SetBool(BowParameter, style == UnitAnimationStyle.Bow);
         _animator.SetBool(CrossbowParameter, style == UnitAnimationStyle.Crossbow);
         _animator.SetBool(MageParameter, style == UnitAnimationStyle.Mage);
