@@ -85,8 +85,9 @@ public class CameraController : MonoBehaviour
     private void HandleMouseClick()
     {
         Mouse mouse = Mouse.current;
-        // Detect left mouse click
-        
+        // No mouse on touch devices (iPhone) - Mouse.current is null there.
+        if (mouse == null) return;
+
         if (mouse.leftButton.wasPressedThisFrame)
         {
             Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
