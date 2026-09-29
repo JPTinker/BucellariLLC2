@@ -41,7 +41,7 @@ public class DecisionPhaseController : MonoBehaviour
     private Label _planWarning;
 
     // Buttons
-    private Button _btnExecute, _btnReset;
+    private Button _btnReset;
 
     [Header("Last Cycle Debrief (read-only snapshot for UI)")]
 
@@ -93,7 +93,6 @@ public class DecisionPhaseController : MonoBehaviour
 
         _planWarning = _root.Q<Label>("plan-warning");
 
-        _btnExecute = _root.Q<Button>("btn-execute-cycle");
         _btnReset = _root.Q<Button>("btn-reset");
     }
 
@@ -109,20 +108,6 @@ public class DecisionPhaseController : MonoBehaviour
         _btnReset.clicked += () =>
         {
             _gsm.ResetAllocation();
-            Refresh();
-        };
-
-        _btnExecute.clicked += () =>
-        {
-            bool applied = _gsm.ExecuteCycle();
-            if (!applied)
-            {
-                // A queued ship can't be paid for - ComputeForecast().IsOverBudget
-                // already disables this via Refresh(), but guard here too in case
-                // the button state is stale.
-                return;
-            }
-            PhaseShellController.Instance?.FlashSyncStatus();
             Refresh();
         };
     }
@@ -186,10 +171,6 @@ public class DecisionPhaseController : MonoBehaviour
             if (forecast.IsOverBudget) _planWarning.AddToClassList("plan-warning--visible");
             else _planWarning.RemoveFromClassList("plan-warning--visible");
         }
-
-        // Disable "Execute Cycle" when a queued ship can't be paid for, rather
-        // than letting ExecuteCycle() silently reject it.
-        _btnExecute.SetEnabled(!forecast.IsOverBudget);
     }
 
     /// <summary>

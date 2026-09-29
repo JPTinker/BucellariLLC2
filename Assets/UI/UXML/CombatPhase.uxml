@@ -1,6 +1,6 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElementsSchema.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI/USS/CombatPhaseStyle.uss?fileID=7433441132597879392&amp;guid=0d4aa06d22099cf418dbb3a703ddd4d9&amp;type=3#CombatPhaseStyle"/>
-    <ui:VisualElement name="combat-screen" class="combat-screen">
+    <ui:VisualElement name="combat-screen" picking-mode="Ignore" class="combat-screen">
         <ui:VisualElement name="resource-bar" class="resource-bar">
             <ui:VisualElement class="resource-heading">
                 <ui:Label text="BATTLEFIELD STATUS" class="eyebrow"/>
@@ -33,7 +33,7 @@
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:VisualElement>
-        <ui:VisualElement class="play-area">
+        <ui:VisualElement picking-mode="Ignore" class="play-area">
             <ui:VisualElement name="unit-roster" class="unit-roster">
                 <ui:VisualElement class="panel-heading">
                     <ui:Label text="YOUR UNITS" class="panel-title"/>
@@ -41,7 +41,7 @@
                 </ui:VisualElement>
                 <ui:ScrollView name="unit-list" class="unit-list"/>
             </ui:VisualElement>
-            <ui:VisualElement name="battlefield-panel" class="battlefield-panel" style="border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;"/>
+            <ui:VisualElement name="battlefield-panel" picking-mode="Ignore" class="battlefield-panel" style="border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;"/>
         </ui:VisualElement>
         <ui:VisualElement name="action-bar" class="action-bar">
             <ui:VisualElement class="action-heading">

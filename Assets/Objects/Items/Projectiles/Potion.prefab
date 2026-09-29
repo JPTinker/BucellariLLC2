@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
   speed: 1
-  arcHeight: 30
+  arcHeight: 0.5
   impactEffectPrefab: {fileID: 0}
   impactEffectLifetime: 2
   trailFadeTime: 0.5

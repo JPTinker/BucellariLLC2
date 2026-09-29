@@ -26,9 +26,11 @@ MonoBehaviour:
   MaxHP: 100
   BaseAttack: 0
   AttackRange: 0
-  MoveSpeed: 0
-  MaxMovementPoints: 0
+  MoveSpeed: 1
+  MaxMovementPoints: 1
   VisibilityRange: 0
   defensePower: 5
-  healsOthers: 1
   Faction: 3
+  AnimationStyle: 0
+  ProjectilePrefab: {fileID: 0}
+  ProjectileLaunchDelay: 0.3

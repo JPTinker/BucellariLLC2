@@ -20,8 +20,7 @@ MonoBehaviour:
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: fa1f668a2416cfd4abae717d4ca3adc9, type: 3}
   - {fileID: 919132149155446097, guid: 135162d19e27b0640866d411ff024f6b, type: 3}
-  equipmentPrefabs:
-  - {fileID: 919132149155446097, guid: 261370fa15a7bb54e9762162f0227fa9, type: 3}
+  equipmentPrefabs: []
   ColorScheme: 0
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}

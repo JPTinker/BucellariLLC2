@@ -77,7 +77,6 @@
                 <ui:Label name="plan-warning" text="" class="body-text plan-warning"/>
 
                 <ui:VisualElement name="action-footer" class="action-footer">
-                    <ui:Button name="btn-execute-cycle" text="Confirm Allocations &amp; Execute Cycle" class="btn btn--primary"/>
                     <ui:Button name="btn-reset" text="Reset Assignments" class="btn btn--ghost"/>
                 </ui:VisualElement>
             </ui:ScrollView>

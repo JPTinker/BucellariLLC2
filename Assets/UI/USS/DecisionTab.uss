@@ -242,19 +242,19 @@
     padding: 2px;
 }
 .stepper__btn {
-    width: 28px;
-    height: 28px;
+    width: 52px;
+    height: 52px;
     border-width: 0;
     background-color: transparent;
     color: var(--color-on-surface);
-    font-size: 16px;
+    font-size: 28px;
     -unity-font-style: bold;
 }
 .stepper__btn:hover { color: var(--color-primary); }
 .stepper__value {
-    width: 32px;
+    width: 44px;
     -unity-text-align: middle-center;
-    font-size: 13px;
+    font-size: 20px;
     -unity-font-style: bold;
     color: var(--color-primary-fixed);
 }

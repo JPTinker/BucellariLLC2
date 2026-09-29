@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
 using UnityEngine.InputSystem.EnhancedTouch;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch; // Alias to prevent namespace conflicts
 using TouchPhase = UnityEngine.InputSystem.TouchPhase;
@@ -34,7 +35,17 @@ public class CameraController : MonoBehaviour
     [Tooltip("Seconds to pan/zoom back out to the default view.")]
     public float spawnPanOutDuration = 0.5f;
 
+    [Header("Touch Tap")]
+    [Tooltip("Max finger travel (pixels) for a touch to still count as a tap.")]
+    public float tapMaxMovePixels = 25f;
+    [Tooltip("Max seconds between touch down and up for a tap.")]
+    public float tapMaxDuration = 0.35f;
+
     private Camera cam;
+    private Vector2 touchStartPosition;
+    private float touchStartTime;
+    private bool touchStartedOverUI;
+    private bool gestureWasMultiTouch;
     private Vector2 lastTouchPosition;
     private int lastTouchCount = 0;
     private Vector3 defaultPosition;
@@ -89,10 +100,28 @@ public class CameraController : MonoBehaviour
         if (mouse == null) return;
 
         if (mouse.leftButton.wasPressedThisFrame)
+            TrySelectTileAt(mouse.position.ReadValue());
+    }
+
+    /// <summary>Raycasts into the world from a screen position, unless a UI Toolkit element is under it.</summary>
+    private void TrySelectTileAt(Vector2 screenPos)
+    {
+        if (IsPointerOverUI(screenPos)) return;
+        TrySelectTile(cam.ScreenPointToRay(screenPos));
+    }
+
+    /// <summary>True if a pickable UI Toolkit element (button, panel, etc.) is under the screen position.</summary>
+    private static bool IsPointerOverUI(Vector2 screenPos)
+    {
+        Vector2 flipped = new(screenPos.x, Screen.height - screenPos.y);
+        foreach (UIDocument doc in FindObjectsByType<UIDocument>())
         {
-            Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
-            TrySelectTile(ray);
+            VisualElement root = doc.rootVisualElement;
+            if (root?.panel == null) continue;
+            Vector2 panelPos = RuntimePanelUtils.ScreenToPanel(root.panel, flipped);
+            if (root.panel.Pick(panelPos) != null) return true;
         }
+        return false;
     }
 
     // -----------------------
@@ -155,13 +184,28 @@ public class CameraController : MonoBehaviour
         {
             Touch touch = activeTouches[0];
 
+            if (touch.phase == TouchPhase.Began)
+            {
+                touchStartPosition = touch.screenPosition;
+                touchStartTime = Time.unscaledTime;
+                touchStartedOverUI = IsPointerOverUI(touch.screenPosition);
+                gestureWasMultiTouch = false;
+            }
+
             // Also resync on the first frame we drop back to one finger (e.g. after a pinch),
             // otherwise the pan would jump using a stale lastTouchPosition from before the pinch.
             if (touch.phase == TouchPhase.Began || lastTouchCount != 1)
             {
                 lastTouchPosition = touch.screenPosition;
             }
-            else if (touch.phase == TouchPhase.Moved)
+            else if (touch.phase == TouchPhase.Ended)
+            {
+                bool isTap = !touchStartedOverUI && !gestureWasMultiTouch
+                    && Time.unscaledTime - touchStartTime <= tapMaxDuration
+                    && (touch.screenPosition - touchStartPosition).magnitude <= tapMaxMovePixels;
+                if (isTap) TrySelectTileAt(touch.screenPosition);
+            }
+            else if (touch.phase == TouchPhase.Moved && !touchStartedOverUI)
             {
                 Vector2 currentPos = touch.screenPosition;
                 Vector3 delta = currentPos - lastTouchPosition;
@@ -179,6 +223,8 @@ public class CameraController : MonoBehaviour
         }
         else if (touchCount == 2)
         {
+            gestureWasMultiTouch = true;
+
             // Pinch zoom
             Touch t0 = activeTouches[0];
             Touch t1 = activeTouches[1];
