@@ -2,8 +2,8 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 /// <summary>
-/// Drives the Campaign Map tab content. Plain component - no UIDocument of its
-/// own. PhaseShellController instantiates CampaignMapContent.uxml into the
+/// Drives the course selector (Stay Put / Travel / Rest) on the Plan screen. Plain component - no UIDocument of its
+/// own. PhaseShellController instantiates DecisionContent.uxml into the
 /// shared shell's content-slot and calls Initialize() with the shell's
 /// rootVisualElement, same as PlanningPhaseController/DecisionPhaseController.
 ///
@@ -15,13 +15,9 @@ using UnityEngine.UIElements;
 /// </summary>
 public class CampaignMapController : MonoBehaviour
 {
-    [Tooltip("The long ships background image shown behind the campaign map hero panel.")]
-    [SerializeField] private Sprite heroBackground;
-
     private VisualElement _root;
     private GameStateManager _gsm;
 
-    private VisualElement _heroImage;
     private Label _evacuationStatus;
 
     private Button _optionStayPut, _optionTravel, _optionRest;
@@ -32,21 +28,18 @@ public class CampaignMapController : MonoBehaviour
         _gsm = GameStateManager.Instance;
 
         QueryElements();
-        ApplyHeroBackground();
         BindOptions();
         Refresh();
     }
 
     private void QueryElements()
     {
-        _heroImage = _root.Q<VisualElement>("campaign-map-hero-image");
         _evacuationStatus = _root.Q<Label>("evacuation-status");
 
         _optionStayPut = _root.Q<Button>("option-stay-put");
         _optionTravel = _root.Q<Button>("option-travel");
         _optionRest = _root.Q<Button>("option-rest");
 
-        WarnIfMissing(_heroImage, "campaign-map-hero-image");
         WarnIfMissing(_evacuationStatus, "evacuation-status");
         WarnIfMissing(_optionStayPut, "option-stay-put");
         WarnIfMissing(_optionTravel, "option-travel");
@@ -58,14 +51,8 @@ public class CampaignMapController : MonoBehaviour
         if (element == null)
         {
             Debug.LogError($"CampaignMapController: could not find an element named '{expectedName}' " +
-                            "in the UXML. Check CampaignMapContent.uxml still defines it.");
+                            "in the UXML. Check DecisionContent.uxml still defines it.");
         }
-    }
-
-    private void ApplyHeroBackground()
-    {
-        if (_heroImage != null && heroBackground != null)
-            _heroImage.style.backgroundImage = new StyleBackground(heroBackground);
     }
 
     private void BindOptions()

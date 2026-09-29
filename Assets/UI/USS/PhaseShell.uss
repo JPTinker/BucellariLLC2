@@ -220,3 +220,15 @@
     margin-bottom: 6px;
 }
 .placeholder-body { font-size: 12px; color: var(--color-outline); }
+
+/* ---------- Readiness checklist (sidebar, above March to War) ---------- */
+.readiness-checklist { margin-bottom: 8px; }
+.readiness-title { margin-bottom: 4px; }
+.readiness-row {
+    font-size: 12px;
+    color: var(--color-error);
+    padding: 3px 0;
+}
+.readiness-row--done { color: var(--color-primary-fixed); }
+.readiness-row--extra { display: none; }
+.readiness-row--extra.readiness-row--active { display: flex; }

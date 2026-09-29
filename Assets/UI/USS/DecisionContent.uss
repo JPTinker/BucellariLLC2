@@ -199,3 +199,66 @@
 }
 .btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
 .btn--ghost { background-color: var(--color-surface-container); color: var(--color-on-surface-variant); height: 40px; }
+
+/* =====================================================================
+   Plan screen (single landscape screen: course + labor + squad)
+   ===================================================================== */
+.plan-root { flex-grow: 1; padding: 12px 16px 12px 16px; }
+
+.plan-strip {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+.plan-strip .stat-text { margin-right: 8px; }
+
+.plan-columns { flex-grow: 1; flex-direction: row; }
+
+.plan-orders { width: 380px; flex-shrink: 0; margin-right: 12px; }
+.plan-section-title { margin: 4px 0 6px 2px; }
+
+.plan-squad { flex-grow: 1; flex-basis: 0; }
+.plan-squad__header { margin-bottom: 6px; }
+.plan-squad .unit-list { margin: 8px 0 0 0; padding: 0; }
+
+/* ---------- Course selector (segmented) ---------- */
+.course-options { flex-direction: row; margin-bottom: 10px; }
+.course-option {
+    flex-grow: 1;
+    flex-basis: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    -unity-text-align: upper-left;
+    background-color: var(--color-surface-container-low);
+    border-width: 2px;
+    border-color: transparent;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 0 6px 0 0;
+}
+.course-option:last-child { margin-right: 0; }
+.course-option:hover { background-color: var(--color-surface-container); }
+.campaign-option--selected {
+    border-color: var(--color-primary-fixed);
+    background-color: var(--color-surface-container);
+}
+
+/* ---------- Compact directive rows ---------- */
+.directive-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+}
+.directive-row__text { flex-shrink: 1; }
+
+.plan-warning {
+    color: var(--color-error);
+    margin: 2px 0 6px 2px;
+    display: none;
+}
+.plan-warning--visible { display: flex; }

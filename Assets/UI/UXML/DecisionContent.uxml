@@ -2,186 +2,96 @@
     <Style src="project://database/Assets/UI/USS/DecisionContent.uss?fileID=7433441132597879392&amp;guid=ba0e156fc08a3fa408c60ca9594c1642&amp;type=3#DecisionContent"/>
     <Style src="project://database/Assets/UI/USS/PhaseShell.uss?fileID=7433441132597879392&amp;guid=43ba64f2b8dc16f4f86eed5a0667948b&amp;type=3#PhaseShell"/>
     <Style src="project://database/Assets/UI/USS/DecisionTab.uss?fileID=7433441132597879392&amp;guid=ede1f172d358ab540beaa266fb7db425&amp;type=3#DecisionTab"/>
-    <ui:VisualElement name="decision-content" class="screen-content">
-        <ui:ScrollView name="content-scroll" mode="Vertical" class="content-scroll">
-            <ui:VisualElement name="phase-hud" class="panel phase-hud">
-                <ui:VisualElement class="row row--space-between">
-                    <ui:VisualElement class="row row--gap-sm">
-                        <ui:VisualElement class="pulse-dot"/>
-                        <ui:Label text="Cycle 14 // Pre-Deployment" class="label-caps text-primary-fixed"/>
-                    </ui:VisualElement>
-                    <ui:Label name="course-status" text="Course: Traveling" class="label-caps chip"/>
-                </ui:VisualElement>
-                <ui:Label text="Planning Phase" class="headline"/>
-                <ui:Label text="Tactical Resource Distribution - Deliberate and allocate squad labor prior to breach resolution." class="body-text text-muted"/>
+    <!--
+      The single "Plan" screen (file keeps its DecisionContent name so the
+      scene's template reference stays valid). Everything the player must
+      decide before marching is here: course, directives, squad. The forecast
+      lives in the sidebar ledger and the readiness checklist beside it.
+    -->
+    <ui:VisualElement name="decision-content" class="screen-content plan-root">
+        <ui:VisualElement name="plan-strip" class="panel plan-strip">
+            <ui:VisualElement class="row row--gap-sm">
+                <ui:VisualElement class="pulse-dot"/>
+                <ui:Label text="LAST CYCLE" class="label-caps text-muted"/>
+                <ui:Label name="debrief-kills" text="0 Kills" class="stat-text"/>
+                <ui:Label name="debrief-saved" text="0 Saved" class="stat-text"/>
+                <ui:Label name="debrief-losses" text="0 Lost" class="stat-text"/>
+                <ui:Label name="debrief-morale-total" text="+0% MORALE" class="label-caps text-bold text-positive"/>
             </ui:VisualElement>
-            <ui:VisualElement name="debrief-section" class="panel debrief">
-                <ui:VisualElement class="row row--space-between">
-                    <ui:Label text="Last Cycle Debrief" class="label-caps text-muted"/>
-                    <ui:Label name="debrief-morale-total" text="+2% MORALE" class="label-caps text-bold text-positive"/>
+            <ui:Label name="evacuation-status" text="" class="label-caps chip"/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="plan-columns" class="plan-columns">
+            <ui:ScrollView name="plan-orders" mode="Vertical" class="plan-orders">
+                <ui:Label text="COURSE" name="section-course" class="label-caps section-title plan-section-title"/>
+                <ui:VisualElement name="course-options" class="course-options">
+                    <ui:Button name="option-stay-put" tooltip="Hold position and work the site harder. x2 Food/Scrap from directives, no progress toward the evacuation zone." class="course-option">
+                        <ui:Label text="STAY PUT" class="label-caps card-title"/>
+                        <ui:Label text="x2 yields, no progress" class="body-text text-muted"/>
+                    </ui:Button>
+                    <ui:Button name="option-travel" tooltip="Keep the convoy moving. -1 cycle until the evacuation zone, standard yields." class="course-option">
+                        <ui:Label text="TRAVEL" class="label-caps card-title"/>
+                        <ui:Label text="-1 cycle to evac" class="body-text text-muted"/>
+                    </ui:Button>
+                    <ui:Button name="option-rest" tooltip="Break camp and tend to the wounded. Heals all units to full HP, no progress toward the evacuation zone." class="course-option">
+                        <ui:Label text="REST" class="label-caps card-title"/>
+                        <ui:Label text="Heal all units" class="body-text text-muted"/>
+                    </ui:Button>
                 </ui:VisualElement>
-                <ui:VisualElement class="debrief__grid">
-                    <ui:VisualElement class="debrief__stat">
-                        <ui:VisualElement class="icon icon-kills"/>
-                        <ui:Label name="debrief-kills" text="3 Kills" class="stat-text"/>
-                        <ui:Label text="+6% Morale" class="label-caps text-positive"/>
+
+                <ui:Label text="LABOR" name="section-labor" class="label-caps section-title plan-section-title"/>
+                <ui:VisualElement name="card-scavenge" tooltip="-10 Food per Villager, +10 Scrap per Villager." class="panel directive-row">
+                    <ui:VisualElement class="directive-row__text">
+                        <ui:Label text="Search for Materials" class="label-caps card-title"/>
+                        <ui:Label text="-10 Food / +10 Scrap each" class="body-text text-muted"/>
                     </ui:VisualElement>
-                    <ui:VisualElement class="debrief__stat">
-                        <ui:VisualElement class="icon icon-saved"/>
-                        <ui:Label name="debrief-saved" text="1 Saved" class="stat-text"/>
-                        <ui:Label text="+5% Morale" class="label-caps text-positive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="debrief__stat">
-                        <ui:VisualElement class="icon icon-lost"/>
-                        <ui:Label name="debrief-losses" text="1 Lost" class="stat-text"/>
-                        <ui:Label text="-10% Morale" class="label-caps text-negative"/>
+                    <ui:VisualElement class="stepper">
+                        <ui:Button name="btn-scavenge-dec" text="-" class="stepper__btn"/>
+                        <ui:Label name="count-scavenge" text="0" class="stepper__value"/>
+                        <ui:Button name="btn-scavenge-inc" text="+" class="stepper__btn"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
+                <ui:VisualElement name="card-harvest" tooltip="-10 Food per Villager, +30 Food per Villager." class="panel directive-row">
+                    <ui:VisualElement class="directive-row__text">
+                        <ui:Label text="Hunt and Gather" class="label-caps card-title"/>
+                        <ui:Label text="-10 Food / +30 Food each" class="body-text text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stepper">
+                        <ui:Button name="btn-harvest-dec" text="-" class="stepper__btn"/>
+                        <ui:Label name="count-harvest" text="0" class="stepper__value"/>
+                        <ui:Button name="btn-harvest-inc" text="+" class="stepper__btn"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <ui:VisualElement name="card-expansion" tooltip="-150 Scrap and -8 Villagers (crew) per ship. +5 Unit Cap, +10 Villager Cap." class="panel directive-row">
+                    <ui:VisualElement class="directive-row__text">
+                        <ui:Label text="Build a Ship" class="label-caps card-title"/>
+                        <ui:Label text="-150 Scrap, -8 Villagers / +5 Unit Cap" class="body-text text-muted"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="stepper">
+                        <ui:Button name="btn-expansion-dec" text="-" class="stepper__btn"/>
+                        <ui:Label name="count-expansion" text="0" class="stepper__value"/>
+                        <ui:Button name="btn-expansion-inc" text="+" class="stepper__btn"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+                <ui:Label name="plan-warning" text="" class="body-text plan-warning"/>
+
+                <ui:VisualElement name="action-footer" class="action-footer">
+                    <ui:Button name="btn-execute-cycle" text="Confirm Allocations &amp; Execute Cycle" class="btn btn--primary"/>
+                    <ui:Button name="btn-reset" text="Reset Assignments" class="btn btn--ghost"/>
+                </ui:VisualElement>
+            </ui:ScrollView>
+
+            <ui:VisualElement name="plan-squad" class="plan-squad">
+                <ui:VisualElement class="row row--space-between plan-squad__header">
+                    <ui:Label text="SQUAD" name="section-squad" class="label-caps section-title"/>
+                    <ui:Label name="count-vanguard" text="0 Selected" class="label-caps tag tag--danger"/>
+                </ui:VisualElement>
+                <ui:VisualElement name="vanguard-roster" class="vanguard-roster"/>
+                <ui:Label name="vanguard-empty-hint" text="Tap unit cards to pick your team." class="body-text text-muted vanguard-empty-hint"/>
+                <!-- Cards are instantiated from UnitCard.uxml by PlanningPhaseController -->
+                <ui:ScrollView name="unit-list" class="unit-list"/>
             </ui:VisualElement>
-            <ui:VisualElement class="section-header-row">
-                <ui:Label text="Directive Assignments" class="label-caps section-title"/>
-                <ui:Label text="4 Operative Nodes" class="label-caps text-muted"/>
-            </ui:VisualElement>
-            <ui:VisualElement name="directive-list" class="directive-list">
-                <ui:VisualElement name="card-vanguard" class="panel directive-card">
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:VisualElement class="row row--gap-sm">
-                            <ui:VisualElement class="icon-badge">
-                                <ui:VisualElement class="icon icon-vanguard"/>
-                            </ui:VisualElement>
-                            <ui:VisualElement>
-                                <ui:Label text="Combat Vanguard" class="label-caps card-title text-primary"/>
-                                <ui:Label text="Sector B-3 Outpost Perimeter" class="body-text text-muted"/>
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:Label name="count-vanguard" text="0 Selected" class="label-caps tag tag--danger"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="card-info-grid">
-                        <ui:Label text="-20 Food per Unit" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="-1% Morale per Unit" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="Casualty Risk (-10 Morale)" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="+0.25% Morale per Kill, +5% per Rescue" class="body-text info-line info-line--positive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement name="vanguard-roster" class="vanguard-roster"/>
-                    <ui:Label name="vanguard-empty-hint" text="No units selected - pick your team on the Roster tab." class="body-text text-muted vanguard-empty-hint"/>
-                </ui:VisualElement>
-                <ui:VisualElement name="card-scavenge" class="panel directive-card">
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:VisualElement class="row row--gap-sm">
-                            <ui:VisualElement class="icon-badge">
-                                <ui:VisualElement class="icon icon-scavenge"/>
-                            </ui:VisualElement>
-                            <ui:VisualElement>
-                                <ui:Label text="Search for Materials" class="label-caps card-title"/>
-                                <ui:Label text="Alien Wreckage &amp; Cryo-Mines" class="body-text text-muted"/>
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:Label text="LOW THREAT" class="label-caps tag"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="card-info-grid">
-                        <ui:Label text="-10 Food per Villager" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="+10 Scrap per Villager" class="body-text info-line info-line--positive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:Label text="[ +10 Scrap/Villager ]" class="label-caps chip chip--muted"/>
-                        <ui:VisualElement class="stepper">
-                            <ui:Button name="btn-scavenge-dec" text="-" class="stepper__btn"/>
-                            <ui:Label name="count-scavenge" text="5" class="stepper__value"/>
-                            <ui:Button name="btn-scavenge-inc" text="+" class="stepper__btn"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:VisualElement name="card-harvest" class="panel directive-card">
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:VisualElement class="row row--gap-sm">
-                            <ui:VisualElement class="icon-badge">
-                                <ui:VisualElement class="icon icon-harvest"/>
-                            </ui:VisualElement>
-                            <ui:VisualElement>
-                                <ui:Label text="Hunt and Gather" class="label-caps card-title"/>
-                                <ui:Label text="Sub-zero Flora Cultivation" class="body-text text-muted"/>
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:Label text="ESSENTIAL" class="label-caps tag"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="card-info-grid">
-                        <ui:Label text="-10 Food per Villager" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="+30 Food per Villager" class="body-text info-line info-line--positive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:Label text="[ Famine Safeguard ]" class="label-caps chip chip--muted"/>
-                        <ui:VisualElement class="stepper">
-                            <ui:Button name="btn-harvest-dec" text="-" class="stepper__btn"/>
-                            <ui:Label name="count-harvest" text="6" class="stepper__value"/>
-                            <ui:Button name="btn-harvest-inc" text="+" class="stepper__btn"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:VisualElement name="card-expansion" class="panel directive-card">
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:VisualElement class="row row--gap-sm">
-                            <ui:VisualElement class="icon-badge">
-                                <ui:VisualElement class="icon icon-expansion"/>
-                            </ui:VisualElement>
-                            <ui:VisualElement>
-                                <ui:Label text="Build a Ship" class="label-caps card-title"/>
-                                <ui:Label text="Colony Departure Vessel" class="body-text text-muted"/>
-                            </ui:VisualElement>
-                        </ui:VisualElement>
-                        <ui:Label text="INFRASTRUCTURE" class="label-caps tag tag--info"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="card-info-grid">
-                        <ui:Label text="-150 Scrap (Cost)" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="-8 Villagers (Crew)" class="body-text info-line info-line--negative"/>
-                        <ui:Label text="+5 Unit Cap" class="body-text info-line info-line--positive"/>
-                        <ui:Label text="+10 Villager Cap" class="body-text info-line info-line--positive"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="row row--space-between">
-                        <ui:Label text="[ Fixed Cost: 8 Villagers ]" class="label-caps chip chip--muted"/>
-                        <ui:VisualElement class="stepper">
-                            <ui:Button name="btn-expansion-dec" text="-" class="stepper__btn"/>
-                            <ui:Label name="count-expansion" text="3" class="stepper__value"/>
-                            <ui:Button name="btn-expansion-inc" text="+" class="stepper__btn"/>
-                        </ui:VisualElement>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-            </ui:VisualElement>
-            <ui:VisualElement name="forecast-section" class="panel forecast">
-                <ui:VisualElement class="row row--space-between">
-                    <ui:Label text="Projected Cycle Outcomes" class="label-caps section-title"/>
-                    <ui:Label text="SIMULATION VERIFIED" class="label-caps chip"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="forecast__grid">
-                    <ui:VisualElement class="forecast__cell">
-                        <ui:Label text="Food Delta" class="body-text text-muted"/>
-                        <ui:Label name="forecast-food" text="Net +28 (Surplus)" class="stat-value stat-value--md text-positive"/>
-                        <ui:Label text="Morale Impact: Stable" class="label-caps text-muted"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="forecast__cell">
-                        <ui:Label text="Scrap Delta" class="body-text text-muted"/>
-                        <ui:Label name="forecast-scrap" text="Net -20 (Hab Pod)" class="stat-value stat-value--md text-negative"/>
-                        <ui:Label text="Infrastructure funded" class="label-caps text-muted"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="forecast__cell">
-                        <ui:Label text="Villagers" class="body-text text-muted"/>
-                        <ui:Label name="forecast-villagers" text="0 Sent / 5 Idle" class="stat-value stat-value--md text-primary"/>
-                        <ui:Label text="Idle villagers roll over next cycle" class="label-caps text-muted"/>
-                    </ui:VisualElement>
-                    <ui:VisualElement class="forecast__cell">
-                        <ui:Label text="Morale Trajectory" class="body-text text-muted"/>
-                        <ui:Label name="forecast-morale" text="+5% Next Cycle" class="stat-value stat-value--md text-positive"/>
-                        <ui:Label text="Frontline proactive" class="label-caps text-muted"/>
-                    </ui:VisualElement>
-                </ui:VisualElement>
-                <ui:VisualElement class="banner">
-                    <ui:VisualElement class="icon icon-shield-check"/>
-                    <ui:Label text="SEC-B3 ALERT: Low casualty probability in Sector B-3. Guard protocol active with Vanguard support." class="body-text"/>
-                </ui:VisualElement>
-            </ui:VisualElement>
-            <ui:VisualElement name="action-footer" class="action-footer">
-                <ui:Button name="btn-execute-cycle" text="Confirm Allocations &amp; Execute Cycle" class="btn btn--primary"/>
-                <ui:Button name="btn-reset" text="Reset Assignments" class="btn btn--ghost"/>
-            </ui:VisualElement>
-        </ui:ScrollView>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

@@ -7,7 +7,7 @@ using UnityEngine.UIElements;
 /// Drives the pre-combat "Planning Phase" team-selection screen.
 ///
 /// No longer owns a UIDocument itself. PhaseShellController instantiates
-/// RosterContent.uxml into the shared shell's content-slot and calls
+/// DecisionContent.uxml into the shared shell's content-slot and calls
 /// Initialize() with the shell's rootVisualElement (not just this content's
 /// own subtree - the reveal/level-up/draft overlays live at the shell level
 /// now, so this still needs to reach them by name). Nav buttons
@@ -34,7 +34,6 @@ public class PlanningPhaseController : MonoBehaviour
 
     private ScrollView _unitList;
     private Button _engageButton;
-    private Label _selectionCounter;
 
     private VisualElement _revealOverlay;
     private VisualElement _revealCard;
@@ -76,7 +75,7 @@ public class PlanningPhaseController : MonoBehaviour
 
     /// <summary>
     /// Called once by PhaseShellController right after it instantiates
-    /// RosterContent.uxml into the shell's content-slot. Replaces what used
+    /// DecisionContent.uxml into the shell's content-slot. Replaces what used
     /// to be OnEnable. `shellRoot` is the shell's WHOLE rootVisualElement,
     /// not just this content's own subtree, because the reveal/level-up/
     /// draft overlays live at the shell level (PhaseShell.uxml) so they can
@@ -90,7 +89,6 @@ public class PlanningPhaseController : MonoBehaviour
 
         _unitList = _root.Q<ScrollView>("unit-list");
         _engageButton = _root.Q<Button>("btn-engage");
-        _selectionCounter = _root.Q<Label>("selection-counter");
 
         _revealOverlay = _root.Q<VisualElement>("reveal-overlay");
         _revealCard = _root.Q<VisualElement>("reveal-card");
@@ -112,7 +110,6 @@ public class PlanningPhaseController : MonoBehaviour
 
         WarnIfMissing(_unitList, "unit-list");
         WarnIfMissing(_engageButton, "btn-engage");
-        WarnIfMissing(_selectionCounter, "selection-counter");
         WarnIfMissing(_revealOverlay, "reveal-overlay");
         WarnIfMissing(_revealCard, "reveal-card");
         WarnIfMissing(_revealIcon, "reveal-icon");
@@ -155,7 +152,7 @@ public class PlanningPhaseController : MonoBehaviour
         if (element == null)
         {
             Debug.LogError($"PlanningPhaseController: could not find an element named '{expectedName}' " +
-                            "in the UXML. Check RosterContent.uxml (or PhaseShell.uxml, for the overlays) still defines it.");
+                            "in the UXML. Check DecisionContent.uxml (or PhaseShell.uxml, for the overlays) still defines it.");
         }
     }
 
@@ -401,10 +398,11 @@ public class PlanningPhaseController : MonoBehaviour
         card.RemoveFromClassList("unit-card-denied");
     }
 
+    // The squad count now lives in the sidebar readiness checklist, which
+    // PhaseShellController.RefreshHeader() rewrites from SelectedUnits.
     private void RefreshSelectionCounter()
     {
-        if (_selectionCounter != null)
-            _selectionCounter.text = $"{_selectedUnits.Count} / {GameStateManager.MaxTeamSize} SELECTED";
+        PhaseShellController.Instance?.RefreshHeader();
     }
 
     private void OnEngageClicked()

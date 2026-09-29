@@ -46,16 +46,20 @@
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:VisualElement class="action-container">
-                <ui:Label name="selection-counter" text="0 / 5 SELECTED" class="selection-counter"/>
+                <ui:VisualElement name="readiness-checklist" class="readiness-checklist">
+                    <ui:Label text="READY TO MARCH" class="label-caps text-muted readiness-title"/>
+                    <ui:Label name="check-course" text="Choose a course" class="readiness-row"/>
+                    <ui:Label name="check-squad" text="Select your squad" class="readiness-row"/>
+                    <ui:Label name="check-villagers" text="Assign all villagers" class="readiness-row"/>
+                    <ui:Label name="check-budget" text="Cannot afford queued ship" class="readiness-row readiness-row--extra"/>
+                </ui:VisualElement>
                 <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button">
                     <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-tr"/>
                     <ui:VisualElement picking-mode="Ignore" class="button-corner-accent button-corner-accent-bl"/>
                 </ui:Button>
             </ui:VisualElement>
             <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar">
-                <ui:Button name="nav-roster" text="ROSTER" class="nav-button nav-button-active"/>
-                <ui:Button name="nav-decision" text="DECISION" class="nav-button"/>
-                <ui:Button name="nav-map" text="CAMPAIGN MAP" class="nav-button"/>
+                <ui:Button name="nav-plan" text="PLAN" class="nav-button nav-button-active"/>
                 <ui:Button name="nav-store" text="STORE" class="nav-button"/>
             </ui:VisualElement>
           </ui:VisualElement>

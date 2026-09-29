@@ -12,26 +12,24 @@ using UnityEngine.UIElements;
 ///
 /// Attach this to the same GameObject as the UIDocument referencing
 /// PhaseShell.uxml, alongside a PlanningPhaseController, a
-/// DecisionPhaseController and a CampaignMapController (plain components now -
-/// none of them own a UIDocument anymore). Assign RosterContent.uxml,
-/// DecisionContent.uxml, CampaignMapContent.uxml and TabPlaceholder.uxml
-/// (still used for the not-yet-built Store tab) plus all three controller
-/// references in the Inspector.
+/// DecisionPhaseController and a CampaignMapController (plain components - none
+/// of them own a UIDocument). Assign DecisionContent.uxml (the single Plan
+/// screen) and TabPlaceholder.uxml (still used for the not-yet-built Store
+/// tab) plus all three controller references in the Inspector.
 /// </summary>
 [RequireComponent(typeof(UIDocument))]
 public class PhaseShellController : MonoBehaviour
 {
     public static PhaseShellController Instance { get; private set; }
 
-    public enum Tab { Roster, Decision, Map, Store }
+    public enum Tab { Plan, Store }
 
     /// <summary>Lets other tabs (e.g. Decision's Combat Vanguard card) read the Roster tab's live selection.</summary>
     public PlanningPhaseController RosterController => rosterController;
 
     [Header("Content templates")]
-    [SerializeField] private VisualTreeAsset rosterContentTemplate;
+    [Tooltip("DecisionContent.uxml - the single Plan screen (course, labor, squad).")]
     [SerializeField] private VisualTreeAsset decisionContentTemplate;
-    [SerializeField] private VisualTreeAsset campaignMapContentTemplate;
     [Tooltip("TabPlaceholder.uxml. Reused for Store until it has real content.")]
     [SerializeField] private VisualTreeAsset placeholderContentTemplate;
 
@@ -45,9 +43,7 @@ public class PhaseShellController : MonoBehaviour
     private VisualElement _root;
     private VisualElement _contentSlot;
 
-    private VisualElement _rosterRoot;
-    private VisualElement _decisionRoot;
-    private VisualElement _mapRoot;
+    private VisualElement _planRoot;
     private VisualElement _storePlaceholderRoot;
 
     // Header (Live Asset Ledger)
@@ -59,12 +55,14 @@ public class PhaseShellController : MonoBehaviour
     private Label _ledgerSyncStatus;
     private Button _saveButton;
 
-    // Footer
-    private Button _navRoster, _navDecision, _navMap, _navStore;
-    private Button _engageButton;
-    private VisualElement _actionContainer;
+    // Readiness checklist
+    private Label _checkCourse, _checkSquad, _checkVillagers, _checkBudget;
 
-    public Tab CurrentTab { get; private set; } = Tab.Roster;
+    // Footer
+    private Button _navPlan, _navStore;
+    private Button _engageButton;
+
+    public Tab CurrentTab { get; private set; } = Tab.Plan;
 
     public bool CanEngage
     {
@@ -103,7 +101,7 @@ public class PhaseShellController : MonoBehaviour
         WireNav();
 
         RefreshHeader();
-        Show(Tab.Roster);
+        Show(Tab.Plan);
 
         // Keep chrome out from under the notch / home indicator on real devices.
         _root.RegisterCallback<GeometryChangedEvent>(_ => ApplySafeArea());
@@ -145,17 +143,19 @@ public class PhaseShellController : MonoBehaviour
         _resMoraleDelta = _root.Q<Label>("res-morale-delta");
         _ledgerSyncStatus = _root.Q<Label>("ledger-sync-status");
         _saveButton = _root.Q<Button>("btn-save-game");
+
+        _checkCourse = _root.Q<Label>("check-course");
+        _checkSquad = _root.Q<Label>("check-squad");
+        _checkVillagers = _root.Q<Label>("check-villagers");
+        _checkBudget = _root.Q<Label>("check-budget");
     }
 
     private void QueryFooter()
     {
-        _navRoster = _root.Q<Button>("nav-roster");
-        _navDecision = _root.Q<Button>("nav-decision");
-        _navMap = _root.Q<Button>("nav-map");
+        _navPlan = _root.Q<Button>("nav-plan");
         _navStore = _root.Q<Button>("nav-store");
         _engageButton = _root.Q<Button>("btn-engage");
         _engageButton?.SetEnabled(false);
-        _actionContainer = _root.Q<VisualElement>(className: "action-container");
     }
 
     /// <summary>
@@ -166,33 +166,28 @@ public class PhaseShellController : MonoBehaviour
     /// Initialize() runs, since both controllers query by name against the
     /// WHOLE shell root - that's how PlanningPhaseController still reaches
     /// the reveal/level-up/draft overlays, which live in PhaseShell.uxml,
-    /// not inside RosterContent.uxml.
+    /// not inside DecisionContent.uxml.
     /// </summary>
     private void BuildContent()
     {
-        if (rosterContentTemplate == null || decisionContentTemplate == null ||
-            campaignMapContentTemplate == null || placeholderContentTemplate == null)
+        if (decisionContentTemplate == null || placeholderContentTemplate == null)
         {
             Debug.LogError("PhaseShellController: one or more content templates aren't assigned in the Inspector.");
             return;
         }
 
-        _rosterRoot = rosterContentTemplate.Instantiate();
-        _decisionRoot = decisionContentTemplate.Instantiate();
-        _mapRoot = campaignMapContentTemplate.Instantiate();
+        _planRoot = decisionContentTemplate.Instantiate();
         _storePlaceholderRoot = placeholderContentTemplate.Instantiate();
 
         SetPlaceholderText(_storePlaceholderRoot, "STORE", "Not built yet.");
 
-        _contentSlot.Add(_rosterRoot);
-        _contentSlot.Add(_decisionRoot);
-        _contentSlot.Add(_mapRoot);
+        _contentSlot.Add(_planRoot);
         _contentSlot.Add(_storePlaceholderRoot);
 
         // Each Initialize() call is wrapped so one tab throwing (e.g. a
         // missing/renamed UXML element) can't abort the rest of BuildContent()/
         // Start() - without this, an exception here would skip WireNav() and
-        // Show(Tab.Roster) entirely, leaving every tab stacked and visible at
+        // Show(Tab.Plan) entirely, leaving every tab stacked and visible at
         // once with no nav button responding to clicks.
         if (rosterController != null)
         {
@@ -226,9 +221,7 @@ public class PhaseShellController : MonoBehaviour
 
     private void WireNav()
     {
-        if (_navRoster != null) _navRoster.clicked += () => Show(Tab.Roster);
-        if (_navDecision != null) _navDecision.clicked += () => Show(Tab.Decision);
-        if (_navMap != null) _navMap.clicked += () => Show(Tab.Map);
+        if (_navPlan != null) _navPlan.clicked += () => Show(Tab.Plan);
         if (_navStore != null) _navStore.clicked += () => Show(Tab.Store);
         if (_saveButton != null) _saveButton.clicked += SaveGame;
     }
@@ -240,8 +233,7 @@ public class PhaseShellController : MonoBehaviour
         FlashSyncStatus(saved ? "[ GAME SAVED ]" : "[ SAVE FAILED ]");
     }
 
-    public void ShowRoster() => Show(Tab.Roster);
-    public void ShowDecision() => Show(Tab.Decision);
+    public void ShowPlan() => Show(Tab.Plan);
 
     /// <summary>
     /// Toggles which content tree is visible via display style rather than
@@ -255,20 +247,13 @@ public class PhaseShellController : MonoBehaviour
     {
         CurrentTab = tab;
 
-        SetVisible(_rosterRoot, tab == Tab.Roster);
-        SetVisible(_decisionRoot, tab == Tab.Decision);
-        SetVisible(_mapRoot, tab == Tab.Map);
+        SetVisible(_planRoot, tab == Tab.Plan);
         SetVisible(_storePlaceholderRoot, tab == Tab.Store);
 
-        SetActiveNav(_navRoster, tab == Tab.Roster);
-        SetActiveNav(_navDecision, tab == Tab.Decision);
-        SetActiveNav(_navMap, tab == Tab.Map);
+        SetActiveNav(_navPlan, tab == Tab.Plan);
         SetActiveNav(_navStore, tab == Tab.Store);
 
-        // The Campaign Map tab can change SelectedCampaignAction while the
-        // Decision tab isn't visible - re-sync its course label/forecast now
-        // rather than waiting for the next allocation tap.
-        if (tab == Tab.Decision) decisionController?.Refresh();
+        if (tab == Tab.Plan) decisionController?.Refresh();
     }
 
     private static void SetVisible(VisualElement element, bool visible)
@@ -296,7 +281,6 @@ public class PhaseShellController : MonoBehaviour
         if (gsm == null)
         {
             _engageButton?.SetEnabled(false);
-            SetVisible(_actionContainer, false);
             return;
         }
 
@@ -324,13 +308,34 @@ public class PhaseShellController : MonoBehaviour
         _resMoraleVal.text = $"{s.Morale}%";
         SetDelta(_resMoraleDelta, forecast.MoraleDelta, suffix: "%");
 
-        // Shell-level chrome, not Roster-specific: stays hidden on every tab
-        // until the player has actually finished making selections (full
-        // squad + campaign action chosen, no idle villagers left), then
-        // appears regardless of which tab they're looking at.
-        bool canEngage = CanEngage;
-        _engageButton?.SetEnabled(canEngage);
-        SetVisible(_actionContainer, canEngage);
+        // Always visible; the checklist explains what's still missing.
+        RefreshChecklist(gsm, forecast);
+        _engageButton?.SetEnabled(CanEngage);
+    }
+
+    /// <summary>Writes the "Ready to march" rows; March to War enables only when every row passes.</summary>
+    private void RefreshChecklist(GameStateManager gsm, GameStateManager.CycleForecast forecast)
+    {
+        int squad = rosterController != null ? rosterController.SelectedUnits.Count : 0;
+
+        SetCheck(_checkCourse, gsm.HasSelectedCampaignAction, "Course chosen", "Choose a course");
+        SetCheck(_checkSquad, squad > 0, $"Squad selected ({squad}/{GameStateManager.MaxTeamSize})", $"Select your squad (0/{GameStateManager.MaxTeamSize})");
+        SetCheck(_checkVillagers, gsm.IdleVillagers == 0, "All villagers assigned", $"Assign villagers ({gsm.IdleVillagers} idle)");
+
+        if (_checkBudget != null)
+        {
+            if (forecast.IsOverBudget) _checkBudget.AddToClassList("readiness-row--active");
+            else _checkBudget.RemoveFromClassList("readiness-row--active");
+            _checkBudget.text = "\u2717 Cannot afford queued ship";
+        }
+    }
+
+    private static void SetCheck(Label label, bool done, string doneText, string todoText)
+    {
+        if (label == null) return;
+        label.text = done ? "\u2713 " + doneText : "\u2717 " + todoText;
+        if (done) label.AddToClassList("readiness-row--done");
+        else label.RemoveFromClassList("readiness-row--done");
     }
 
     private static void SetDelta(Label label, int value, string suffix = "")

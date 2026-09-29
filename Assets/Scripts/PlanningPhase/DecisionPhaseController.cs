@@ -2,7 +2,9 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 /// <summary>
-/// Drives the Decision (resource-planning) tab content. Plain component now -
+/// Drives the Plan screen's labor directives, debrief strip and Vanguard
+/// mirror (DecisionContent.uxml; course selection is CampaignMapController,
+/// squad picking is PlanningPhaseController). Plain component now -
 /// no longer owns a UIDocument. PhaseShellController instantiates
 /// DecisionContent.uxml into the shared shell's content-slot and calls
 /// Initialize() with the shell's rootVisualElement, same as
@@ -35,11 +37,8 @@ public class DecisionPhaseController : MonoBehaviour
     private VisualElement _vanguardRoster;
     private Label _vanguardEmptyHint;
 
-    // Forecast
-    private Label _forecastFood, _forecastScrap, _forecastVillagers, _forecastMorale;
-
-    // Campaign Map course (set on the Map tab, read here so it's visible without switching tabs)
-    private Label _courseStatus;
+    // Over-budget warning (the forecast numbers themselves live in the sidebar ledger)
+    private Label _planWarning;
 
     // Buttons
     private Button _btnExecute, _btnReset;
@@ -92,12 +91,7 @@ public class DecisionPhaseController : MonoBehaviour
         _vanguardRoster = _root.Q<VisualElement>("vanguard-roster");
         _vanguardEmptyHint = _root.Q<Label>("vanguard-empty-hint");
 
-        _forecastFood = _root.Q<Label>("forecast-food");
-        _forecastScrap = _root.Q<Label>("forecast-scrap");
-        _forecastVillagers = _root.Q<Label>("forecast-villagers");
-        _forecastMorale = _root.Q<Label>("forecast-morale");
-
-        _courseStatus = _root.Q<Label>("course-status");
+        _planWarning = _root.Q<Label>("plan-warning");
 
         _btnExecute = _root.Q<Button>("btn-execute-cycle");
         _btnReset = _root.Q<Button>("btn-reset");
@@ -181,26 +175,17 @@ public class DecisionPhaseController : MonoBehaviour
 
         PhaseShellController.Instance?.RefreshHeader();
 
-        _courseStatus.text = _gsm.SelectedCampaignAction switch
-        {
-            GameStateManager.CampaignAction.StayPut => "Course: Staying Put (x2 Yields)",
-            GameStateManager.CampaignAction.Rest => "Course: Resting",
-            _ => "Course: Traveling"
-        };
-
         RefreshVanguardRoster();
         _countScavenge.text = a.ScavengeUnits.ToString();
         _countHarvest.text = a.HarvestUnits.ToString();
         _countExpansion.text = a.ExpansionUnits.ToString();
 
-        _forecastFood.text = $"Net {(forecast.FoodDelta >= 0 ? "+" : "")}{forecast.FoodDelta} ({(forecast.FoodDelta >= 0 ? "Surplus" : "Deficit")})";
-        SetTone(_forecastFood, forecast.FoodDelta >= 0);
-
-        _forecastScrap.text = $"Net {(forecast.MaterialsDelta >= 0 ? "+" : "")}{forecast.MaterialsDelta}" + (forecast.WillBuildShip ? " (Ship)" : "");
-        SetTone(_forecastScrap, forecast.MaterialsDelta >= 0);
-
-        _forecastVillagers.text = $"{forecast.VillagersSent} Sent / {forecast.IdleVillagers} Idle";
-        _forecastMorale.text = $"{(forecast.MoraleDelta >= 0 ? "+" : "")}{forecast.MoraleDelta}% Next Cycle";
+        if (_planWarning != null)
+        {
+            _planWarning.text = forecast.IsOverBudget ? "Not enough Scrap to build the queued ship." : "";
+            if (forecast.IsOverBudget) _planWarning.AddToClassList("plan-warning--visible");
+            else _planWarning.RemoveFromClassList("plan-warning--visible");
+        }
 
         // Disable "Execute Cycle" when a queued ship can't be paid for, rather
         // than letting ExecuteCycle() silently reject it.
@@ -250,10 +235,4 @@ public class DecisionPhaseController : MonoBehaviour
         return chip;
     }
 
-    private static void SetTone(Label label, bool positive)
-    {
-        label.RemoveFromClassList("text-positive");
-        label.RemoveFromClassList("text-negative");
-        label.AddToClassList(positive ? "text-positive" : "text-negative");
-    }
 }
