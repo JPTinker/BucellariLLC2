@@ -590,22 +590,6 @@ public class GameStateManager : MonoBehaviour
         SceneManager.LoadScene(sceneName);
     }
 
-    /// <summary>
-    /// Call this after combat ends to return to the management screen.
-    /// </summary>
-    public void ReturnToTeamManager(bool playerWon, int goldEarned = 0, string sceneName = "TeamManager")
-    {
-        if (playerWon)
-        {
-            Resources.Gold += goldEarned;
-            Resources.CurrentStageIndex++;
-        }
-
-
-        SetState(GameState.TeamManagement);
-        SceneManager.LoadScene(sceneName);
-    }
-
     private void SetState(GameState newState)
     {
         CurrentState = newState;

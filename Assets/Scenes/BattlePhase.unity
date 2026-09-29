@@ -1192,8 +1192,8 @@ MonoBehaviour:
   hexSize: 0.6
   Cloud: {fileID: 919132149155446097, guid: fc2dbb2f2b55de843918e525fe3947ac, type: 3}
   fogHeight: 0.25
-  width: 25
-  height: 25
+  width: 10
+  height: 10
   seed: 0
   noiseScale: 0.15
   terrainBands:
@@ -1214,7 +1214,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 39634b9ab2ab047409704f3ffd41d947, type: 2}
   - {fileID: 11400000, guid: eebb2c2877ca4ca44b62a7b39b76299b, type: 2}
   enemyGroupSize: 3
-  enemySpawnCount: 20
+  enemySpawnCount: 8
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
 --- !u!4 &2007730826
@@ -1246,8 +1246,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   enemyAI: {fileID: 2007730828}
   villagerAI: {fileID: 2007730829}
-  reinforcementThreshold: 10
-  reinforcementTargetCount: 20
+  reinforcementThreshold: 4
+  reinforcementTargetCount: 8
   combatUIManager: {fileID: 1221553267}
   notificationManager: {fileID: 1014924430}
 --- !u!114 &2007730828

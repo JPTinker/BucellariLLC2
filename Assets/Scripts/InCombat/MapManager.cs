@@ -39,8 +39,14 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float fogHeight = 0.25f;
 
     [Header("Map Size")]
-    public int width = 20;
-    public int height = 20;
+    [Tooltip("Current map size. Starts small and grows via ExpandMap() on each enemy reinforcement wave.")]
+    public int width = 10;
+    public int height = 10;
+    [Tooltip("The map stops growing once it reaches this size.")]
+    public int maxWidth = 25;
+    public int maxHeight = 25;
+    [Tooltip("Columns/rows added to the +x/+y edges on each expansion.")]
+    public int expansionStep = 2;
 
     [Header("Noise")]
     public int seed = 0;
@@ -73,7 +79,13 @@ public class MapManager : MonoBehaviour
     [Tooltip("How many enemies land together per cluster. Each enemy still gets its own tile - no stacking.")]
     public int enemyGroupSize = 3;
     [Tooltip("Total number of enemies spawned at the start of combat.")]
-    public int enemySpawnCount = 20;
+    public int enemySpawnCount = 8;
+
+    [Header("Enemy Wave Scaling")]
+    [Tooltip("Each reinforcement wave adds this fraction of base max HP (0.15 = +15% per wave).")]
+    [SerializeField] private float hpScalingPerWave = 0.15f;
+    [Tooltip("Each reinforcement wave adds this fraction of base attack. Attack is a small integer, so this is higher than the HP rate.")]
+    [SerializeField] private float attackScalingPerWave = 0.20f;
 
     [Header("Villagers / Rescue")]
     [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
@@ -149,7 +161,7 @@ public class MapManager : MonoBehaviour
         
     }
 
-    public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null)
+    public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null, int waveLevel = 0)
     {
         // 1. Guard Clause: Tile Check
         if (tile == null)
@@ -194,6 +206,7 @@ public class MapManager : MonoBehaviour
         instance.Initialize(enemyData);
         if (isEnemy){
             instance.Faction =  UnitFaction.Enemy;
+            ApplyWaveScaling(instance, waveLevel);
         }
         string uniqueId = GenerateUnique4DigitString();
         instance.unitName = $"{enemyData.UnitName}_{uniqueId}";
@@ -205,6 +218,17 @@ public class MapManager : MonoBehaviour
         PlaySpawnEffects(tile.transform.position);
 
         return instance;
+    }
+
+    /// <summary>Flat per-wave bonus applied to this instance only - the shared UnitData asset is never touched.</summary>
+    private void ApplyWaveScaling(UnitInstance enemy, int waveLevel)
+    {
+        if (waveLevel <= 0) return;
+
+        enemy.maxHealth = Mathf.RoundToInt(enemy.maxHealth * (1f + waveLevel * hpScalingPerWave));
+        enemy.currentHealth = enemy.maxHealth;
+        enemy.attackPower = Mathf.RoundToInt(enemy.attackPower * (1f + waveLevel * attackScalingPerWave));
+        enemy.NotifyStatsChanged();
     }
 
     private void PlaySpawnEffects(Vector3 position)
@@ -265,21 +289,52 @@ public class MapManager : MonoBehaviour
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
-            {
-                float noiseValue = Mathf.PerlinNoise(
-                    (x + offsetX) * noiseScale,
-                    (y + offsetY) * noiseScale);
-
-                Vector2Int gridPosition = new Vector2Int(x, y);
-                TerrainType terrain = gridPosition == ExfilTilePosition
-                    ? TerrainType.Exfil
-                    : PickTerrain(noiseValue);
-                SpawnTile(gridPosition, terrain);
-            }
+                GenerateTileAt(x, y);
         }
 
         ConnectAllNeighbors();
         MarkExtractionPoints();
+    }
+
+    // Noise depends only on (x, y, seed), so tiles added by ExpandMap() match
+    // what a larger initial map would have produced.
+    private void GenerateTileAt(int x, int y)
+    {
+        float noiseValue = Mathf.PerlinNoise(
+            (x + seed * 10.37f) * noiseScale,
+            (y + seed * 19.53f) * noiseScale);
+
+        Vector2Int gridPosition = new Vector2Int(x, y);
+        TerrainType terrain = gridPosition == ExfilTilePosition
+            ? TerrainType.Exfil
+            : PickTerrain(noiseValue);
+        SpawnTile(gridPosition, terrain);
+    }
+
+    /// <summary>
+    /// Grows the map toward +x/+y by expansionStep (capped at maxWidth/maxHeight).
+    /// New tiles are fogged and linked to the old edge. Returns false if already at max size.
+    /// </summary>
+    public bool ExpandMap()
+    {
+        int newWidth = Mathf.Min(width + expansionStep, maxWidth);
+        int newHeight = Mathf.Min(height + expansionStep, maxHeight);
+        if (newWidth == width && newHeight == height) return false;
+
+        for (int y = 0; y < newHeight; y++)
+        {
+            for (int x = 0; x < newWidth; x++)
+            {
+                if (!tileMap.ContainsKey(new Vector2Int(x, y)))
+                    GenerateTileAt(x, y);
+            }
+        }
+
+        width = newWidth;
+        height = newHeight;
+        ConnectAllNeighbors();
+        Debug.Log($"MapGenerator: map expanded to {width}x{height}");
+        return true;
     }
 
     private List<HexTile> GetSpacedGroupSpots(HexTile anchor, List<HexTile> validTiles, int groupSize)
@@ -323,7 +378,7 @@ public class MapManager : MonoBehaviour
     // ---------------------------------------------------------------------
     // Enemy clusters: groups land near each other, but never share a tile.
     // ---------------------------------------------------------------------
-    public List<UnitInstance> SpawnEnemyWave(int totalCount)
+    public List<UnitInstance> SpawnEnemyWave(int totalCount, int waveLevel = 0)
     {
         List<UnitInstance> spawned = new List<UnitInstance>();
         List<HexTile> validTiles = GetEnemyEdgeSpawnTiles();
@@ -357,7 +412,7 @@ public class MapManager : MonoBehaviour
             for (int i = 0; i < groupTarget; i++)
             {
                 HexTile spot = groupSpots[i];
-                UnitInstance enemy = SpawnEnemyUnit(spot, isEnemy: true);
+                UnitInstance enemy = SpawnEnemyUnit(spot, isEnemy: true, waveLevel: waveLevel);
                 if (enemy != null)
                 {
                     spawned.Add(enemy);

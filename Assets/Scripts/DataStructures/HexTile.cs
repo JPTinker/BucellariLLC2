@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,6 +17,9 @@ public class HexTile : MonoBehaviour
     [Header("Fog of War")] public GameObject fogInstance; public bool isRevealed;
     [Range(0.01f, 0.6f)] public float hiddenDarkness = 0.01f;
     public int foodLeftOnTile;
+    [Header("Click Feedback")]
+    [SerializeField, Min(0f)] private float clickBounceHeight = 0.25f;
+    [SerializeField, Min(0.01f)] private float clickBounceDuration = 0.3f;
     [Header("Farming Visuals")] [Range(0f, 1f)] public float depletedDarkness = 0.5f;
     public bool IsOccupied => occupyingUnit != null;
     public bool IsExtractionPoint = false;
@@ -23,6 +27,15 @@ public class HexTile : MonoBehaviour
     public bool CanEnter() => isWalkable && !IsOccupied;
     public void SetUnit(UnitInstance unit) { occupyingUnit = unit; isWalkable = false; }
     public void RemoveUnit() { occupyingUnit = null; isWalkable = true; }
+
+    private Vector3 restingLocalPosition;
+    private Coroutine clickBounceCoroutine;
+
+    private void Awake()
+    {
+        restingLocalPosition = transform.localPosition;
+    }
+
     public void Reveal()
     {
         if (isRevealed) return;
@@ -135,6 +148,29 @@ public class HexTile : MonoBehaviour
 
     public void OnTilePressed()
     {
+        if (clickBounceCoroutine != null)
+        {
+            StopCoroutine(clickBounceCoroutine);
+            transform.localPosition = restingLocalPosition;
+        }
+
+        clickBounceCoroutine = StartCoroutine(PlayClickBounce());
         CombatManager.Instance?.SelectedTile(this);
     } 
+
+    private IEnumerator PlayClickBounce()
+    {
+        float elapsed = 0f;
+        while (elapsed < clickBounceDuration)
+        {
+            elapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(elapsed / clickBounceDuration);
+            float height = Mathf.Sin(progress * Mathf.PI) * clickBounceHeight;
+            transform.localPosition = restingLocalPosition + Vector3.up * height;
+            yield return null;
+        }
+
+        transform.localPosition = restingLocalPosition;
+        clickBounceCoroutine = null;
+    }
 }

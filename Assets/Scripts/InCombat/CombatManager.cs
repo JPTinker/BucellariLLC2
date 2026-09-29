@@ -18,7 +18,12 @@ public class CombatManager : MonoBehaviour
     [Tooltip("When living enemies drop below this count, reinforcements are spawned.")]
     [SerializeField] private int reinforcementThreshold = 10;
     [Tooltip("Reinforcements top the enemy count back up to this total.")]
-    [SerializeField] private int reinforcementTargetCount = 20;
+    [SerializeField] private int reinforcementTargetCount = 8;
+    [Tooltip("Extra enemies added to the target count for every time the map has grown.")]
+    [SerializeField] private int enemiesPerExpansion = 2;
+    // 0 = opening wave; incremented on each reinforcement wave to scale new enemies.
+    private int enemyWaveLevel;
+    private int mapExpansions;
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> enemyUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> villagerUnits = new List<UnitInstance>();
@@ -306,12 +311,27 @@ public class CombatManager : MonoBehaviour
         enemyUnits.RemoveAll(unit => unit == null || unit.IsDead);
         if (enemyUnits.Count >= reinforcementThreshold) return;
 
-        int toSpawn = reinforcementTargetCount - enemyUnits.Count;
-        List<UnitInstance> reinforcements = MapManager.Instance.SpawnEnemyWave(toSpawn);
+        // Each respawn is one escalation step: the map grows and the new wave is stronger.
+        enemyWaveLevel++;
+        bool mapGrew = MapManager.Instance.ExpandMap();
+        if (mapGrew) mapExpansions++;
+
+        int targetCount = reinforcementTargetCount + mapExpansions * enemiesPerExpansion;
+        int toSpawn = targetCount - enemyUnits.Count;
+        List<UnitInstance> reinforcements = MapManager.Instance.SpawnEnemyWave(toSpawn, enemyWaveLevel);
         TrackAll(reinforcements);
 
+        // NotificationManager shows one message at a time (a new call replaces the last), so send a single combined message.
         if (reinforcements.Count > 0)
-            notificationManager.ShowNotification($"{reinforcements.Count} enemy reinforcements have arrived");
+        {
+            string message = $"{reinforcements.Count} enemy reinforcements have arrived - enemies are stronger (Lv {enemyWaveLevel})";
+            if (mapGrew) message += "\nThe battlefield has expanded";
+            notificationManager.ShowNotification(message);
+        }
+        else if (mapGrew)
+        {
+            notificationManager.ShowNotification("The battlefield has expanded");
+        }
     }
 
     private void PreviewDestination(HexTile destination)
