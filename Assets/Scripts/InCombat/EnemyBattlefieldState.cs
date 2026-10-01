@@ -14,8 +14,9 @@ public class EnemyBattlefieldState
     public List<UnitInstance> EnemyUnits { get; } = new();
     public List<UnitInstance> PlayerUnits { get; } = new();
     public List<UnitInstance> Villagers { get; } = new();
+    public List<UnitInstance> Structures { get; } = new();
 
-    /// Everything the horde wants dead: player units and villagers.
+    /// Everything the horde wants dead: player units, villagers and player-built structures.
     public List<UnitInstance> Targets { get; } = new();
 
     // Extra path cost for walking through a tile an ally currently stands on.
@@ -57,6 +58,11 @@ public class EnemyBattlefieldState
 
                 case UnitFaction.Villager:
                     state.Villagers.Add(unit);
+                    state.Targets.Add(unit);
+                    break;
+
+                case UnitFaction.Structure:
+                    state.Structures.Add(unit);
                     state.Targets.Add(unit);
                     break;
             }

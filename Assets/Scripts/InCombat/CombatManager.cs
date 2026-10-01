@@ -33,6 +33,7 @@ public class CombatManager : MonoBehaviour
     private UnitInstance selectedUnit;
     private HexTile pendingDestination;
     private bool levelEnded;
+    private bool buildMode;
     private bool nonPlayerTurnInProgress;
     public int currentRound { get; private set; } = 1;
 
@@ -83,7 +84,68 @@ public class CombatManager : MonoBehaviour
             case CombatPhaseUIController.CombatAction.Scout:
                 HandleScoutClicked(unit);
                 break;
+            case CombatPhaseUIController.CombatAction.BuildWall:
+                EnterBuildMode(unit);
+                break;
         }
+    }
+
+    // ---------------------------------------------------------------
+    // Building: click Build Wall, then click a highlighted adjacent tile.
+    // Clicking anywhere else (or selecting another unit) cancels.
+    // ---------------------------------------------------------------
+
+    private void EnterBuildMode(UnitInstance unit)
+    {
+        if (MapManager.Instance == null || unit.actionsRemaining <= 0) return;
+
+        if (GameStateManager.Instance == null ||
+            GameStateManager.Instance.Settlement.Materials < MapManager.Instance.wallMaterialCost)
+        {
+            notificationManager?.ShowNotification($"Not enough materials (need {MapManager.Instance.wallMaterialCost})");
+            return;
+        }
+
+        List<HexTile> buildable = MapManager.Instance.GetBuildableTiles(unit);
+        if (buildable.Count == 0)
+        {
+            notificationManager?.ShowNotification("No free adjacent tile to build on");
+            return;
+        }
+
+        // Swap the move/attack highlights for build highlights on the same unit.
+        foreach (HexTile tile in highlightedTiles) if (tile != null) tile.ClearHighlight();
+        highlightedTiles.Clear();
+        reachableTiles.Clear();
+        previewPath.Clear();
+        pendingDestination = null;
+
+        selectedUnit = unit;
+        buildMode = true;
+        foreach (HexTile tile in buildable)
+        {
+            highlightedTiles.Add(tile);
+            tile.Highlight(TileHighlightType.Build);
+        }
+    }
+
+    private void HandleBuildClick(HexTile tile)
+    {
+        UnitInstance builder = selectedUnit;
+        MapManager map = MapManager.Instance;
+        GameStateManager gsm = GameStateManager.Instance;
+
+        bool built = false;
+        if (builder != null && map != null && gsm != null && highlightedTiles.Contains(tile) &&
+            gsm.TrySpendMaterials(map.wallMaterialCost))
+        {
+            built = map.BuildWall(tile) != null;
+            if (!built) gsm.Settlement.Materials += map.wallMaterialCost; // refund if placement failed
+        }
+
+        // Same tail as every other action: spend the action, then drop the selection.
+        if (built) TakeAction(builder);
+        ClearSelection();
     }
 
     private static void HandleFortifyClicked(UnitInstance unit)
@@ -117,6 +179,7 @@ public class CombatManager : MonoBehaviour
     {
         //Debug.Log($"CombatManager: SelectedTile called with {tile?.name ?? "null"}");
         if (tile == null || levelEnded || nonPlayerTurnInProgress) return;
+        if (buildMode) { HandleBuildClick(tile); return; }
         if (selectedUnit == null)
         {
             if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) {
@@ -351,6 +414,7 @@ public class CombatManager : MonoBehaviour
     {
         combatUIManager.SelectUnit(null);
         selectedUnit = null;
+        buildMode = false;
         pendingDestination = null;
         previewPath.Clear();
         reachableTiles.Clear();
@@ -373,6 +437,9 @@ public class CombatManager : MonoBehaviour
         else if(unit.Faction == UnitFaction.Villager){
             list = villagerUnits;
         }
+        else if (unit.Faction == UnitFaction.Structure) {
+            return; // walls don't count toward win/loss and need no death bookkeeping
+        }
         else {
             Debug.LogWarning($"CombatManager: Track called with unit {unit.name} of unknown faction {unit.Faction}. Ignoring.");
             return;
@@ -386,6 +453,12 @@ public class CombatManager : MonoBehaviour
     {
         unit.OnDeath -= HandleUnitDeath;
         playerUnits.Remove(unit); enemyUnits.Remove(unit); villagerUnits.Remove(unit);
+        GameStateManager gsm = GameStateManager.Instance;
+        if (gsm != null)
+        {
+            if (unit.Faction == UnitFaction.Player) gsm.RegisterCasualty(unit.PersistentUnit);
+            else if (unit.Faction == UnitFaction.Enemy) gsm.RegisterEnemyKilled();
+        }
         if (unit == selectedUnit) ClearSelection();
         CheckLevelEnd();
         CheckTurnEnd();
@@ -410,6 +483,8 @@ public class CombatManager : MonoBehaviour
         {
             levelEnded = true;
             OnLevelLost?.Invoke();
+            // No player units left on the map (all extracted or fallen): roll the after-action screen.
+            GameStateManager.Instance?.EndBattle();
         }
         else if (enemyUnits.Count == 0)
         {

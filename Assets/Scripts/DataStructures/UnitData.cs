@@ -45,7 +45,9 @@ public enum UnitFaction
     Player,
     Enemy,
     Neutral,
-    Villager
+    Villager,
+    /// <summary>Player-built obstacles (walls). Enemies can attack them; they never count toward win/loss.</summary>
+    Structure
 }
 
 public enum UnitAnimationStyle

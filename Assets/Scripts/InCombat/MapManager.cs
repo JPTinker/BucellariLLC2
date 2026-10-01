@@ -18,6 +18,7 @@ public class MapManager : MonoBehaviour
 {
     public static MapManager Instance { get; private set; }
     private static readonly Vector2Int ExfilTilePosition = new Vector2Int(0, 0);
+    private const int StartZoneSize = 3;
     private const int VillagerEdgeMargin = 2;
     private const int InitialVillagerSpawnCount = 1;
     private const int VillagerSpawnInterval = 4;
@@ -49,8 +50,14 @@ public class MapManager : MonoBehaviour
     public int expansionStep = 2;
 
     [Header("Noise")]
+    [Tooltip("Pick a fresh random seed each battle. Untick to use the fixed seed below.")]
+    public bool randomizeSeed = true;
     public int seed = 0;
     public float noiseScale = 0.15f;
+    [Tooltip("Frequency of the second, finer noise octave.")]
+    public float detailScale = 0.4f;
+    [Tooltip("How much the fine octave is blended in (0 = off).")]
+    [Range(0f, 1f)] public float detailWeight = 0.3f;
 
     [Tooltip("Bands ordered from lowest terrain (e.g. Water) to highest (e.g. StoneMountain). " +
              "Each band's maxHeight must be greater than the previous one's, ending at 1.")]
@@ -93,6 +100,15 @@ public class MapManager : MonoBehaviour
     private int villagerSpawnTarget;
     private int villagersSpawned;
 
+    [Header("Building")]
+    [Tooltip("Optional wall prefab. If empty, a simple cube is generated at runtime. A UnitInstance is added automatically if the prefab lacks one.")]
+    public GameObject wallPrefab;
+    [Tooltip("Settlement Materials spent per wall.")]
+    public int wallMaterialCost = 5;
+    public int wallMaxHealth = 12;
+    public int wallDefense = 1;
+    [SerializeField] private Color fallbackWallColor = new Color(0.45f, 0.33f, 0.22f);
+
     // Gates the villager spawn-focus tour behind the player unit spawn-focus tour,
     // so villagers only start their camera zoom-in after the players' has finished.
     private bool initialUnitSpawnTourComplete = true;
@@ -112,6 +128,8 @@ public class MapManager : MonoBehaviour
         }
         Instance = this;
         BuildTerrainDatabase();
+        if (randomizeSeed)
+            seed = UnityEngine.Random.Range(0, 10000);
         Generate();
         gameStateManager = GameStateManager.Instance;
         placeUnits();
@@ -231,6 +249,87 @@ public class MapManager : MonoBehaviour
         enemy.NotifyStatsChanged();
     }
 
+    // ---------------------------------------------------------------------
+    // Building: a unit spends Materials to raise a wall on an adjacent tile.
+    // Walls are UnitInstances (Faction.Structure) so enemies attack them
+    // through the normal combat pipeline; they block movement while standing.
+    // ---------------------------------------------------------------------
+
+    /// <summary>Empty, revealed tiles next to the builder where a wall can go.</summary>
+    public List<HexTile> GetBuildableTiles(UnitInstance builder)
+    {
+        List<HexTile> tiles = new List<HexTile>();
+        if (builder == null || builder.currentTile == null) return tiles;
+
+        foreach (HexTile neighbor in builder.currentTile.neighbors)
+        {
+            if (IsBuildable(neighbor))
+                tiles.Add(neighbor);
+        }
+        return tiles;
+    }
+
+    private static bool IsBuildable(HexTile tile)
+    {
+        return tile != null && tile.isRevealed && tile.CanEnter() &&
+               tile.terrainType != TerrainType.Water &&
+               tile.terrainType != TerrainType.Exfil &&
+               !tile.IsExtractionPoint;
+    }
+
+    /// <summary>Spawns a wall on the tile. Does not charge Materials - the caller does.</summary>
+    public UnitInstance BuildWall(HexTile tile)
+    {
+        if (!IsBuildable(tile)) return null;
+
+        Vector3 position = tile.transform.position + Vector3.up * tile.heightOffset;
+        GameObject wallObject;
+        float visualLift = 0f;
+
+        if (wallPrefab != null)
+        {
+            wallObject = Instantiate(wallPrefab, position, Quaternion.identity);
+        }
+        else
+        {
+            wallObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Vector3 size = new Vector3(hexSize * 0.8f, hexSize * 0.7f, hexSize * 0.8f);
+            wallObject.transform.localScale = size;
+            visualLift = size.y * 0.5f;
+
+            // Clicks should fall through to the tile underneath.
+            Collider col = wallObject.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+
+            Renderer wallRenderer = wallObject.GetComponent<Renderer>();
+            if (wallRenderer != null) wallRenderer.material.color = fallbackWallColor;
+        }
+
+        if (!wallObject.TryGetComponent(out UnitInstance wall))
+            wall = wallObject.AddComponent<UnitInstance>();
+
+        wall.Faction = UnitFaction.Structure;
+        wall.unitName = $"Wall_{GenerateUnique4DigitString()}";
+        wallObject.name = wall.unitName;
+        wall.maxHealth = Mathf.Max(1, wallMaxHealth);
+        wall.currentHealth = wall.maxHealth;
+        wall.defensePower = wallDefense;
+        wall.attackPower = 0;
+        wall.attackRange = 0;
+        wall.movementRange = 0;
+        wall.visibilityRange = 0;
+        wall.maxActionsPerTurn = 0;
+        wall.actionsRemaining = 0;
+
+        wall.PlaceOnTile(tile);
+        if (visualLift > 0f)
+            wall.transform.position += Vector3.up * visualLift;
+
+        PlaySpawnEffects(tile.transform.position);
+        wall.NotifyStatsChanged();
+        return wall;
+    }
+
     private void PlaySpawnEffects(Vector3 position)
     {
         if (spawnVfxPrefab != null)
@@ -300,14 +399,26 @@ public class MapManager : MonoBehaviour
     // what a larger initial map would have produced.
     private void GenerateTileAt(int x, int y)
     {
-        float noiseValue = Mathf.PerlinNoise(
-            (x + seed * 10.37f) * noiseScale,
-            (y + seed * 19.53f) * noiseScale);
+        float sx = x + seed * 10.37f;
+        float sy = y + seed * 19.53f;
+        float noiseValue = Mathf.PerlinNoise(sx * noiseScale, sy * noiseScale);
+
+        // Second, finer octave breaks up the single big low-frequency blob so
+        // water/hills show up as several patches instead of one central lake.
+        if (detailWeight > 0f)
+        {
+            float detail = Mathf.PerlinNoise(sx * detailScale + 137.1f, sy * detailScale + 59.7f);
+            noiseValue = Mathf.Lerp(noiseValue, detail, detailWeight);
+        }
 
         Vector2Int gridPosition = new Vector2Int(x, y);
         TerrainType terrain = gridPosition == ExfilTilePosition
             ? TerrainType.Exfil
             : PickTerrain(noiseValue);
+
+        // Keep the player start/exfil corner dry so units can always move out.
+        if (terrain == TerrainType.Water && x <= StartZoneSize && y <= StartZoneSize)
+            terrain = TerrainType.Grass;
         SpawnTile(gridPosition, terrain);
     }
 

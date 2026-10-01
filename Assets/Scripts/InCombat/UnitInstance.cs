@@ -18,7 +18,7 @@ public class UnitInstance : MonoBehaviour
     public int Wounds => PersistentUnit != null ? PersistentUnit.Wounds : 0;
     public UnitRarity Rarity => PersistentUnit != null ? PersistentUnit.Rarity : UnitRarity.Common;
 
-    private const int ExperiencePerLevel = 100;
+    public const int ExperiencePerLevel = 100;
     private const int AttackExperience = 10;
     private const int KillExperience = 20;
     private const int RescueExperience = 25;
@@ -80,6 +80,7 @@ public class UnitInstance : MonoBehaviour
     private static readonly int MageParameter = Animator.StringToHash("Mage");
     private static readonly int MeleHandsParameter = Animator.StringToHash("MeleHands");
     private static readonly int Spawn = Animator.StringToHash("Spawn");
+    private static readonly int Exfil = Animator.StringToHash("Evacuate");
     private string attackAnimationState;
     [Header("Damage Feedback")]
     [Tooltip("Damage at or below this percentage of max health is a 'light' hit (flashes once).")]
@@ -89,10 +90,15 @@ public class UnitInstance : MonoBehaviour
     [SerializeField] private Color damageFlashColor = Color.red;
     [SerializeField] private float flashOnDuration = 0.08f;
     [SerializeField] private float flashOffDuration = 0.08f;
+    [Tooltip("Optional whirl reaction played on hit. Auto-found on this object or its children.")]
+    [SerializeField] private HitWhirlEffect hitWhirl;
     private Coroutine movementCoroutine;
 
     private void Awake()
     {
+        if (hitWhirl == null)
+            hitWhirl = GetComponentInChildren<HitWhirlEffect>(true);
+
         actionsRemaining = maxActionsPerTurn;
         currentHealth = maxHealth;
 
@@ -129,6 +135,9 @@ public class UnitInstance : MonoBehaviour
         maxActionsPerTurn = Mathf.Max(1, unit.MaxMovementPoints);
         Faction = unit.Faction;
         actionsRemaining = maxActionsPerTurn;
+        // Snapshot starting stats for the after-action screen before the battle changes them.
+        if (Faction == UnitFaction.Player && GameStateManager.Instance != null)
+            GameStateManager.Instance.LastBattleReport.GetOrCreate(unit);
         ApplyColorScheme(unit.Archetype);
         ConfigureAnimatorStyle(unit.Archetype);
         if (unit.WeaponPrefab != null && rightHand != null){
@@ -170,11 +179,28 @@ public class UnitInstance : MonoBehaviour
             PersistentUnit.Experience = Experience;
             LevelUp();
         }
+
+        UnitReportEntry entry = ReportEntry();
+        if (entry != null) entry.EndXP = Experience;
+    }
+
+    private UnitReportEntry ReportEntry()
+    {
+        if (Faction != UnitFaction.Player || PersistentUnit == null || GameStateManager.Instance == null) return null;
+        return GameStateManager.Instance.LastBattleReport.GetOrCreate(PersistentUnit);
     }
 
     private void LevelUp()
     {
+        var step = new LevelStep
+        {
+            OldLevel = PersistentUnit.Level, OldMaxHP = PersistentUnit.MaxHP,
+            OldAttack = PersistentUnit.BaseAttack, OldDefense = PersistentUnit.DefensePower
+        };
         PersistentUnit.ApplyLevelUp();
+        step.NewLevel = PersistentUnit.Level; step.NewMaxHP = PersistentUnit.MaxHP;
+        step.NewAttack = PersistentUnit.BaseAttack; step.NewDefense = PersistentUnit.DefensePower;
+        ReportEntry()?.LevelSteps.Add(step);
         SyncProgressionStats();
         Debug.Log($"{unitName} reached level {Level}.");
     }
@@ -246,9 +272,12 @@ public class UnitInstance : MonoBehaviour
         currentTile = tile;
         tile.SetUnit(this);
         transform.position = tile.transform.position + Vector3.up * tile.heightOffset;
-        if (!IsRevealed && tile.isRevealed)
+
+        // Always sync with the tile: a freshly spawned unit has IsRevealed == false
+        // but visible renderers, so on a fogged tile it must be explicitly hidden.
+        if (tile.isRevealed)
             OnTileRevealed();
-        else if (IsRevealed && !tile.isRevealed)
+        else
             OnTileHidden();
     }
 
@@ -491,6 +520,8 @@ public class UnitInstance : MonoBehaviour
 
         PlayAnimatorAction(TakeDamageParameter, damageTaken < 10 ? "Hit_A" : "Hit_B");
         PlayDamageFlash(damageTaken);
+        if (hitWhirl != null)
+            hitWhirl.Play((float)damageTaken / Mathf.Max(1, maxHealth));
     }
 
     private void PlayDamageFlash(int damageTaken)
@@ -560,7 +591,10 @@ public class UnitInstance : MonoBehaviour
             _ => 0
         });
     }
-
+    public void playExfiltrationAnimation()
+    {
+        PlayAnimatorAction(Exfil, "Evacuate");
+    }
     private void PlayAnimatorAction(int parameter, string stateName)
     {
         if (_animator == null || !_animator.isActiveAndEnabled) return;

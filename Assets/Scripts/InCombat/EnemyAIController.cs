@@ -28,6 +28,8 @@ public class EnemyAIController : MonoBehaviour
     [Header("Target Priorities")]
     [SerializeField] private float playerWeight = 1f;
     [SerializeField] private float villagerWeight = 1.25f;
+    [Tooltip("Value of hitting a wall relative to a player unit. Below 1 = enemies prefer units but chew through walls in their way.")]
+    [SerializeField] private float structureWeight = 0.5f;
     [Tooltip("Value for finishing a unit off, on top of the damage dealt.")]
     [SerializeField] private float killBonus = 60f;
     [Tooltip("Extra kill value per point of the victim's attack power (removing threats).")]
@@ -416,7 +418,13 @@ public class EnemyAIController : MonoBehaviour
         if (dealt >= remainingHealth)
             value += killBonus + killThreatBonus * target.attackPower;
 
-        return value * (target.Faction == UnitFaction.Villager ? villagerWeight : playerWeight);
+        float weight = target.Faction switch
+        {
+            UnitFaction.Villager => villagerWeight,
+            UnitFaction.Structure => structureWeight,
+            _ => playerWeight
+        };
+        return value * weight;
     }
 
     //---------------------------------------

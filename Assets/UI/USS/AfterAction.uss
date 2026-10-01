@@ -1,0 +1,119 @@
+/* AfterAction.uss
+   Standalone (this scene doesn't load PhaseShell.uss). The root is transparent
+   so the 3D exfil stage shows through; panels carry their own backgrounds. */
+
+.aa-root {
+    --color-surface: #0E141A;
+    --color-surface-container: #1A2027;
+    --color-surface-container-high: #252B31;
+    --color-primary: #E1FDFF;
+    --color-primary-fixed-dim: #00DBE7;
+    --color-primary-container: #00F2FF;
+    --color-on-primary: #00363A;
+    --color-on-surface: #DDE3EC;
+    --color-on-surface-variant: #B9CACB;
+    --color-gain: #7CFF8A;
+    --color-pop: #FFD23F;
+    --color-danger: #FF5A5F;
+
+    flex-grow: 1;
+    color: var(--color-on-surface);
+}
+
+.hidden { display: none; }
+
+.aa-shake { flex-grow: 1; justify-content: space-between; align-items: center; }
+
+/* ---- banner ---- */
+.aa-banner { margin-top: 36px; align-items: center; }
+.aa-eyebrow {
+    font-size: 12px; letter-spacing: 6px; -unity-font-style: bold;
+    color: var(--color-primary-fixed-dim);
+}
+.aa-title {
+    font-size: 54px; -unity-font-style: bold; letter-spacing: 3px;
+    color: var(--color-pop);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: #3A2400;
+    text-shadow: 0 4px 0 #3A2400;
+    white-space: normal; -unity-text-align: middle-center;
+}
+.aa-title--loss { color: var(--color-danger); -unity-text-outline-color: #3A0A0C; text-shadow: 0 4px 0 #3A0A0C; }
+
+/* ---- card ---- */
+.aa-card-slot { flex-grow: 1; justify-content: flex-end; align-items: center; width: 100%; padding-bottom: 12px; }
+.aa-card {
+    width: 460px; max-width: 92%;
+    padding: 16px 18px;
+    background-color: rgba(14, 20, 26, 0.92);
+    border-width: 3px; border-color: var(--color-primary-fixed-dim);
+    border-radius: 14px;
+    opacity: 0;
+}
+.aa-card--fallen { border-color: #5A6168; background-color: rgba(30, 32, 36, 0.92); }
+.aa-card--fallen .aa-icon { -unity-background-image-tint-color: #6A6A6A; }
+.aa-card--fallen .aa-name { color: #9AA0A6; }
+
+.aa-card-head { flex-direction: row; align-items: center; margin-bottom: 12px; }
+.aa-icon {
+    width: 84px; height: 84px; border-radius: 10px;
+    background-color: var(--color-surface-container-high);
+    border-width: 2px; border-color: #3A494B;
+    margin-right: 14px;
+}
+.aa-card-id { flex-grow: 1; }
+.aa-name { font-size: 26px; -unity-font-style: bold; letter-spacing: 1px; }
+.aa-level { font-size: 20px; -unity-font-style: bold; color: var(--color-primary); }
+.aa-level--pop { color: var(--color-pop); }
+
+.aa-badge {
+    font-size: 18px; -unity-font-style: bold; letter-spacing: 2px;
+    color: var(--color-on-primary); background-color: var(--color-pop);
+    padding: 6px 12px; border-radius: 8px;
+    opacity: 0;
+}
+
+/* ---- XP bar ---- */
+.aa-xp-track {
+    height: 30px; border-radius: 15px; overflow: hidden;
+    background-color: var(--color-surface-container-high);
+    justify-content: center; margin-bottom: 12px;
+}
+.aa-xp-fill {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+    background-color: var(--color-primary-container);
+}
+.aa-xp-fill--full { background-color: var(--color-pop); }
+.aa-xp-label {
+    font-size: 15px; -unity-font-style: bold; -unity-text-align: middle-center;
+    color: var(--color-on-primary);
+    -unity-text-outline-width: 1px; -unity-text-outline-color: rgba(255,255,255,0.4);
+}
+
+/* ---- stats ---- */
+.aa-stats { flex-direction: row; justify-content: space-between; }
+.aa-stat {
+    flex-grow: 1; font-size: 19px; -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    padding: 8px 4px; margin: 0 3px; border-radius: 8px;
+    background-color: var(--color-surface-container);
+}
+.aa-stat--gain { color: var(--color-gain); background-color: rgba(60, 140, 70, 0.35); }
+
+.aa-note {
+    font-size: 14px; color: var(--color-on-surface-variant);
+    -unity-text-align: middle-center; margin-top: 10px; white-space: normal;
+}
+
+/* ---- footer ---- */
+.aa-footer { align-items: center; margin-bottom: 28px; height: 90px; justify-content: center; }
+.aa-hint { font-size: 12px; letter-spacing: 4px; color: var(--color-on-surface-variant); }
+.aa-continue {
+    width: 340px; height: 68px; border-radius: 8px; border-width: 0;
+    font-size: 22px; -unity-font-style: bold; letter-spacing: 3px;
+    background-color: var(--color-pop); color: #3A2400;
+}
+.aa-continue:hover { background-color: #FFE27A; }
+
+/* ---- overlays ---- */
+.aa-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+.aa-flash { background-color: white; opacity: 0; }

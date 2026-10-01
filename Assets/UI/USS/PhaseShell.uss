@@ -146,12 +146,12 @@
 
 /* Save Game - small icon-only button pinned to the header row's right edge. */
 .save-button {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     margin: 0;
     padding: 0;
     border-width: 1px;
-    border-radius: 4px;
+    border-radius: 6px;
     border-color: var(--color-outline-variant);
     background-color: var(--color-surface-container-high);
     align-items: center;
@@ -160,8 +160,8 @@
 .save-button:hover { background-color: var(--color-surface-container-highest); border-color: var(--color-primary-fixed-dim); }
 .save-button:active { background-color: var(--color-secondary-container); }
 .save-button__icon {
-    width: 16px;
-    height: 16px;
+    width: 26px;
+    height: 26px;
     background-image: url("project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_8_tab_.png?fileID=21300000&guid=64df4b6d7138b2c489e0b9a444cfa521&type=3#T_8_tab_");
     -unity-background-image-tint-color: var(--color-primary-fixed-dim);
 }

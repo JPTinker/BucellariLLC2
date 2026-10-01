@@ -22,7 +22,7 @@
 }
 
 .title-panel {
-    width: 360px;
+    width: 480px;
     max-width: 90%;
     align-items: stretch;
 }
@@ -46,13 +46,13 @@
 }
 
 .btn {
-    height: 48px;
-    border-radius: 4px;
+    height: 68px;
+    border-radius: 6px;
     border-width: 0;
-    font-size: 12px;
+    font-size: 18px;
     -unity-font-style: bold;
-    letter-spacing: 1.5px;
-    margin: 0 0 10px 0;
+    letter-spacing: 2px;
+    margin: 0 0 14px 0;
 }
 .btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
 .btn--primary:hover { background-color: var(--color-primary-fixed-dim); }
@@ -82,7 +82,7 @@
     background-color: rgba(0, 0, 0, 0.7);
 }
 .confirm-card {
-    width: 340px;
+    width: 440px;
     max-width: 90%;
     padding: 24px;
     border-radius: 6px;

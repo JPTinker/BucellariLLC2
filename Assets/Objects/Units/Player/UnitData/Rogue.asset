@@ -26,12 +26,13 @@ MonoBehaviour:
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
   MaxHP: 100
-  BaseAttack: 10
+  BaseAttack: 8
   AttackRange: 1
   MoveSpeed: 2
-  MaxMovementPoints: 2
+  MaxMovementPoints: 3
   VisibilityRange: 3
   defensePower: 2
-  healsOthers: 1
   Faction: 0
   AnimationStyle: 3
+  ProjectilePrefab: {fileID: 0}
+  ProjectileLaunchDelay: 0.3

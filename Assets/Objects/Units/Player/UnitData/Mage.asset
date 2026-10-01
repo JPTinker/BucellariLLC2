@@ -34,7 +34,7 @@ MonoBehaviour:
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
   MaxHP: 100
-  BaseAttack: 5
+  BaseAttack: 6
   AttackRange: 2
   MoveSpeed: 2
   MaxMovementPoints: 2

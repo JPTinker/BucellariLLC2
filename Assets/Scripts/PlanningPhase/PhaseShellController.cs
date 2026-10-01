@@ -72,7 +72,8 @@ public class PhaseShellController : MonoBehaviour
             return gsm != null &&
                 gsm.HasSelectedCampaignAction &&
                 rosterController != null &&
-                rosterController.SelectedUnits.Count > 0 &&
+                (gsm.SelectedCampaignAction == GameStateManager.CampaignAction.Rest ||
+                 rosterController.SelectedUnits.Count > 0) &&
                 gsm.IdleVillagers == 0;
         }
     }

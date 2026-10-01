@@ -179,7 +179,7 @@ public class PlanningPhaseController : MonoBehaviour
         // player picks first, then their pick plays through the reveal animation
         // before settling into the roster list. Level-ups and new-recruit reveals
         // follow, in that order, once any draft is resolved.
-        if (gsm.PendingDraftOptions.Count > 0 && _draftOverlay != null && _draftOptionsContainer != null)
+        if (gsm.HasPendingDraft && _draftOverlay != null && _draftOptionsContainer != null)
         {
             StartCoroutine(PlayDraftSequence());
         }
@@ -191,7 +191,7 @@ public class PlanningPhaseController : MonoBehaviour
     public void LevelChangeDraftOffer()
     {
         var gsm = GameStateManager.Instance;
-        if (gsm.PendingDraftOptions.Count > 0 && _draftOverlay != null && _draftOptionsContainer != null)
+        if (gsm.HasPendingDraft &&_draftOverlay != null && _draftOptionsContainer != null)
         {
             StartCoroutine(PlayDraftSequence());
         }
@@ -260,7 +260,54 @@ public class PlanningPhaseController : MonoBehaviour
 
         cardRoot.RegisterCallback<ClickEvent>(_ => ToggleSelection(unit, cardRoot));
 
+        cardRoot.Add(BuildDismissButton(unit));
+
         return card;
+    }
+
+    /// <summary>
+    /// Two-click "dismiss" button: the first click arms it ("CONFIRM?"), the second
+    /// within 3 seconds converts the unit into a Villager.
+    /// </summary>
+    private Button BuildDismissButton(Unit unit)
+    {
+        const string idleText = "DISMISS → +1 VILLAGER";
+        var button = new Button { text = idleText };
+        button.AddToClassList("unit-dismiss-button");
+        button.style.marginTop = 4;
+        button.style.fontSize = 11;
+
+        IVisualElementScheduledItem resetTimer = null;
+        button.clicked += () =>
+        {
+            var gsm = GameStateManager.Instance;
+            if (gsm == null) return;
+
+            if (!gsm.CanDismissUnit(unit, out string reason))
+            {
+                FindAnyObjectByType<NotificationManager>()?.ShowNotification(reason);
+                return;
+            }
+
+            if (button.text == idleText)
+            {
+                button.text = "CONFIRM? (cannot undo)";
+                resetTimer = button.schedule.Execute(() => button.text = idleText);
+                resetTimer.ExecuteLater(3000);
+                return;
+            }
+
+            resetTimer?.Pause();
+            _selectedUnits.Remove(unit);
+            gsm.DismissUnitForVillager(unit);
+            RefreshRosterList();
+            RefreshSelectionCounter();
+            FindAnyObjectByType<NotificationManager>()?.ShowNotification($"{unit.UnitName} dismissed - +1 villager");
+        };
+
+        // Don't let the click also toggle the card's selection.
+        button.RegisterCallback<ClickEvent>(e => e.StopPropagation());
+        return button;
     }
 
     /// <summary>
@@ -412,10 +459,20 @@ public class PlanningPhaseController : MonoBehaviour
             !PhaseShellController.Instance.CanEngage)
             return;
 
-        if (gsm.SetActiveTeam(_selectedUnits))
-        {
-            gsm.LoadCombatMap();
-        }
+        bool resting = gsm.SelectedCampaignAction == GameStateManager.CampaignAction.Rest;
+
+        // Rest needs no squad; anything else must have a valid team to deploy.
+        if (!resting && !gsm.SetActiveTeam(_selectedUnits))
+            return;
+
+        // ExecuteCycle applies the chosen course: Rest heals and stays here,
+        // everything else loads the battle scene.
+        if (!gsm.ExecuteCycle() || !resting)
+            return;
+
+        RefreshRosterList();
+        PhaseShellController.Instance?.RefreshHeader();
+        FindAnyObjectByType<NotificationManager>()?.ShowNotification("Squad rested - all units restored");
     }
 
     // ---------------------------------------------------------------
@@ -643,8 +700,10 @@ public class PlanningPhaseController : MonoBehaviour
         PhaseShellController.Instance?.RefreshHeader();
 
         if (GameStateManager.Instance.PendingDraftsToOffer > 0)
-        {
             GameStateManager.Instance.OfferNextUnitDraft();
+
+        if (GameStateManager.Instance.HasPendingDraft)
+        {
             yield return StartCoroutine(PlayDraftSequence());
         }
         else

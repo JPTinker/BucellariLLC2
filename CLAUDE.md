@@ -10,7 +10,9 @@ There is no CLI build/lint/test workflow. Develop by opening the project in the 
 
 ## Scene flow
 
-Enabled build scenes: `TitleScreen` → `DecisionPhase` → `BattlePhase` → back to `DecisionPhase` (`SampleScene` is disabled).
+Enabled build scenes: `TitleScreen` → `DecisionPhase` → `BattlePhase` → `AfterAction` → back to `DecisionPhase` (`SampleScene` is disabled).
+
+- **AfterAction** (`AfterAction/AfterActionController`): rewards screen. Reads `GameStateManager.LastBattleReport` (`BattleReport`, filled during combat by `UnitInstance`/`GameStateManager`), plays exfil, XP bars, level-ups, fallen cards. `Assets/Editor/AfterActionSceneBuilder` creates the scene and build entry (Tools > Create AfterAction Scene). `CombatManager.CheckLevelEnd` → `GameStateManager.EndBattle()` is what leaves the battle.
 
 - **TitleScreen** (`Global/TitleScreenController`): New Game / Continue. Continue sets `SaveSystem.LoadOnNextStart = true` and loads `DecisionPhase`.
 - **DecisionPhase** (planning): one `UIDocument` driven by `PhaseShellController`, which swaps tab content (Roster, Decision, Map, Store-placeholder) into a content slot. Tab controllers (`PlanningPhaseController` = roster tab, `DecisionPhaseController`, `CampaignMapController`) are plain components with no `UIDocument` of their own; templates and controller refs are assigned in the Inspector. `PhaseTabSwitcher` is a legacy predecessor of `PhaseShellController`.

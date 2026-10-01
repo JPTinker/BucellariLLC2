@@ -1,0 +1,42 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="../USS/AfterAction.uss"/>
+    <ui:VisualElement name="aa-root" class="aa-root">
+        <ui:VisualElement name="aa-shake" class="aa-shake">
+            <ui:VisualElement class="aa-banner">
+                <ui:Label name="aa-eyebrow" text="AFTER ACTION" class="aa-eyebrow"/>
+                <ui:Label name="aa-title" text="MISSION COMPLETE" class="aa-title"/>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="aa-card-slot" class="aa-card-slot">
+                <ui:VisualElement name="aa-card" class="aa-card">
+                    <ui:VisualElement class="aa-card-head">
+                        <ui:VisualElement name="aa-icon" class="aa-icon"/>
+                        <ui:VisualElement class="aa-card-id">
+                            <ui:Label name="aa-name" text="UNIT" class="aa-name"/>
+                            <ui:Label name="aa-level" text="LV. 1" class="aa-level"/>
+                        </ui:VisualElement>
+                        <ui:Label name="aa-badge" text="LEVEL UP!" class="aa-badge"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="aa-xp-track">
+                        <ui:VisualElement name="aa-xp-fill" class="aa-xp-fill"/>
+                        <ui:Label name="aa-xp-label" text="XP 0 / 100" class="aa-xp-label"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement class="aa-stats">
+                        <ui:Label name="aa-stat-hp" text="HP  0" class="aa-stat"/>
+                        <ui:Label name="aa-stat-atk" text="ATK  0" class="aa-stat"/>
+                        <ui:Label name="aa-stat-def" text="DEF  0" class="aa-stat"/>
+                    </ui:VisualElement>
+                    <ui:Label name="aa-note" text="" class="aa-note"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="aa-footer">
+                <ui:Label name="aa-hint" text="TAP TO SKIP" class="aa-hint"/>
+                <ui:Button name="aa-continue" text="CONTINUE" class="aa-continue hidden"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="aa-confetti" class="aa-overlay" picking-mode="Ignore"/>
+        <ui:VisualElement name="aa-flash" class="aa-overlay aa-flash" picking-mode="Ignore"/>
+    </ui:VisualElement>
+</ui:UXML>

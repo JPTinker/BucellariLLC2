@@ -36,6 +36,7 @@ public class CombatPhaseUIController : MonoBehaviour
     private Button fortifyButton;
     private Button extractButton;
     private Button scoutButton;
+    private Button buildButton;
     private Button endTurnButton;
 
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
@@ -89,6 +90,7 @@ public class CombatPhaseUIController : MonoBehaviour
         Fortify,
         Extract,
         Scout,
+        BuildWall,
         EndTurn
     }
 
@@ -129,8 +131,10 @@ public class CombatPhaseUIController : MonoBehaviour
         fortifyButton = root.Q<Button>("action-fortify");
         extractButton = root.Q<Button>("action-extract");
         scoutButton = root.Q<Button>("action-scout");
+        buildButton = root.Q<Button>("action-build");
         endTurnButton = root.Q<Button>("end-turn");
 
+        buildButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.BuildWall));
         fortifyButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Fortify));
         extractButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Extract));
         scoutButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Scout));
@@ -266,6 +270,7 @@ public class CombatPhaseUIController : MonoBehaviour
             fortifyButton?.SetEnabled(false);
             extractButton?.SetEnabled(false);
             scoutButton?.SetEnabled(false);
+            buildButton?.SetEnabled(false);
             return;
         }
 
@@ -287,6 +292,14 @@ public class CombatPhaseUIController : MonoBehaviour
 
         // Scout can be used if they have actions remaining
         scoutButton?.SetEnabled(true);
+
+        // Build Wall needs enough Materials and a free adjacent tile.
+        MapManager map = MapManager.Instance;
+        GameStateManager gsm = GameStateManager.Instance;
+        bool canBuild = map != null && gsm != null &&
+                        gsm.Settlement.Materials >= map.wallMaterialCost &&
+                        map.GetBuildableTiles(unit).Count > 0;
+        buildButton?.SetEnabled(canBuild);
     }
 
     private void RaiseAction(CombatAction action)

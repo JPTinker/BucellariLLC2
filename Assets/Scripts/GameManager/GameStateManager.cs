@@ -226,6 +226,11 @@ public class GameStateManager : MonoBehaviour
     public int PendingDraftsToOffer { get; private set; }
     public bool CanDraftSavedVillager { get; private set; }
 
+    public bool UnitsFull => FullRoster.Count >= Settlement.UnitCapacity;
+    public bool VillagersFull => Settlement.Villagers >= Settlement.VillagerCapacity;
+    /// <summary>True when a reward draft (unit cards and/or a villager card) is waiting to be shown.</summary>
+    public bool HasPendingDraft => PendingDraftOptions.Count > 0 || CanDraftSavedVillager;
+
     [Header("Extraction & Combat Progress")]
     // Tracks units that successfully extracted during the current battle
     public List<Unit> ExtractedUnitsThisBattle = new List<Unit>();
@@ -235,6 +240,11 @@ public class GameStateManager : MonoBehaviour
     public int EnemiesKilledThisBattle = 0;
     // Tracks player units lost (died, not extracted) during the current battle
     public int CasualtiesThisBattle = 0;
+
+    /// <summary>Per-unit record of the battle that just ended; read by the AfterAction scene.</summary>
+    public BattleReport LastBattleReport { get; private set; } = new BattleReport();
+    private bool _battleEnding;
+    public const string AfterActionScene = "AfterAction";
 
     [Header("Last Cycle Debrief (read-only snapshot for UI)")]
 
@@ -290,6 +300,13 @@ public class GameStateManager : MonoBehaviour
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         Debug.Log($"Scene loaded: {scene.name}");
+        if (scene.name == "BattlePhase")
+        {
+            // Fresh report for the new battle; units add their entry when MapManager spawns them in Start().
+            LastBattleReport = new BattleReport();
+            ExtractedUnitsThisBattle.Clear();
+            _battleEnding = false;
+        }
         // Add your custom logic here (e.g., spawn player, update UI)
         if (scene.name == "DecisionPhase")
         {
@@ -405,7 +422,15 @@ public class GameStateManager : MonoBehaviour
     public void OfferUnitDraft(int optionCount = 2, bool allowVillagerChoice = false)
     {
         Debug.Log("Offering draft");
-        CanDraftSavedVillager = allowVillagerChoice;
+        // Capacity gating: full roster -> villager card only; full villagers ->
+        // unit cards only; both full -> nothing is offered.
+        CanDraftSavedVillager = allowVillagerChoice && !VillagersFull;
+        if (UnitsFull)
+        {
+            PendingDraftOptions.Clear();
+            PendingDraftRarities.Clear();
+            return;
+        }
         if (AvailablePlayerArchetypes == null || AvailablePlayerArchetypes.Count == 0)
         {
             Debug.LogError("No UnitData archetypes assigned in GameStateManager!");
@@ -449,10 +474,35 @@ public class GameStateManager : MonoBehaviour
 
     public void OfferNextUnitDraft()
     {
-        if (PendingDraftsToOffer <= 0) return;
+        // Keep consuming offers until one actually has something to show; if the
+        // settlement is full on both counts the remaining rewards are forfeited.
+        while (PendingDraftsToOffer > 0)
+        {
+            OfferUnitDraft(2, allowVillagerChoice: true);
+            PendingDraftsToOffer--;
+            if (HasPendingDraft) return;
+        }
+    }
 
-        OfferUnitDraft(2, allowVillagerChoice: true);
-        PendingDraftsToOffer--;
+    /// <summary>Why <paramref name="unit"/> can't be dismissed, or null when it can.</summary>
+    public bool CanDismissUnit(Unit unit, out string reason)
+    {
+        reason = null;
+        if (unit == null || !FullRoster.Contains(unit)) reason = "Unit not found.";
+        else if (FullRoster.Count <= 1) reason = "You must keep at least one unit.";
+        else if (VillagersFull) reason = "Villager capacity is full.";
+        return reason == null;
+    }
+
+    /// <summary>Removes a unit from the roster permanently and converts them to a Villager.</summary>
+    public bool DismissUnitForVillager(Unit unit)
+    {
+        if (!CanDismissUnit(unit, out _)) return false;
+        FullRoster.Remove(unit);
+        ActiveTeam.Remove(unit);
+        PendingReveal.Remove(unit);
+        Settlement.Villagers++;
+        return true;
     }
 
     public void ResolveUnitDraft(UnitData chosen)
@@ -602,39 +652,72 @@ public class GameStateManager : MonoBehaviour
 
         // 1. Set the unit as saved / extracted
         unitInstance.IsExtracted = true;
-        CombatManager.Instance.HandleUnitExtract(unitInstance);
 
         // Write the battle's damage back onto the persistent roster record
         // before the UnitInstance is destroyed, so it carries over into the
         // next battle instead of resetting to full - only Rest heals it back up.
-        if (unitInstance.PersistentUnit != null)
-            unitInstance.PersistentUnit.CurrentHP = unitInstance.currentHealth;
-        // If your UnitInstance maps back to a persistent Unit data model, 
-        // store or track it here so it's preserved for the next screen.
-        // (Assuming UnitInstance has a reference to its underlying persistent 'Unit' or data)
-        // ExtractedUnitsThisBattle.Add(unitInstance.persistentUnitData);
+        Unit persistent = unitInstance.PersistentUnit;
+        if (persistent != null)
+        {
+            persistent.CurrentHP = unitInstance.currentHealth;
+            if (!ExtractedUnitsThisBattle.Contains(persistent))
+                ExtractedUnitsThisBattle.Add(persistent);
+        }
 
-        // 3. If the unit was carrying / saved any villagers, tally them up
-        // (Adjust property name if your UnitInstance tracks rescued villagers differently)
+        // 2. If the unit was carrying / saved any villagers, tally them up
+        int rescued = 0;
         if (unitInstance.rescuedUnitData[0] != null)
         {
             Debug.Log("Villager has been saved");
-            SavedVillagersThisBattle++;
+            rescued++;
         }
         if (unitInstance.rescuedUnitData[1] != null)
         {
-            SavedVillagersThisBattle++;
+            rescued++;
+        }
+        SavedVillagersThisBattle += rescued;
+
+        UnitReportEntry entry = LastBattleReport.GetOrCreate(persistent);
+        if (entry != null)
+        {
+            entry.Outcome = BattleOutcome.Extracted;
+            entry.RescuedVillagers = rescued;
+            entry.EndXP = unitInstance.Experience;
         }
 
-
-        // 2. Remove the unit from the battlefield (Disable GameObject / destroy)
-        // This triggers cleanup in your CombatManager/Roster
+        // 3. Remove the unit from the battlefield. HandleUnitExtract may end the
+        // battle once the last player unit is gone (see EndBattle).
+        CombatManager.Instance.HandleUnitExtract(unitInstance);
         Destroy(unitInstance.gameObject);
 
         Debug.Log($"GameStateManager: Unit {unitInstance.unitName} successfully extracted!");
+    }
 
-        // 4. Check if the player has any living/active units left on the battlefield
-        CheckForCombatEnd();
+    /// <summary>
+    /// Finishes the battle: seals the report and hands off to the AfterAction
+    /// scene. Called by CombatManager when no player units remain on the map.
+    /// </summary>
+    public void EndBattle(float delaySeconds = 0.8f)
+    {
+        if (_battleEnding) return;
+        _battleEnding = true;
+
+        LastBattleReport.EnemiesKilled = EnemiesKilledThisBattle;
+        LastBattleReport.VillagersSaved = SavedVillagersThisBattle;
+        LastBattleReport.Won = ExtractedUnitsThisBattle.Count > 0;
+
+        // A wiped squad would leave the campaign with nobody to field.
+        if (FullRoster.Count == 0) GrantStarterUnits(2);
+
+        SetState(GameState.InCombat);
+        StartCoroutine(LoadSceneAfterDelay(AfterActionScene, delaySeconds));
+    }
+
+    private System.Collections.IEnumerator LoadSceneAfterDelay(string sceneName, float delay)
+    {
+        // Lets the last hit / extract play out before the scene swap.
+        if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
+        SceneManager.LoadScene(sceneName);
     }
 
     /// <summary>Called by VillagerAIController when a villager reaches the evacuation zone under its own power.</summary>
@@ -655,37 +738,6 @@ public class GameStateManager : MonoBehaviour
         Debug.Log($"GameStateManager: {villager.unitName} reached the evacuation zone and was saved!");
 
         Destroy(villager.gameObject);
-    }
-
-    private void CheckForCombatEnd(String sceneName = "DecisionPhase")
-    {
-        // Find all remaining active player units on the field
-        UnitInstance[] remainingUnits = FindObjectsByType<UnitInstance>();
-        
-        bool hasActiveUnits = false;
-
-        foreach (var u in remainingUnits)
-        {
-            if (u != null && u.Faction == UnitFaction.Player && !u.IsDead && !u.IsExtracted)
-            {
-                hasActiveUnits = true;
-                break;
-            }
-        }
-        
-
-        // If no active units left, end the round/combat phase
-        if (!hasActiveUnits)
-        {
-            Debug.Log("GameStateManager: All player units are dead or extracted. Ending round.");
-            SetState(GameState.InCombat);
-            SceneManager.LoadScene(sceneName);
-            // Trigger your round end logic here (e.g., call CombatManager.Instance.EndRound() or invoke an event)
-            if (CombatManager.Instance != null)
-            {
-                // CombatManager.Instance.TriggerRoundEnd();
-            }
-        }
     }
 
     // ============================================================
@@ -847,10 +899,13 @@ public class GameStateManager : MonoBehaviour
         // Apply this cycle's Campaign Map course. Stay Put's yield doubling
         // already happened above (it's baked into the forecast); Rest and
         // Travel have their own effects to commit here.
+        // Rest heals everyone and skips this cycle's battle entirely.
+        bool skipBattle = false;
         switch (SelectedCampaignAction)
         {
             case CampaignAction.Rest:
                 RestAllUnits();
+                skipBattle = true;
                 break;
             case CampaignAction.Travel:
                 EvacuationCyclesRemaining = Mathf.Max(0, EvacuationCyclesRemaining - 1);
@@ -862,12 +917,20 @@ public class GameStateManager : MonoBehaviour
         // Hand the Vanguard block off to combat - ActiveTeam already holds
         // whichever units are picked on the Roster tab (kept live in sync by
         // PlanningPhaseController.ToggleSelection).
-        if (ActiveTeam.Count > 0)
+        if (!skipBattle && ActiveTeam.Count > 0)
         {
             LoadCombatMap(battleSceneName);
         }
 
         CurrentAllocation.Reset(0, 0, 0);
+        return true;
+    }
+
+    /// <summary>Spends settlement Materials (e.g. to build a wall mid-battle). Returns false, spending nothing, if short.</summary>
+    public bool TrySpendMaterials(int amount)
+    {
+        if (amount < 0 || Settlement.Materials < amount) return false;
+        Settlement.Materials -= amount;
         return true;
     }
 
@@ -1014,7 +1077,7 @@ public class GameStateManager : MonoBehaviour
             PendingDraftRarities.Add(i < d.PendingDraftRarities.Count ? d.PendingDraftRarities[i] : UnitRarity.Common);
         }
         PendingDraftsToOffer = d.PendingDraftsToOffer;
-        CanDraftSavedVillager = d.CanDraftSavedVillager && PendingDraftOptions.Count > 0;
+        CanDraftSavedVillager = d.CanDraftSavedVillager;
 
         LastCycleKills = d.LastCycleKills;
         LastCycleVillagersSaved = d.LastCycleVillagersSaved;
@@ -1039,7 +1102,15 @@ public class GameStateManager : MonoBehaviour
     /// <summary>Call from CombatManager when a player unit dies (not extracted).</summary>
     public void RegisterCasualty(Unit unit)
     {
-        if (unit != null) FullRoster.Remove(unit);
+        if (unit != null)
+        {
+            FullRoster.Remove(unit);
+            ActiveTeam.Remove(unit);
+            PendingReveal.Remove(unit);
+
+            UnitReportEntry entry = LastBattleReport.GetOrCreate(unit);
+            if (entry != null) entry.Outcome = BattleOutcome.Died;
+        }
         CasualtiesThisBattle++;
     }
 
