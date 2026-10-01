@@ -4,8 +4,8 @@
         <ui:VisualElement class="title-panel">
             <ui:Label text="ESCAPE PARTY" class="title-eyebrow"/>
             <ui:Label name="title-heading" text="BUCELLARI" class="title-heading"/>
-            <ui:Button name="btn-continue" text="CONTINUE" class="btn btn--primary"/>
-            <ui:Button name="btn-new-game" text="NEW GAME" class="btn btn--ghost"/>
+            <ui:Button name="btn-continue" text="CONTINUE" class="btn btn--primary" style="height: 120px;"/>
+            <ui:Button name="btn-new-game" text="NEW GAME" class="btn btn--ghost" style="height: 120px;"/>
             <ui:Label name="save-hint" text="No saved game found" class="save-hint"/>
         </ui:VisualElement>
         <ui:VisualElement name="confirm-overlay" class="confirm-overlay hidden">
