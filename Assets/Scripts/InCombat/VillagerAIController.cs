@@ -118,7 +118,7 @@ public class VillagerAIController : MonoBehaviour
         int cost = 0;
         for (int i = 1; i < path.Count; i++)
         {
-            cost += Mathf.Max(1, path[i].movementCost);
+            cost += HexPathfinder.StepCost(i == 1, path[i], movementRange);
             if (cost > movementRange) break;
             result = path[i];
         }

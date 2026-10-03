@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b3768ec8fb35c44bb2c8a3219a0c0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
-  speed: 1
+  speed: 1.25
   arcHeight: 0.1
   impactEffectPrefab: {fileID: 0}
   impactEffectLifetime: 2

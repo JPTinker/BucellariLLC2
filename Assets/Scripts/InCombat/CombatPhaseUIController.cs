@@ -162,7 +162,7 @@ public class CombatPhaseUIController : MonoBehaviour
     /// (neither runs mid-battle), but Units can drop mid-fight via casualties, so
     /// this is re-pulled after every action alongside the roster/townsfolk panels.
     /// </summary>
-    private void RefreshSettlementLedger()
+    public void RefreshSettlementLedger()
     {
         GameStateManager gsm = GameStateManager.Instance;
         if (gsm == null) return;
@@ -288,7 +288,6 @@ public class CombatPhaseUIController : MonoBehaviour
         // Rule 3: If the unit is already fortified then fortify is disabled
         // (Change 'isFortified' to 'IsFortified' if your property casing differs)
         bool isFortified = unit.IsFortified; 
-        fortifyButton?.SetEnabled(!isFortified);
 
         // Scout can be used if they have actions remaining
         scoutButton?.SetEnabled(true);
@@ -296,6 +295,9 @@ public class CombatPhaseUIController : MonoBehaviour
         // Build Wall needs enough Materials and a free adjacent tile.
         MapManager map = MapManager.Instance;
         GameStateManager gsm = GameStateManager.Instance;
+        bool canFortify = !isFortified && map != null && gsm != null &&
+                          gsm.Settlement.Materials >= map.fortifyMaterialCost;
+        fortifyButton?.SetEnabled(canFortify);
         bool canBuild = map != null && gsm != null &&
                         gsm.Settlement.Materials >= map.wallMaterialCost &&
                         map.GetBuildableTiles(unit).Count > 0;

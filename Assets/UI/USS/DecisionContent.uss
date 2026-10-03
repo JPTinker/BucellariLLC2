@@ -56,7 +56,6 @@
     padding: 8px;
     margin-right: 6px;
 }
-.debrief__stat:last-child { margin-right: 0; }
 
 /* ---------- Section headers ---------- */
 .section-header-row {
@@ -239,7 +238,6 @@
     padding: 8px 10px;
     margin: 0 6px 0 0;
 }
-.course-option:last-child { margin-right: 0; }
 .course-option:hover { background-color: var(--color-surface-container); }
 .campaign-option--selected {
     border-color: var(--color-primary-fixed);

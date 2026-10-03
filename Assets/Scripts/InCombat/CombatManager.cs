@@ -145,11 +145,21 @@ public class CombatManager : MonoBehaviour
 
         // Same tail as every other action: spend the action, then drop the selection.
         if (built) TakeAction(builder);
+        combatUIManager?.RefreshSettlementLedger();
         ClearSelection();
     }
 
-    private static void HandleFortifyClicked(UnitInstance unit)
+    private void HandleFortifyClicked(UnitInstance unit)
     {
+        MapManager map = MapManager.Instance;
+        GameStateManager gsm = GameStateManager.Instance;
+        int cost = map != null ? map.fortifyMaterialCost : 0;
+        if (gsm == null || !gsm.TrySpendMaterials(cost))
+        {
+            notificationManager?.ShowNotification($"Not enough materials (need {cost})");
+            return;
+        }
+
         unit.onFortify();
         Debug.Log($"CombatManager: Fortify clicked for {unit.unitName}.");
     }

@@ -11,30 +11,30 @@
 */
 
 .phase-root {
-    --color-surface: #0E141A;
-    --color-surface-container-low: #161C22;
-    --color-surface-container: #1A2027;
-    --color-surface-container-high: #252B31;
-    --color-surface-container-highest: #2F353C;
+    --color-surface: #1a2634;
+    --color-surface-container-low: #1f2e3f;
+    --color-surface-container: #243447;
+    --color-surface-container-high: #2c4057;
+    --color-surface-container-highest: #35506a;
 
-    --color-primary: #E1FDFF;
+    --color-primary: #e0fbff;
     --color-primary-fixed: #74F5FF;
-    --color-primary-fixed-dim: #00DBE7;
+    --color-primary-fixed-dim: #00dbe7;
     --color-primary-container: #00F2FF;
     --color-on-primary: #00363A;
 
-    --color-on-surface: #DDE3EC;
-    --color-on-surface-variant: #B9CACB;
-    --color-outline: #849495;
-    --color-outline-variant: #3A494B;
+    --color-on-surface: #e0fbff;
+    --color-on-surface-variant: #a9c4d0;
+    --color-outline: #6f8ca0;
+    --color-outline-variant: #35506a;
 
     --color-error: #FFB4AB;
     --color-error-container: #93000A;
     --color-on-error-container: #FFDAD6;
 
     --color-secondary-fixed: #CDE7EB;
-    --color-secondary-container: #324B4E;
-    --color-on-secondary-container: #A0BABE;
+    --color-secondary-container: #2c4a56;
+    --color-on-secondary-container: #a9c4d0;
 
     flex-grow: 1;
     background-color: var(--color-surface);
@@ -65,7 +65,7 @@
     border-right-color: rgba(0, 242, 255, 0.1);
 }
 .shell-sidebar .stats-header { margin: 12px; }
-.shell-sidebar .stats-header__grid { flex-direction: row; flex-wrap: wrap; }
+.shell-sidebar .stats-header__grid { flex-direction: row; flex-wrap: wrap; margin-right: 0; }
 .shell-sidebar .stats-header__cell {
     width: 47%;
     flex-grow: 0;
@@ -117,9 +117,7 @@
 .row--space-between { justify-content: space-between; }
 .row--baseline { align-items: flex-end; }
 .row--gap-sm > * { margin-right: 8px; }
-.row--gap-sm > *:last-child { margin-right: 0; }
 .row--gap-xs > * { margin-right: 4px; }
-.row--gap-xs > *:last-child { margin-right: 0; }
 
 .chip {
     font-size: 9px;
@@ -166,7 +164,7 @@
     -unity-background-image-tint-color: var(--color-primary-fixed-dim);
 }
 .save-button:hover .save-button__icon { -unity-background-image-tint-color: var(--color-primary); }
-.stats-header__grid { flex-direction: row; }
+.stats-header__grid { flex-direction: row; margin-right: -6px; } /* cancels last cell trailing margin (USS has no :last-child) */
 .stats-header__cell {
     flex-grow: 1;
     flex-basis: 0;
@@ -177,7 +175,6 @@
     margin-right: 6px;
     min-height: 64px;
 }
-.stats-header__cell:last-child { margin-right: 0; }
 
 /* ---------- Swappable content area ---------- */
 .content-slot { flex-grow: 1; }
@@ -189,7 +186,7 @@
     align-items: center;
     height: 80px;
     flex-shrink: 0;
-    background-color: rgba(14, 20, 26, 0.92);
+    background-color: rgba(26, 38, 52, 0.92);
     border-top-width: 1px;
     border-top-color: rgba(0, 242, 255, 0.1);
 }
@@ -232,3 +229,6 @@
 .readiness-row--done { color: var(--color-primary-fixed); }
 .readiness-row--extra { display: none; }
 .readiness-row--extra.readiness-row--active { display: flex; }
+
+/* Sora (Assets/Fonts/Sora); inherited by everything under the root. */
+.phase-root { -unity-font-definition: url("/Assets/Fonts/Sora/Sora-Regular.ttf"); }

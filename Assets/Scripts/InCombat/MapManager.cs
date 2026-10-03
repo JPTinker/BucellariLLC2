@@ -41,8 +41,8 @@ public class MapManager : MonoBehaviour
 
     [Header("Map Size")]
     [Tooltip("Current map size. Starts small and grows via ExpandMap() on each enemy reinforcement wave.")]
-    public int width = 10;
-    public int height = 10;
+    public int width = 14;
+    public int height = 14;
     [Tooltip("The map stops growing once it reaches this size.")]
     public int maxWidth = 25;
     public int maxHeight = 25;
@@ -105,6 +105,8 @@ public class MapManager : MonoBehaviour
     public GameObject wallPrefab;
     [Tooltip("Settlement Materials spent per wall.")]
     public int wallMaterialCost = 5;
+    [Tooltip("Settlement Materials spent per Fortify.")]
+    public int fortifyMaterialCost = 2;
     public int wallMaxHealth = 12;
     public int wallDefense = 1;
     [SerializeField] private Color fallbackWallColor = new Color(0.45f, 0.33f, 0.22f);
@@ -233,7 +235,7 @@ public class MapManager : MonoBehaviour
         instance.PlaceOnTile(tile);
 
         // 6. Spawn Visual Juice / Particle Effects
-        PlaySpawnEffects(tile.transform.position);
+        //PlaySpawnEffects(tile.transform.position);
 
         return instance;
     }
@@ -334,6 +336,7 @@ public class MapManager : MonoBehaviour
     {
         if (spawnVfxPrefab != null)
         {
+            position += Vector3.up * 0.5f; // lift the VFX slightly above the tile
             GameObject vfx = Instantiate(spawnVfxPrefab, position, Quaternion.identity);
             Destroy(vfx, 2.0f);
         }
@@ -624,14 +627,19 @@ public class MapManager : MonoBehaviour
 
         gameStateManager.EnsurePlayerHasTeam();
         List<Unit> playerTeam = gameStateManager.ActiveTeam;
-        Vector2Int[] playerSpawnPositions =
+        // Start near the middle of the map so the squad reaches the fight quickly.
+        Vector2Int center = new Vector2Int(width / 2 - 1, height / 2 - 1);
+        Vector2Int[] playerSpawnOffsets =
         {
+            new Vector2Int(0, 0),
+            new Vector2Int(1, 0),
             new Vector2Int(0, 1),
             new Vector2Int(1, 1),
-            new Vector2Int(1, 0),
-            new Vector2Int(2, 0),
-            new Vector2Int(0, 2)
+            new Vector2Int(-1, 0)
         };
+        Vector2Int[] playerSpawnPositions = new Vector2Int[playerSpawnOffsets.Length];
+        for (int i = 0; i < playerSpawnOffsets.Length; i++)
+            playerSpawnPositions[i] = center + playerSpawnOffsets[i];
 
         int playerCount = Mathf.Min(playerTeam.Count, playerSpawnPositions.Length);
         for (int count = 0; count < playerCount; count++)
@@ -677,6 +685,7 @@ public class MapManager : MonoBehaviour
 
         for (int i =0; i < spawnedUnits.Count; i++)
         {
+            PlaySpawnEffects(spawnedUnits[i].currentTile.transform.position);
             spawnedUnits[i].playSpawnAnimation();
         }
         StartCoroutine(PlayInitialUnitSpawnTour(spawnedUnits[0]));

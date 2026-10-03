@@ -24,6 +24,10 @@
                     <ui:Label name="settlement-villagers-value" text="5/10" class="resource-value"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="resource-item">
+                    <ui:Label text="MATERIALS" class="resource-label"/>
+                    <ui:Label name="settlement-materials-value" text="0" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="resource-item">
                     <ui:Label text="MORALE" class="resource-label"/>
                     <ui:Label name="settlement-morale-value" text="84%" class="resource-value"/>
                 </ui:VisualElement>

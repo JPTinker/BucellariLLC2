@@ -3,16 +3,16 @@
    tokens it needs are redeclared here with the same values. */
 
 .title-root {
-    --color-surface: #0E141A;
-    --color-surface-container: #1A2027;
-    --color-surface-container-high: #252B31;
-    --color-primary: #E1FDFF;
-    --color-primary-fixed-dim: #00DBE7;
+    --color-surface: #1a2634;
+    --color-surface-container: #243447;
+    --color-surface-container-high: #2c4057;
+    --color-primary: #e0fbff;
+    --color-primary-fixed-dim: #00dbe7;
     --color-primary-container: #00F2FF;
     --color-on-primary: #00363A;
-    --color-on-surface: #DDE3EC;
-    --color-on-surface-variant: #B9CACB;
-    --color-outline-variant: #3A494B;
+    --color-on-surface: #e0fbff;
+    --color-on-surface-variant: #a9c4d0;
+    --color-outline-variant: #35506a;
 
     flex-grow: 1;
     align-items: center;
@@ -104,3 +104,6 @@
 }
 
 .hidden { display: none; }
+
+/* Sora (Assets/Fonts/Sora); inherited by everything under the root. */
+.title-root { -unity-font-definition: url("/Assets/Fonts/Sora/Sora-Regular.ttf"); }

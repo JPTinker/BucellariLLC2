@@ -225,7 +225,11 @@ public class AfterActionController : MonoBehaviour
         StartCoroutine(UIAnim.Shake(_shake, 14f, 0.4f));
         StartCoroutine(UIAnim.PunchIn(_badge, 0.35f));
         StartCoroutine(UIAnim.Pop(_level, 1.4f, 0.35f));
-        if (actor != null) StartCoroutine(Hop(actor, 0.9f, 0.5f));
+        if (actor != null)
+        {
+            StartCoroutine(Hop(actor, 0.9f, 0.5f));
+            if (actor.Go != null) CombatVfxConfig.Load()?.Spawn(CombatVfxConfig.Load().levelUp, actor.Go.transform, true);
+        }
 
         Vector2 origin = _confetti.WorldToLocal(_card.worldBound.center);
         yield return UIAnim.Confetti(_confetti, origin);
@@ -399,6 +403,7 @@ public class AfterActionController : MonoBehaviour
             beam.transform.localScale = new Vector3(1.1f, 0.01f, 1.1f);
             beam.GetComponent<Renderer>().material = MakeMaterial(Color.Lerp(padColor, Color.white, 0.5f));
             beams.Add(beam.transform);
+            CombatVfxConfig.Load()?.SpawnAt(CombatVfxConfig.Load().teleport, a.Pad, false);
         }
 
         const float duration = 1.2f;

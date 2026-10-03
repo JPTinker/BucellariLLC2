@@ -198,7 +198,19 @@ public class GameStateManager : MonoBehaviour
     [Header("Campaign Map")]
     public CampaignAction SelectedCampaignAction = CampaignAction.Travel;
     public bool HasSelectedCampaignAction { get; private set; }
-    public int EvacuationCyclesRemaining = 5;
+    /// <summary>Cycles of travel from the start to the Evacuation Zone (used to place the boat on the Voyage screen).</summary>
+    public const int EvacuationCyclesTotal = 10;
+    public int EvacuationCyclesRemaining = EvacuationCyclesTotal;
+
+    /// <summary>Set by ExecuteCycle when the course was Travel; consumed by the Voyage scene.</summary>
+    public bool HasPendingVoyage { get; private set; }
+    public int VoyageFromRemaining { get; private set; }
+    public int VoyageToRemaining { get; private set; }
+    public const string VoyageSceneName = "Voyage";
+    public string BattleSceneAfterVoyage { get; private set; } = "BattlePhase";
+
+    /// <summary>Called by the Voyage scene once its sailing animation is done.</summary>
+    public void ClearPendingVoyage() => HasPendingVoyage = false;
 
     // Roster of all owned units (the pool shown on the team-selection screen).
     public List<Unit> FullRoster = new List<Unit>();
@@ -908,7 +920,10 @@ public class GameStateManager : MonoBehaviour
                 skipBattle = true;
                 break;
             case CampaignAction.Travel:
+                VoyageFromRemaining = EvacuationCyclesRemaining;
                 EvacuationCyclesRemaining = Mathf.Max(0, EvacuationCyclesRemaining - 1);
+                VoyageToRemaining = EvacuationCyclesRemaining;
+                HasPendingVoyage = true;
                 break;
         }
         SelectedCampaignAction = CampaignAction.Travel;
@@ -917,7 +932,14 @@ public class GameStateManager : MonoBehaviour
         // Hand the Vanguard block off to combat - ActiveTeam already holds
         // whichever units are picked on the Roster tab (kept live in sync by
         // PlanningPhaseController.ToggleSelection).
-        if (!skipBattle && ActiveTeam.Count > 0)
+        if (HasPendingVoyage)
+        {
+            // Show the boat sailing first; the Voyage scene then loads combat
+            // (BattleSceneAfterVoyage) or plays the victory screen on arrival.
+            BattleSceneAfterVoyage = battleSceneName;
+            SceneManager.LoadScene(VoyageSceneName);
+        }
+        else if (!skipBattle && ActiveTeam.Count > 0)
         {
             LoadCombatMap(battleSceneName);
         }

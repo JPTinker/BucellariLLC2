@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="../USS/Voyage.uss"/>
+    <ui:VisualElement name="vy-root" class="vy-root">
+        <ui:VisualElement class="vy-banner">
+            <ui:Label text="THE VOYAGE" class="vy-eyebrow"/>
+            <ui:Label name="vy-status" text="" class="vy-status"/>
+        </ui:VisualElement>
+
+        <!-- Sea chart: route dots are added at runtime into vy-route; the boat sits on top. -->
+        <ui:VisualElement name="vy-map" class="vy-map">
+            <ui:VisualElement name="vy-route" class="vy-route"/>
+            <ui:VisualElement name="vy-start" class="vy-marker vy-marker--start">
+                <ui:Label text="HOME" class="vy-marker-label"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="vy-goal" class="vy-marker vy-marker--goal">
+                <ui:Label text="EVACUATION ZONE" class="vy-marker-label"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="vy-boat" class="vy-boat">
+                <ui:VisualElement name="vy-boat-sail" class="vy-boat-sail"/>
+                <ui:VisualElement name="vy-boat-hull" class="vy-boat-hull"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <ui:Label name="vy-hint" text="TAP TO SKIP" class="vy-hint"/>
+
+        <ui:VisualElement name="vy-flash" class="vy-overlay vy-flash" picking-mode="Ignore"/>
+
+        <!-- Shown when the boat reaches the goal. -->
+        <ui:VisualElement name="vy-victory" class="vy-overlay vy-victory hidden">
+            <ui:Label text="EVACUATION COMPLETE" class="vy-victory-eyebrow"/>
+            <ui:Label text="YOU WIN" class="vy-victory-title"/>
+            <ui:Label name="vy-victory-note" text="The survivors have reached safety." class="vy-victory-note"/>
+            <ui:Button name="vy-victory-button" text="RETURN TO TITLE" class="vy-button"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

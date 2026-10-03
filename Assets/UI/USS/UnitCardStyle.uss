@@ -3,7 +3,7 @@
 .player-card {
     width: 560px;
     padding: 12px;
-    background-color: rgb(8, 18, 31);
+    background-color: rgb(24, 40, 58);
     border-width: 1px;
     border-color: rgb(57, 132, 164);
     transition-property: border-color, background-color;
@@ -37,7 +37,7 @@
     width: 138px;
     height: 158px;
     overflow: hidden;
-    background-color: rgb(17, 37, 56);
+    background-color: rgb(30, 50, 70);
     border-width: 1px;
     border-color: rgb(70, 154, 187);
 }
@@ -251,7 +251,7 @@
 /* Health */
 .player-card .stat-panel {
     padding: 8px;
-    background-color: rgb(13, 29, 45);
+    background-color: rgb(26, 44, 62);
     border-width: 1px;
     border-color: rgba(67, 128, 157, 0.55);
 }
@@ -311,7 +311,7 @@
     position: relative;
     height: 11px;
     overflow: hidden;
-    background-color: rgb(5, 14, 24);
+    background-color: rgb(22, 36, 52);
     border-width: 1px;
     border-color: rgb(38, 76, 98);
 }
@@ -338,7 +338,7 @@
 .player-card .health-tick {
     width: 1px;
     height: 100%;
-    background-color: rgba(5, 14, 24, 0.75);
+    background-color: rgba(22, 36, 52, 0.75);
 }
 
 /* Combat ranges */
@@ -353,7 +353,7 @@
     flex-direction: row;
     align-items: center;
     padding: 7px;
-    background-color: rgb(13, 29, 45);
+    background-color: rgb(26, 44, 62);
     border-width: 1px;
     border-color: rgba(67, 128, 157, 0.55);
 }
@@ -447,7 +447,7 @@
     margin-right: 4px;
     border-width: 1px;
     border-color: rgb(72, 128, 157);
-    background-color: rgb(13, 29, 45);
+    background-color: rgb(26, 44, 62);
 }
 
 .player-card .action-pip-dot {

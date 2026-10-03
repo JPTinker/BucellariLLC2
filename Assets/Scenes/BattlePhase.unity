@@ -183,7 +183,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 0.8
@@ -246,38 +246,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 604712594}
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &222244809
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 222244810}
-  m_Layer: 2
-  m_Name: CloudVolume
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &222244810
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 222244809}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 15, y: 3, z: 15}
-  m_LocalScale: {x: 45, y: 2, z: 45}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 459166734}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &226643593
 GameObject:
   m_ObjectHideFlags: 0
@@ -340,132 +308,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 226643593}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!1 &459166733
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 459166734}
-  - component: {fileID: 459166737}
-  - component: {fileID: 459166736}
-  - component: {fileID: 459166735}
-  - component: {fileID: 459166738}
-  m_Layer: 2
-  m_Name: CloudMesh
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &459166734
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459166733}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 222244810}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &459166735
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459166733}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
---- !u!23 &459166736
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459166733}
-  m_Enabled: 1
-  m_CastShadows: 1
-  m_ReceiveShadows: 1
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 351bb40a1aa3344438a04f3451cc901d, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &459166737
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459166733}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &459166738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 459166733}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5eece4104fb73fa40a0300f1f5b45b59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Clouds
-  cloudMaterial: {fileID: 2100000, guid: 351bb40a1aa3344438a04f3451cc901d, type: 2}
 --- !u!1 &604712593
 GameObject:
   m_ObjectHideFlags: 0
@@ -606,7 +448,7 @@ Camera:
   far clip plane: 1000
   field of view: 26.991467
   orthographic: 1
-  orthographic size: 5.5
+  orthographic size: 4
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -656,7 +498,7 @@ MonoBehaviour:
   zoomSpeed: 0.25
   minZoom: 2
   maxZoom: 15
-  pinchZoomSpeed: 0.02
+  pinchZoomSpeed: 0.1
   minBounds: {x: 3, y: -6}
   maxBounds: {x: 25, y: 25}
   useBounds: 0
@@ -664,6 +506,8 @@ MonoBehaviour:
   spawnPanInDuration: 0.5
   spawnHoldDuration: 0.7
   spawnPanOutDuration: 0.5
+  tapMaxMovePixels: 25
+  tapMaxDuration: 0.35
 --- !u!1 &1014924425
 GameObject:
   m_ObjectHideFlags: 0
@@ -1192,10 +1036,16 @@ MonoBehaviour:
   hexSize: 0.6
   Cloud: {fileID: 919132149155446097, guid: fc2dbb2f2b55de843918e525fe3947ac, type: 3}
   fogHeight: 0.25
-  width: 10
-  height: 10
+  width: 14
+  height: 14
+  maxWidth: 25
+  maxHeight: 25
+  expansionStep: 2
+  randomizeSeed: 1
   seed: 0
   noiseScale: 0.15
+  detailScale: 0.4
+  detailWeight: 0.3
   terrainBands:
   - maxHeight: 0.3
     terrain: 0
@@ -1207,7 +1057,7 @@ MonoBehaviour:
     terrain: 3
   - maxHeight: 1
     terrain: 4
-  spawnVfxPrefab: {fileID: 0}
+  spawnVfxPrefab: {fileID: 4809171458859421548, guid: 4e91ed1a8efe7044785b9bd97a47d87f, type: 3}
   AvailableEnemyArchetypes:
   - {fileID: 11400000, guid: 3a663e78d18a10a4895a56e5af9a1365, type: 2}
   - {fileID: 11400000, guid: b49640a538cb5f344936d0121c4b1ece, type: 2}
@@ -1215,8 +1065,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eebb2c2877ca4ca44b62a7b39b76299b, type: 2}
   enemyGroupSize: 3
   enemySpawnCount: 8
+  hpScalingPerWave: 0.15
+  attackScalingPerWave: 0.2
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
+  wallPrefab: {fileID: 7514974912573514939, guid: 04dc8fab069ddeb42877a9d5de78096a, type: 3}
+  wallMaterialCost: 5
+  fortifyMaterialCost: 2
+  wallMaxHealth: 12
+  wallDefense: 1
+  fallbackWallColor: {r: 0.45, g: 0.33, b: 0.22, a: 1}
 --- !u!4 &2007730826
 Transform:
   m_ObjectHideFlags: 0
@@ -1248,6 +1106,7 @@ MonoBehaviour:
   villagerAI: {fileID: 2007730829}
   reinforcementThreshold: 4
   reinforcementTargetCount: 8
+  enemiesPerExpansion: 2
   combatUIManager: {fileID: 1221553267}
   notificationManager: {fileID: 1014924430}
 --- !u!114 &2007730828
@@ -1270,6 +1129,7 @@ MonoBehaviour:
   moveCandidatesPerStep: 6
   playerWeight: 1
   villagerWeight: 1.25
+  structureWeight: 0.5
   killBonus: 60
   killThreatBonus: 4
   focusFireWeight: 1
@@ -1422,6 +1282,5 @@ SceneRoots:
   - {fileID: 604712594}
   - {fileID: 7752388499564446533}
   - {fileID: 2007730826}
-  - {fileID: 222244810}
   - {fileID: 1407582444}
   - {fileID: 1221553266}

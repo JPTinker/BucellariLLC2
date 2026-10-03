@@ -7,6 +7,14 @@ using UnityEngine;
 /// </summary>
 public static class HexPathfinder
 {
+    /// Cost to enter a tile. A tile adjacent to the start is always enterable, even when its
+    /// cost exceeds the whole budget (e.g. 2 movement vs. cost-3 terrain); the unit just spends everything.
+    public static int StepCost(bool fromStart, HexTile tile, int budget)
+    {
+        int cost = Mathf.Max(1, tile.movementCost);
+        return fromStart && budget >= 0 ? Mathf.Min(cost, budget) : cost;
+    }
+
     /// Returns the tile path from start to goal (inclusive), or null if no path exists.
     /// Pass maxMovementCost >= 0 to cap how far a unit can path in one call.
     public static List<HexTile> FindPath(HexTile start, HexTile goal, int maxMovementCost = -1)
@@ -33,7 +41,7 @@ public static class HexPathfinder
                 if (neighbor == null) continue;
                 if (!neighbor.isWalkable || neighbor.IsOccupied) continue;
 
-                int tentativeG = gScore[current] + Mathf.Max(1, neighbor.movementCost);
+                int tentativeG = gScore[current] + StepCost(current == start, neighbor, maxMovementCost);
                 if (maxMovementCost >= 0 && tentativeG > maxMovementCost) continue;
 
                 if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
@@ -68,7 +76,7 @@ public static class HexPathfinder
             {
                 if (neighbor == null || (!neighbor.isWalkable && !neighbor.IsOccupied)) continue;
 
-                int newCost = currentCost + Mathf.Max(1, neighbor.movementCost);
+                int newCost = currentCost + StepCost(current == start, neighbor, movementRange);
                 if (newCost > movementRange) continue;
 
                 if (!cheapestCost.ContainsKey(neighbor) || newCost < cheapestCost[neighbor])

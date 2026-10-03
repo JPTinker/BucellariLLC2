@@ -3,15 +3,15 @@
    so the 3D exfil stage shows through; panels carry their own backgrounds. */
 
 .aa-root {
-    --color-surface: #0E141A;
-    --color-surface-container: #1A2027;
-    --color-surface-container-high: #252B31;
-    --color-primary: #E1FDFF;
-    --color-primary-fixed-dim: #00DBE7;
+    --color-surface: #1a2634;
+    --color-surface-container: #243447;
+    --color-surface-container-high: #2c4057;
+    --color-primary: #e0fbff;
+    --color-primary-fixed-dim: #00dbe7;
     --color-primary-container: #00F2FF;
     --color-on-primary: #00363A;
-    --color-on-surface: #DDE3EC;
-    --color-on-surface-variant: #B9CACB;
+    --color-on-surface: #e0fbff;
+    --color-on-surface-variant: #a9c4d0;
     --color-gain: #7CFF8A;
     --color-pop: #FFD23F;
     --color-danger: #FF5A5F;
@@ -42,9 +42,9 @@
 /* ---- card ---- */
 .aa-card-slot { flex-grow: 1; justify-content: flex-end; align-items: center; width: 100%; padding-bottom: 12px; }
 .aa-card {
-    width: 460px; max-width: 92%;
+    width: 660px; max-width: 96%;
     padding: 16px 18px;
-    background-color: rgba(14, 20, 26, 0.92);
+    background-color: rgba(26, 38, 52, 0.92);
     border-width: 3px; border-color: var(--color-primary-fixed-dim);
     border-radius: 14px;
     opacity: 0;
@@ -57,7 +57,7 @@
 .aa-icon {
     width: 84px; height: 84px; border-radius: 10px;
     background-color: var(--color-surface-container-high);
-    border-width: 2px; border-color: #3A494B;
+    border-width: 2px; border-color: #35506a;
     margin-right: 14px;
 }
 .aa-card-id { flex-grow: 1; }
@@ -92,9 +92,9 @@
 /* ---- stats ---- */
 .aa-stats { flex-direction: row; justify-content: space-between; }
 .aa-stat {
-    flex-grow: 1; font-size: 19px; -unity-font-style: bold;
+    flex-grow: 1; flex-basis: 0; font-size: 18px; -unity-font-style: bold; white-space: nowrap;
     -unity-text-align: middle-center;
-    padding: 8px 4px; margin: 0 3px; border-radius: 8px;
+    padding: 10px 6px; margin: 0 3px; border-radius: 8px;
     background-color: var(--color-surface-container);
 }
 .aa-stat--gain { color: var(--color-gain); background-color: rgba(60, 140, 70, 0.35); }
@@ -117,3 +117,6 @@
 /* ---- overlays ---- */
 .aa-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
 .aa-flash { background-color: white; opacity: 0; }
+
+/* Sora (Assets/Fonts/Sora); inherited by everything under the root. */
+.aa-root { -unity-font-definition: url("/Assets/Fonts/Sora/Sora-Regular.ttf"); }

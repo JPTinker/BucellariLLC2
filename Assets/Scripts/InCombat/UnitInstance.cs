@@ -92,10 +92,15 @@ public class UnitInstance : MonoBehaviour
     [SerializeField] private float flashOffDuration = 0.08f;
     [Tooltip("Optional whirl reaction played on hit. Auto-found on this object or its children.")]
     [SerializeField] private HitWhirlEffect hitWhirl;
+    [Tooltip("Hovl VFX prefabs for hit/wound/death/fortify/level-up. Defaults to Resources/CombatVfxConfig.")]
+    [SerializeField] private CombatVfxConfig vfx;
     private Coroutine movementCoroutine;
 
     private void Awake()
     {
+        if (vfx == null)
+            vfx = CombatVfxConfig.Load();
+
         if (hitWhirl == null)
             hitWhirl = GetComponentInChildren<HitWhirlEffect>(true);
 
@@ -202,6 +207,7 @@ public class UnitInstance : MonoBehaviour
         step.NewAttack = PersistentUnit.BaseAttack; step.NewDefense = PersistentUnit.DefensePower;
         ReportEntry()?.LevelSteps.Add(step);
         SyncProgressionStats();
+        vfx?.Spawn(vfx.levelUp, transform, true);
         Debug.Log($"{unitName} reached level {Level}.");
     }
 
@@ -513,6 +519,8 @@ public class UnitInstance : MonoBehaviour
         PlayHitReaction(damageTaken);
     }
 
+    private float _lastHitVfxTime = -1f;
+
     private void PlayHitReaction(int damageTaken)
     {
         if (_animator != null)
@@ -520,7 +528,15 @@ public class UnitInstance : MonoBehaviour
 
         PlayAnimatorAction(TakeDamageParameter, damageTaken < 10 ? "Hit_A" : "Hit_B");
         PlayDamageFlash(damageTaken);
-        if (hitWhirl != null)
+        // One damage VFX per hit: ignore repeats landing within the same moment.
+        bool playVfx = Time.time - _lastHitVfxTime > 0.15f;
+        if (playVfx) _lastHitVfxTime = Time.time;
+        if (vfx != null && playVfx)
+        {
+            bool heavy = vfx.heavyHit != null && (float)damageTaken / Mathf.Max(1, maxHealth) >= vfx.heavyHitFraction;
+            vfx.Spawn(heavy ? vfx.heavyHit : vfx.hit, transform, false);
+        }
+        if (hitWhirl != null && playVfx)
             hitWhirl.Play((float)damageTaken / Mathf.Max(1, maxHealth));
     }
 
@@ -635,6 +651,11 @@ public class UnitInstance : MonoBehaviour
         }
 
         OnDeath?.Invoke(this);
+        if (vfx != null)
+        {
+            if (destroyDelay > 0f) StartCoroutine(DeathVfxAfterDelay(destroyDelay));
+            else vfx.SpawnAt(vfx.death, transform.position);
+        }
         Destroy(gameObject, destroyDelay);
     }
 
@@ -722,9 +743,16 @@ public class UnitInstance : MonoBehaviour
         Debug.Log($"{unitName} has rescued {villager.unitName}!");
         return true;
     }
+    private IEnumerator DeathVfxAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        vfx.SpawnAt(vfx.death, transform.position);
+    }
+
     public void onFortify()
     {
         IsFortified = true;
+        vfx?.Spawn(vfx.fortify, transform, true);
         NotifyStatsChanged();
         CombatManager.Instance?.TakeAction(this);
     }

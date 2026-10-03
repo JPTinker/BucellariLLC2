@@ -58,9 +58,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba54906ab20069440a16ad0e37d9d816, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 5414973541165224835}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ba54906ab20069440a16ad0e37d9d816, type: 3}
-      insertIndex: -1
       addedObject: {fileID: -5901356151915905538}
   m_SourcePrefab: {fileID: 100100000, guid: ba54906ab20069440a16ad0e37d9d816, type: 3}
 --- !u!1 &3876378797390236121 stripped
@@ -68,58 +65,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ba54906ab20069440a16ad0e37d9d816, type: 3}
   m_PrefabInstance: {fileID: 4110308903349138568}
   m_PrefabAsset: {fileID: 0}
---- !u!60 &5414973541165224835
-PolygonCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3876378797390236121}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0, y: 0}
-    oldSize: {x: 0, y: 0}
-    newSize: {x: 0, y: 0}
-    adaptiveTilingThreshold: 0
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Points:
-    m_Paths:
-    - - {x: 0, y: 0.78999996}
-      - {x: -0.47552827, y: 0.4445085}
-      - {x: -0.2938926, y: -0.11450854}
-      - {x: 0.29389268, y: -0.11450848}
-      - {x: 0.47552824, y: 0.44450855}
-  m_UseDelaunayMesh: 1
 --- !u!114 &-5901356151915905538
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -143,9 +88,15 @@ MonoBehaviour:
   attackBonus: 0
   isHighlighted: 0
   movementHighlightMaterial: {fileID: 0}
+  pathPreviewHighlightMaterial: {fileID: 0}
   attackHighlightMaterial: {fileID: 0}
   buildHighlightMaterial: {fileID: 0}
+  rescueHighlightMaterial: {fileID: 0}
   fogInstance: {fileID: 0}
   isRevealed: 0
+  hiddenDarkness: 0.01
   foodLeftOnTile: 0
+  clickBounceHeight: 0.25
+  clickBounceDuration: 0.3
   depletedDarkness: 0.5
+  IsExtractionPoint: 0

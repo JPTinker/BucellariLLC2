@@ -1,0 +1,69 @@
+/* Voyage.uss - standalone, pure UI Toolkit (no 3D stage). Swap the boat for a sprite
+   by assigning VoyageController.boatSprite. */
+
+.vy-root {
+    --color-sea: #1A2634;
+    --color-sea-light: #243447;
+    --color-text: #e0fbff;
+    --color-accent: #FFD23F;
+    --color-route: #7FD4E6;
+
+    flex-grow: 1;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-sea);
+    color: var(--color-text);
+}
+
+.hidden { display: none; }
+
+.vy-banner { margin-top: 36px; align-items: center; }
+.vy-eyebrow { font-size: 12px; letter-spacing: 6px; -unity-font-style: bold; color: var(--color-route); }
+.vy-status { font-size: 34px; -unity-font-style: bold; letter-spacing: 2px; color: var(--color-accent); margin-top: 6px; }
+
+/* ---- chart ---- */
+.vy-map {
+    width: 88%; height: 46%;
+    background-color: var(--color-sea-light);
+    border-width: 3px; border-color: #35506a; border-radius: 16px;
+}
+.vy-route { position: absolute; left: 8%; right: 8%; top: 50%; height: 0; }
+.vy-route-dot {
+    position: absolute; width: 12px; height: 12px; margin-left: -6px; margin-top: -6px;
+    border-radius: 6px; background-color: var(--color-route); opacity: 0.55;
+}
+.vy-route-dot--passed { background-color: var(--color-accent); opacity: 1; }
+
+.vy-marker { position: absolute; top: 50%; width: 120px; height: 120px; margin-top: -60px; margin-left: -60px;
+    border-radius: 60px; justify-content: center; align-items: center; border-width: 3px; }
+.vy-marker--start { left: 8%; background-color: rgba(60, 140, 70, 0.35); border-color: #7CFF8A; }
+.vy-marker--goal { left: 92%; background-color: rgba(255, 210, 63, 0.25); border-color: var(--color-accent); }
+.vy-marker-label { font-size: 12px; -unity-font-style: bold; letter-spacing: 1px; white-space: normal; -unity-text-align: middle-center; }
+
+/* ---- boat (placeholder built from two boxes) ---- */
+.vy-boat { position: absolute; top: 50%; left: 8%; width: 70px; height: 64px; margin-left: -35px; margin-top: -52px; align-items: center; }
+.vy-boat-sail { width: 30px; height: 40px; background-color: #F4F1E8; border-top-left-radius: 20px; border-top-right-radius: 4px; }
+.vy-boat-hull { width: 70px; height: 20px; margin-top: 2px; background-color: #8B5A2B;
+    border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; }
+.vy-boat--sprite .vy-boat-sail, .vy-boat--sprite .vy-boat-hull { display: none; }
+
+.vy-hint { font-size: 12px; letter-spacing: 4px; color: var(--color-route); margin-bottom: 36px; }
+
+/* ---- overlays ---- */
+.vy-overlay { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+.vy-flash { background-color: white; opacity: 0; }
+.vy-victory { background-color: rgba(8, 14, 20, 0.88); justify-content: center; align-items: center; opacity: 0; }
+.vy-victory-eyebrow { font-size: 14px; letter-spacing: 8px; -unity-font-style: bold; color: var(--color-route); }
+.vy-victory-title {
+    font-size: 96px; -unity-font-style: bold; letter-spacing: 6px; color: var(--color-accent);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: #3A2400; text-shadow: 0 6px 0 #3A2400;
+}
+.vy-victory-note { font-size: 18px; margin-top: 8px; margin-bottom: 36px; color: var(--color-text); }
+.vy-button {
+    width: 340px; height: 68px; border-radius: 8px; border-width: 0;
+    font-size: 22px; -unity-font-style: bold; letter-spacing: 3px;
+    background-color: var(--color-accent); color: #3A2400;
+}
+
+/* Sora (Assets/Fonts/Sora); inherited by everything under the root. */
+.vy-root { -unity-font-definition: url("/Assets/Fonts/Sora/Sora-Regular.ttf"); }

@@ -109,7 +109,7 @@ public class EnemyBattlefieldState
             new[] { start },
             movementRange,
             tile => IsWalkableTerrain(tile) && !isBlocked(tile),
-            (from, to) => EnterCost(to));
+            (from, to) => HexPathfinder.StepCost(from == start, to, movementRange));
 
         reachable.Remove(start);
         return reachable;
