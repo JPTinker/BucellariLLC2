@@ -302,6 +302,17 @@ public class CameraController : MonoBehaviour
 
         isFocusing = false;
     }
+    /// <summary>Pans to a unit and stays there (zoom unchanged). Skipped while a spawn focus is running.</summary>
+    public void PanToUnit(Transform target, float duration = 0.4f)
+    {
+        if (target == null || isFocusing) return;
+        if (panRoutine != null) StopCoroutine(panRoutine);
+        Vector3 focusPosition = new Vector3(target.position.x, transform.position.y, target.position.z - 5.5f);
+        panRoutine = StartCoroutine(PanAndZoom(transform.position, focusPosition, cam.orthographicSize, cam.orthographicSize, duration));
+    }
+
+    private Coroutine panRoutine;
+
     private IEnumerator PanAndZoom(Vector3 fromPosition, Vector3 toPosition, float fromZoom, float toZoom, float duration)
     {
         if (duration <= 0f)

@@ -37,6 +37,7 @@ public class CombatPhaseUIController : MonoBehaviour
     private Button extractButton;
     private Button scoutButton;
     private Button buildButton;
+    private Button nextUnitButton;
     private Button endTurnButton;
 
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
@@ -133,7 +134,9 @@ public class CombatPhaseUIController : MonoBehaviour
         scoutButton = root.Q<Button>("action-scout");
         buildButton = root.Q<Button>("action-build");
         endTurnButton = root.Q<Button>("end-turn");
+        nextUnitButton = root.Q<Button>("action-next-unit");
 
+        nextUnitButton?.RegisterCallback<ClickEvent>(_ => SelectNextReadyUnit());
         buildButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.BuildWall));
         fortifyButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Fortify));
         extractButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Extract));
@@ -256,6 +259,28 @@ public class CombatPhaseUIController : MonoBehaviour
         RefreshActionButtonStates();
 
         OnUnitSelected?.Invoke(unit);
+    }
+
+    /// <summary>
+    /// Selects the next player unit (after the current one, wrapping) that still has actions,
+    /// highlights its moves via CombatManager, and pans the camera to it.
+    /// </summary>
+    public void SelectNextReadyUnit()
+    {
+        int start = selectedUnit != null ? playerUnits.IndexOf(selectedUnit) : -1;
+        for (int i = 1; i <= playerUnits.Count; i++)
+        {
+            UnitInstance candidate = playerUnits[(start + i + playerUnits.Count) % playerUnits.Count];
+            if (!IsActivePlayerUnit(candidate) || candidate.actionsRemaining <= 0) continue;
+
+            if (combatManager != null) combatManager.SelectUnit(candidate);
+            SelectUnit(candidate);
+            if (CameraController.Instance != null) CameraController.Instance.PanToUnit(candidate.transform);
+            return;
+        }
+
+        if (combatManager != null && combatManager.notificationManager != null)
+            combatManager.notificationManager.ShowNotification("No units have actions left.");
     }
 
     private void RefreshActionButtonStates()

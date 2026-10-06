@@ -179,8 +179,6 @@ public class GameStateManager : MonoBehaviour
     // --- SINGLETON SETUP ---
     public static GameStateManager Instance { get; private set; }
 
-    public int testing =1;
-
     [Header("Available Unit Templates")]
     public List<UnitData> AvailablePlayerArchetypes; // Drag 'Knight' and 'Warrior' assets here
 

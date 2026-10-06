@@ -34,6 +34,7 @@ public class VillagerAIController : MonoBehaviour
             if (IsActiveVillager(unit))
             {
                 unit.actionsRemaining = unit.maxActionsPerTurn;
+                unit.NotifyStatsChanged();
                 villagers.Add(unit);
             }
         }
@@ -73,6 +74,7 @@ public class VillagerAIController : MonoBehaviour
             if (!villager.MoveTo(stepDestination, villager.movementRange)) yield break;
 
             villager.actionsRemaining = Mathf.Max(0, villager.actionsRemaining - 1);
+            villager.NotifyStatsChanged();
             yield return new WaitForSeconds(actionDelay);
 
             float waited = 0f;

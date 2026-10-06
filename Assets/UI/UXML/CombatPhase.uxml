@@ -56,6 +56,7 @@
                 <ui:Button name="action-extract" text="EXTRACT" class="action-button action-button-extract"/>
                 <ui:Button name="action-scout" text="SCOUT" class="action-button"/>
                 <ui:Button name="action-build" text="BUILD WALL" class="action-button"/>
+                <ui:Button name="action-next-unit" text="NEXT UNIT" tooltip="Jump to a unit that still has actions left." class="action-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

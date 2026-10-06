@@ -93,6 +93,8 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float hpScalingPerWave = 0.15f;
     [Tooltip("Each reinforcement wave adds this fraction of base attack. Attack is a small integer, so this is higher than the HP rate.")]
     [SerializeField] private float attackScalingPerWave = 0.20f;
+    [Tooltip("Extra enemy levels (same scaling as waves) for an enemy spawning right next to the exfil zone. Falls off linearly to 0 at the far corner of the map.")]
+    [SerializeField] private float maxExfilProximityLevels = 3f;
 
     [Header("Villagers / Rescue")]
     [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
@@ -226,7 +228,7 @@ public class MapManager : MonoBehaviour
         instance.Initialize(enemyData);
         if (isEnemy){
             instance.Faction =  UnitFaction.Enemy;
-            ApplyWaveScaling(instance, waveLevel);
+            ApplyWaveScaling(instance, waveLevel + GetExfilProximityLevels(tile));
         }
         string uniqueId = GenerateUnique4DigitString();
         instance.unitName = $"{enemyData.UnitName}_{uniqueId}";
@@ -238,6 +240,17 @@ public class MapManager : MonoBehaviour
         //PlaySpawnEffects(tile.transform.position);
 
         return instance;
+    }
+
+    /// <summary>Bonus levels for spawning close to the exfil tile: full at distance 0, none at the map's far corner.</summary>
+    private int GetExfilProximityLevels(HexTile tile)
+    {
+        int farthest = HexCoordinates.GetDistance(new Vector2Int(width - 1, height - 1), ExfilTilePosition);
+        if (farthest <= 0 || maxExfilProximityLevels <= 0f) return 0;
+
+        int dist = HexCoordinates.GetDistance(tile.gridPosition, ExfilTilePosition);
+        float closeness = 1f - Mathf.Clamp01((float)dist / farthest);
+        return Mathf.RoundToInt(closeness * maxExfilProximityLevels);
     }
 
     /// <summary>Flat per-wave bonus applied to this instance only - the shared UnitData asset is never touched.</summary>

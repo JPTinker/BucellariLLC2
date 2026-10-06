@@ -12,6 +12,8 @@ public class UnitData : ScriptableObject
     public Sprite UnitIcon;          // For UI / Roster list
     public GameObject ModelPrefab;    // World space visual / Sprite Prefab
     public GameObject[] weaponPrefabs; // Array of equipment prefabs for the unit
+    [Tooltip("Weapon item whose Weapon VFX plays on targets this unit hits.")]
+    public ItemData weaponItem;
     public GameObject[] equipmentPrefabs; // Array of equipment prefabs for the unit
 
     [Header("Visual Style")]
@@ -19,6 +21,33 @@ public class UnitData : ScriptableObject
     public Material ColorScheme1;
     public Material ColorScheme2;
     public Material ColorScheme3;
+    public Material ColorScheme4;
+    [Tooltip("Roll a random populated color scheme for each new unit. Off = always use Color Scheme above.")]
+    public bool RandomizeColorScheme = true;
+
+    public Material GetSchemeMaterial(UnitColorScheme scheme) => scheme switch
+    {
+        UnitColorScheme.Scheme2 => ColorScheme2,
+        UnitColorScheme.Scheme3 => ColorScheme3,
+        UnitColorScheme.Scheme4 => ColorScheme4,
+        _ => ColorScheme1
+    };
+
+    /// <summary>Picks a scheme at random among those that actually have a material (or, failing that, a prefab texture).</summary>
+    public UnitColorScheme RollColorScheme()
+    {
+        if (!RandomizeColorScheme) return ColorScheme;
+
+        UnitInstance prefabInstance = ModelPrefab != null ? ModelPrefab.GetComponent<UnitInstance>() : null;
+        var options = new System.Collections.Generic.List<UnitColorScheme>();
+        foreach (UnitColorScheme scheme in System.Enum.GetValues(typeof(UnitColorScheme)))
+        {
+            bool populated = GetSchemeMaterial(scheme) != null ||
+                             (prefabInstance != null && prefabInstance.GetSchemeTexture(scheme) != null);
+            if (populated) options.Add(scheme);
+        }
+        return options.Count > 0 ? options[UnityEngine.Random.Range(0, options.Count)] : ColorScheme;
+    }
 
     [Header("Base Combat Stats")]
     public int MaxHP = 100;
@@ -64,7 +93,8 @@ public enum UnitColorScheme
 {
     Scheme1,
     Scheme2,
-    Scheme3
+    Scheme3,
+    Scheme4
 }
 
 public enum UnitRarity
@@ -200,7 +230,7 @@ public class Unit
         MaxMovementPoints = archetype.MaxMovementPoints;
         VisibilityRange = archetype.VisibilityRange;
         DefensePower = archetype.defensePower;
-        ColorScheme = archetype.ColorScheme;
+        ColorScheme = archetype.RollColorScheme();
         Faction = archetype.Faction;
         WeaponPrefab = archetype.weaponPrefabs != null && archetype.weaponPrefabs.Length > 0 ? archetype.weaponPrefabs[0] : null;
         EquipmentPrefab = archetype.equipmentPrefabs != null && archetype.equipmentPrefabs.Length > 0 ? archetype.equipmentPrefabs[0] : null;

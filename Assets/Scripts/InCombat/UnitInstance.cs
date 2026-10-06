@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
  using System.Collections.Generic;
 
@@ -50,6 +51,14 @@ public class UnitInstance : MonoBehaviour
     public Texture2D ColorScheme3;
     public Texture2D ColorScheme4;
 
+    public Texture2D GetSchemeTexture(UnitColorScheme scheme) => scheme switch
+    {
+        UnitColorScheme.Scheme2 => ColorScheme2,
+        UnitColorScheme.Scheme3 => ColorScheme3,
+        UnitColorScheme.Scheme4 => ColorScheme4,
+        _ => ColorScheme1
+    };
+
 
     [Header("State")]
     public HexTile currentTile;
@@ -95,6 +104,8 @@ public class UnitInstance : MonoBehaviour
     [Tooltip("Hovl VFX prefabs for hit/wound/death/fortify/level-up. Defaults to Resources/CombatVfxConfig.")]
     [SerializeField] private CombatVfxConfig vfx;
     private Coroutine movementCoroutine;
+    /// <summary>Weapon whose VFX plays on whoever this unit hits.</summary>
+    private ItemData weaponItem;
 
     private void Awake()
     {
@@ -145,6 +156,7 @@ public class UnitInstance : MonoBehaviour
             GameStateManager.Instance.LastBattleReport.GetOrCreate(unit);
         ApplyColorScheme(unit.Archetype);
         ConfigureAnimatorStyle(unit.Archetype);
+        weaponItem = unit.Archetype != null ? unit.Archetype.weaponItem : null;
         if (unit.WeaponPrefab != null && rightHand != null){
             GameObject.Instantiate(unit.WeaponPrefab, rightHand.transform, false);
         }
@@ -239,14 +251,14 @@ public class UnitInstance : MonoBehaviour
     {
         if (archetype == null) return;
 
-        Material selectedMaterial = colorScheme switch
-        {
-            UnitColorScheme.Scheme2 => archetype.ColorScheme2,
-            UnitColorScheme.Scheme3 => archetype.ColorScheme3,
-            _ => archetype.ColorScheme1
-        };
+        Material selectedMaterial = archetype.GetSchemeMaterial(colorScheme);
 
-        if (selectedMaterial == null) return;
+        // No material for this scheme: recolor by swapping the texture on this unit's own copy of its materials.
+        if (selectedMaterial == null)
+        {
+            ApplySchemeTexture(GetSchemeTexture(colorScheme));
+            return;
+        }
 
         foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
         {
@@ -263,6 +275,40 @@ public class UnitInstance : MonoBehaviour
             renderer.sharedMaterials = materials;
         }
     }
+    private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
+    private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
+
+    /// Per-unit material instances (not a MaterialPropertyBlock: the damage flash resets the block).
+    private void ApplySchemeTexture(Texture2D texture)
+    {
+        if (texture == null) return;
+
+        var instances = new Dictionary<Material, Material>();
+        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
+        {
+            if (renderer is ParticleSystemRenderer || renderer is TrailRenderer || renderer is LineRenderer) continue;
+
+            Material[] materials = renderer.sharedMaterials;
+            for (int i = 0; i < materials.Length; i++)
+            {
+                Material source = materials[i];
+                if (source == null) continue;
+
+                int property = source.HasProperty(BaseMapId) ? BaseMapId : source.HasProperty(MainTexId) ? MainTexId : -1;
+                if (property < 0) continue;
+
+                if (!instances.TryGetValue(source, out Material copy))
+                {
+                    copy = new Material(source);
+                    copy.SetTexture(property, texture);
+                    instances[source] = copy;
+                }
+                materials[i] = copy;
+            }
+            renderer.sharedMaterials = materials;
+        }
+    }
+
     // ---------------------------
     // Placement / Movement
     // ---------------------------
@@ -398,7 +444,7 @@ public class UnitInstance : MonoBehaviour
 
         int damage = CalculateAttackDamage(target, currentTile);
         Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage!");
-        target.TakeDamage(damage, hitDelay);
+        target.TakeDamage(damage, hitDelay, weaponItem);
         if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
         {
             AddExperience(AttackExperience);
@@ -484,7 +530,7 @@ public class UnitInstance : MonoBehaviour
     }
     /// hitDelay postpones the visible reaction (flash, damage anim, removal on
     /// death) so it lines up with a projectile landing; the damage itself is immediate.
-    public void TakeDamage(int amount, float hitDelay = 0f)
+    public void TakeDamage(int amount, float hitDelay = 0f, ItemData weapon = null)
     {
         if (IsDead) return;
 
@@ -499,9 +545,9 @@ public class UnitInstance : MonoBehaviour
         if (damageTaken > 0)
         {
             if (hitDelay > 0f && gameObject.activeInHierarchy)
-                StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay));
+                StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay, weapon));
             else
-                PlayHitReaction(damageTaken);
+                PlayHitReaction(damageTaken, weapon);
         }
 
         if (currentHealth <= 0)
@@ -513,15 +559,15 @@ public class UnitInstance : MonoBehaviour
         RecordWounds(damageTaken);
     }
 
-    private IEnumerator PlayHitReactionAfterDelay(int damageTaken, float delay)
+    private IEnumerator PlayHitReactionAfterDelay(int damageTaken, float delay, ItemData weapon)
     {
         yield return new WaitForSeconds(delay);
-        PlayHitReaction(damageTaken);
+        PlayHitReaction(damageTaken, weapon);
     }
 
     private float _lastHitVfxTime = -1f;
 
-    private void PlayHitReaction(int damageTaken)
+    private void PlayHitReaction(int damageTaken, ItemData weapon = null)
     {
         if (_animator != null)
             _animator.SetInteger(DamageTakenParameter, damageTaken);
@@ -533,8 +579,10 @@ public class UnitInstance : MonoBehaviour
         if (playVfx) _lastHitVfxTime = Time.time;
         if (vfx != null && playVfx)
         {
-            bool heavy = vfx.heavyHit != null && (float)damageTaken / Mathf.Max(1, maxHealth) >= vfx.heavyHitFraction;
-            vfx.Spawn(heavy ? vfx.heavyHit : vfx.hit, transform, false);
+            bool heavy = (float)damageTaken / Mathf.Max(1, maxHealth) >= vfx.heavyHitFraction;
+            GameObject normalFx = weapon != null && weapon.weaponHitVfx != null ? weapon.weaponHitVfx : vfx.hit;
+            GameObject heavyFx = weapon != null && weapon.weaponHeavyHitVfx != null ? weapon.weaponHeavyHitVfx : vfx.heavyHit;
+            vfx.Spawn(heavy && heavyFx != null ? heavyFx : normalFx, transform, false);
         }
         if (hitWhirl != null && playVfx)
             hitWhirl.Play((float)damageTaken / Mathf.Max(1, maxHealth));

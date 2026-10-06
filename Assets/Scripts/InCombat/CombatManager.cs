@@ -77,12 +77,15 @@ public class CombatManager : MonoBehaviour
         {
             case CombatPhaseUIController.CombatAction.Fortify:
                 HandleFortifyClicked(unit);
+                if (unit.IsFortified) ClearSelection(); // action spent: drop stale move/attack highlights
                 break;
             case CombatPhaseUIController.CombatAction.Extract:
                 HandleExtractClicked(unit);
+                ClearSelection();
                 break;
             case CombatPhaseUIController.CombatAction.Scout:
                 HandleScoutClicked(unit);
+                ClearSelection();
                 break;
             case CombatPhaseUIController.CombatAction.BuildWall:
                 EnterBuildMode(unit);
@@ -250,6 +253,7 @@ public class CombatManager : MonoBehaviour
     public void TakeAction(UnitInstance selectedUnit)
     {
         selectedUnit.actionsRemaining = Mathf.Max(0, selectedUnit.actionsRemaining - 1);
+        selectedUnit.NotifyStatsChanged();
         if (selectedUnit.actionsRemaining <= 0)
         {
             // check to see if turn is over. 
@@ -269,6 +273,8 @@ public class CombatManager : MonoBehaviour
         foreach (HexTile tile in HexPathfinder.GetReachableTiles(unit.currentTile, unit.movementRange))
         {
             if (!tile.CanEnter(unit)) continue;
+            // GetReachableTiles walks through occupied tiles, but MoveTo cannot - only highlight tiles with a real route.
+            if (HexPathfinder.FindPath(unit.currentTile, tile, unit.movementRange) == null) continue;
             reachableTiles.Add(tile);
             highlightedTiles.Add(tile);
             tile.Highlight(TileHighlightType.Movement);
@@ -367,7 +373,10 @@ public class CombatManager : MonoBehaviour
         foreach (UnitInstance unit in playerUnits)
         {
             if (unit != null && !unit.IsDead)
+            {
                 unit.actionsRemaining = unit.maxActionsPerTurn;
+                unit.NotifyStatsChanged();
+            }
         }
         SpawnEnemyReinforcements();
         currentRound++;
@@ -416,7 +425,15 @@ public class CombatManager : MonoBehaviour
         previewPath.AddRange(path);
         if (previewPath.Count > 0) previewPath.RemoveAt(0); // Start is not part of the route preview.
 
-        foreach (HexTile tile in highlightedTiles) tile.Highlight(TileHighlightType.Movement);
+        // Restore each tile's own highlight type; attack/rescue tiles must not turn into movement tiles.
+        foreach (HexTile tile in highlightedTiles)
+        {
+            UnitInstance occupant = tile.occupyingUnit;
+            TileHighlightType type = occupant == null ? TileHighlightType.Movement
+                : occupant.Faction == UnitFaction.Villager ? TileHighlightType.Rescue
+                : TileHighlightType.Attack;
+            tile.Highlight(type);
+        }
         foreach (HexTile tile in previewPath) tile.Highlight(TileHighlightType.Path);
     }
 

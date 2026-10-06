@@ -16,4 +16,10 @@ public class ItemData : ScriptableObject
     public int healing = 0;         // Tiles per turn
     public int defense = 0;         // Damage reduction
 
+    [Header("Weapon VFX")]
+    [Tooltip("Played on the target when this weapon hits. Empty = fall back to CombatVfxConfig.hit.")]
+    public GameObject weaponHitVfx;
+    [Tooltip("Played instead of Weapon Hit VFX on a heavy blow. Empty = use the config's heavy hit, or Weapon Hit VFX.")]
+    public GameObject weaponHeavyHitVfx;
+
 }

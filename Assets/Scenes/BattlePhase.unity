@@ -498,7 +498,7 @@ MonoBehaviour:
   zoomSpeed: 0.25
   minZoom: 2
   maxZoom: 15
-  pinchZoomSpeed: 0.1
+  pinchZoomSpeed: 0.05
   minBounds: {x: 3, y: -6}
   maxBounds: {x: 25, y: 25}
   useBounds: 0

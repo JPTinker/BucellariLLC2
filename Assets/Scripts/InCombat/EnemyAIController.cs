@@ -128,6 +128,7 @@ public class EnemyAIController : MonoBehaviour
             if (IsActiveEnemy(unit))
             {
                 unit.actionsRemaining = unit.maxActionsPerTurn;
+                unit.NotifyStatsChanged();
                 pending.Add(unit);
             }
         }
@@ -444,5 +445,6 @@ public class EnemyAIController : MonoBehaviour
     private static void SpendAction(UnitInstance unit)
     {
         unit.actionsRemaining = Mathf.Max(0, unit.actionsRemaining - 1);
+        unit.NotifyStatsChanged();
     }
 }

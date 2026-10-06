@@ -53,11 +53,12 @@ MonoBehaviour:
   attackRange: 1
   defensePower: 2
   movementRange: 3
-  healsOthers: 0
   visibilityRange: 3
   colorScheme: 0
   leftHand: {fileID: 7211117007116925571}
   rightHand: {fileID: 702103425327298323}
+  projectileSpawnPoint: {fileID: 0}
+  aimHeight: 1
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
@@ -76,6 +77,8 @@ MonoBehaviour:
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashOnDuration: 0.08
   flashOffDuration: 0.08
+  hitWhirl: {fileID: 0}
+  vfx: {fileID: 0}
 --- !u!1001 &1225694668355872588
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -86,15 +89,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
       propertyPath: m_LocalScale.x
-      value: 0.3
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
       propertyPath: m_LocalScale.y
-      value: 0.3
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
       propertyPath: m_LocalScale.z
-      value: 0.3
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 0cb91a005594ce2468b7de9701637039, type: 3}
       propertyPath: m_LocalPosition.x

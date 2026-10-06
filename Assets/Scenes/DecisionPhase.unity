@@ -167,6 +167,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: EvacuationCyclesRemaining
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 7801607055821855217, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: m_Name
       value: FullGameManager
@@ -375,9 +379,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 348c30cff7db62c40aec19b64a5a8b42, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PhaseShellController
-  rosterContentTemplate: {fileID: 9197481963319205126, guid: 514631de899a9f440a67b1fb5d0e4ee0, type: 3}
   decisionContentTemplate: {fileID: 9197481963319205126, guid: bb399d0cd62b14b4782ec95725f5de38, type: 3}
-  campaignMapContentTemplate: {fileID: 9197481963319205126, guid: 1cd2684bb3454402af2bb22b43531b38, type: 3}
   placeholderContentTemplate: {fileID: 9197481963319205126, guid: ec99ce3a144a4f145bc69d6c26e88da8, type: 3}
   rosterController: {fileID: 1380302194}
   decisionController: {fileID: 1380302193}
@@ -432,7 +434,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a9e87d25ae2e2b4cb9ba1fd19fb9a0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CampaignMapController
-  heroBackground: {fileID: 21300000, guid: 4a3a4e847b477ec4d9ad8dbed43c2a5b, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
