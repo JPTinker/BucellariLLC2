@@ -18,20 +18,24 @@ MonoBehaviour:
   UnitIcon: {fileID: 21300000, guid: c9ee654612db54c44a76fbf43c9550f5, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: c4e182651f83ace44b25e78824f34201, type: 3}
   weaponPrefabs:
-  - {fileID: 919132149155446097, guid: 9078280e6cbe8684b80c32224735b7ca, type: 3}
-  - {fileID: 919132149155446097, guid: fd7b27a1fe960d840a96fd0ce7bb717c, type: 3}
-  - {fileID: 919132149155446097, guid: ff3b0d75b6597ac41ac8fcfc59879f46, type: 3}
+  - {fileID: 2382300552485899055, guid: 661c8932ba52b9f449a8af1d887e0848, type: 3}
+  - {fileID: 2917268026643292516, guid: 8c70eeb5a3be2f248976a4bc8fa85dc2, type: 3}
+  - {fileID: 1525822509343777241, guid: 7fad4d024b48a9f48b1dcf5fa0322b5d, type: 3}
   equipmentPrefabs:
-  - {fileID: 919132149155446097, guid: ac6c7c27d2d53024c8d8d6ca9ab71382, type: 3}
-  - {fileID: 919132149155446097, guid: 548bc03ac04aaa749b604417fbde3a1b, type: 3}
-  - {fileID: 919132149155446097, guid: d85f5c6fc671fce40ae1fa7aa62db301, type: 3}
-  - {fileID: 919132149155446097, guid: 539f4d0f1eb10bf43bb017bbc123a406, type: 3}
-  - {fileID: 919132149155446097, guid: c4812c3325a38214fa85817f51c6037e, type: 3}
-  - {fileID: 919132149155446097, guid: 98d93f7b54d72be4e9e818b9cadaf5ba, type: 3}
+  - {fileID: 2718603775508475012, guid: b56d97a2b2419d54dbb7709185b163e4, type: 3}
+  - {fileID: 4963174504935253501, guid: 4696d88c1849c084a8566cafd842f3fc, type: 3}
+  - {fileID: 7952120861741311206, guid: 357862ea359c4424c8b61dd5a7abc82c, type: 3}
+  - {fileID: 1900770461927456114, guid: 63af2654cabf9a94caba76103c927253, type: 3}
+  - {fileID: 3476254959847901210, guid: e97ca64e1807f744dac93e87fd99004a, type: 3}
+  - {fileID: 6447590355987698244, guid: 8f87ad8b9fcb2674a8d71cf078c5bc42, type: 3}
+  - {fileID: 6933703316759818675, guid: c0fa248f41ffe2a4f932dc022b11cd9e, type: 3}
+  - {fileID: 525933808488557593, guid: 636aac9993214fc47b5df71bd8a6a975, type: 3}
   ColorScheme: 0
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  RandomizeColorScheme: 1
   MaxHP: 100
   BaseAttack: 7
   AttackRange: 1

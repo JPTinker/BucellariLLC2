@@ -92,8 +92,11 @@ public class CombatPhaseUIController : MonoBehaviour
         Extract,
         Scout,
         BuildWall,
-        EndTurn
+        EndTurn,
+        EscapeWorkers
     }
+
+    private Button escapeWorkersButton;
 
     private void Awake()
     {
@@ -143,6 +146,23 @@ public class CombatPhaseUIController : MonoBehaviour
         scoutButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Scout));
         endTurnButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.EndTurn));
 
+        // Worker escape button: built in code and placed beside End Turn, so no UXML edit is needed.
+        // Only shown when the battle actually has worker villagers.
+        if (endTurnButton != null && endTurnButton.parent != null)
+        {
+            escapeWorkersButton = new Button { name = "action-escape-workers", text = "Workers Escape" };
+            foreach (string cls in endTurnButton.GetClasses())
+                escapeWorkersButton.AddToClassList(cls);
+            escapeWorkersButton.RegisterCallback<ClickEvent>(_ =>
+            {
+                OnActionRequested?.Invoke(CombatAction.EscapeWorkers, null);
+                RefreshWorkerEscapeButton();
+            });
+            int endIndex = endTurnButton.parent.IndexOf(endTurnButton);
+            endTurnButton.parent.Insert(endIndex, escapeWorkersButton);
+            RefreshWorkerEscapeButton();
+        }
+
         unitList = root.Q<ScrollView>("unit-list");
 
         // End Turn doesn't depend on a selected unit; the rest start disabled.
@@ -171,6 +191,7 @@ public class CombatPhaseUIController : MonoBehaviour
         if (gsm == null) return;
 
         GameStateManager.SettlementResources s = gsm.Settlement;
+        RefreshWorkerEscapeButton();
 
         if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.Population}/{s.UnitCapacity}";
         if (settlementVillagersLabel != null) settlementVillagersLabel.text = $"{s.Villagers}/{s.VillagerCapacity}";
@@ -327,6 +348,14 @@ public class CombatPhaseUIController : MonoBehaviour
                         gsm.Settlement.Materials >= map.wallMaterialCost &&
                         map.GetBuildableTiles(unit).Count > 0;
         buildButton?.SetEnabled(canBuild);
+    }
+
+    /// <summary>Shows the Escape button only while worker villagers are on the field and haven't been told to flee yet.</summary>
+    public void RefreshWorkerEscapeButton()
+    {
+        if (escapeWorkersButton == null) return;
+        bool show = combatManager != null && combatManager.HasActiveWorkers && !combatManager.WorkersEscaping;
+        escapeWorkersButton.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     private void RaiseAction(CombatAction action)

@@ -40,10 +40,10 @@
                 </ui:VisualElement>
 
                 <ui:Label text="LABOR" name="section-labor" class="label-caps section-title plan-section-title"/>
-                <ui:VisualElement name="card-scavenge" tooltip="-10 Food per Villager, +10 Scrap per Villager." class="panel directive-row">
+                <ui:VisualElement name="card-scavenge" tooltip="Lumberjacks spawn at the boat, build a lumber mill in a forest, gather, and carry materials back. Enemies will hunt them." class="panel directive-row">
                     <ui:VisualElement class="directive-row__text">
-                        <ui:Label text="Search for Materials" class="label-caps card-title"/>
-                        <ui:Label text="-10 Food / +10 Scrap each" class="body-text text-muted"/>
+                        <ui:Label text="Lumberjacks" class="label-caps card-title"/>
+                        <ui:Label text="-10 Food each / chop forest for Scrap" class="body-text text-muted"/>
                     </ui:VisualElement>
                     <ui:VisualElement class="stepper">
                         <ui:Button name="btn-scavenge-dec" text="-" class="stepper__btn"/>
@@ -51,10 +51,10 @@
                         <ui:Button name="btn-scavenge-inc" text="+" class="stepper__btn"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement name="card-harvest" tooltip="-10 Food per Villager, +30 Food per Villager." class="panel directive-row">
+                <ui:VisualElement name="card-harvest" tooltip="Farmers spawn at the boat, build a farm on flat grass, gather, and carry food back. Enemies will hunt them." class="panel directive-row">
                     <ui:VisualElement class="directive-row__text">
-                        <ui:Label text="Hunt and Gather" class="label-caps card-title"/>
-                        <ui:Label text="-10 Food / +30 Food each" class="body-text text-muted"/>
+                        <ui:Label text="Farmers" class="label-caps card-title"/>
+                        <ui:Label text="-10 Food each / farm flat grass for Food" class="body-text text-muted"/>
                     </ui:VisualElement>
                     <ui:VisualElement class="stepper">
                         <ui:Button name="btn-harvest-dec" text="-" class="stepper__btn"/>
@@ -62,10 +62,10 @@
                         <ui:Button name="btn-harvest-inc" text="+" class="stepper__btn"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
-                <ui:VisualElement name="card-expansion" tooltip="-150 Scrap and -8 Villagers (crew) per ship. +5 Unit Cap, +10 Villager Cap." class="panel directive-row">
+                <ui:VisualElement name="card-expansion" tooltip="-150 Scrap per ship. +5 Unit Cap, +5 Villager Cap." class="panel directive-row">
                     <ui:VisualElement class="directive-row__text">
                         <ui:Label text="Build a Ship" class="label-caps card-title"/>
-                        <ui:Label text="-150 Scrap, -8 Villagers / +5 Unit Cap" class="body-text text-muted"/>
+                        <ui:Label text="-150 Scrap / +5 Unit Cap, +5 Villager Cap" class="body-text text-muted"/>
                     </ui:VisualElement>
                     <ui:VisualElement class="stepper">
                         <ui:Button name="btn-expansion-dec" text="-" class="stepper__btn"/>

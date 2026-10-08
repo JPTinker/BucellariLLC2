@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BuildingType { WoodTower, StoneTower, Mine, Farm, WoodenWall, StoneWall }
+public enum BuildingType { WoodTower, StoneTower, Mine, Farm, WoodenWall, StoneWall, LumberMill }
 public enum TerrainType { Water, Sand, Grass, StoneHill, StoneMountain, Buildings, Exfil }
 public enum TileHighlightType { None, Movement, Attack, Build, Path, Rescue }
 
@@ -17,6 +17,14 @@ public class HexTile : MonoBehaviour
     [Header("Fog of War")] public GameObject fogInstance; public bool isRevealed;
     [Range(0.01f, 0.6f)] public float hiddenDarkness = 0.01f;
     public int foodLeftOnTile;
+    [Header("Worker Sites")]
+    [Tooltip("Set by MapManager from the tile prefab name (grass-forest). Lumber mill sites.")] public bool isForest;
+    [Tooltip("Set by MapManager from the tile prefab name (grass-hill). Not farmable.")] public bool isHill;
+    [Tooltip("A worker has claimed this tile for a farm / lumber mill.")] public bool workerSiteClaimed;
+    /// <summary>Flat, open grass: valid farm ground.</summary>
+    public bool IsFarmable => terrainType == TerrainType.Grass && !isForest && !isHill && !workerSiteClaimed && isWalkable;
+    /// <summary>Forested grass: valid lumber mill ground.</summary>
+    public bool IsLumberable => isForest && !workerSiteClaimed && isWalkable;
     [Header("Click Feedback")]
     [SerializeField, Min(0f)] private float clickBounceHeight = 0.25f;
     [SerializeField, Min(0.01f)] private float clickBounceDuration = 0.3f;

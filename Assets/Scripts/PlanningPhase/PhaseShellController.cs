@@ -73,8 +73,7 @@ public class PhaseShellController : MonoBehaviour
                 gsm.HasSelectedCampaignAction &&
                 rosterController != null &&
                 (gsm.SelectedCampaignAction == GameStateManager.CampaignAction.Rest ||
-                 rosterController.SelectedUnits.Count > 0) &&
-                gsm.IdleVillagers == 0;
+                 rosterController.SelectedUnits.Count > 0);
         }
     }
 
@@ -301,7 +300,7 @@ public class PhaseShellController : MonoBehaviour
         SetDelta(_resMaterialsDelta, forecast.MaterialsDelta);
 
         // Villagers cell mirrors Units: current headcount vs capacity, with idle
-        // (not yet assigned to a labor directive this cycle) as the annotation.
+        // (not sent as battle workers this cycle) as the annotation.
         _resVillagersVal.text = s.Villagers.ToString();
         _resVillagersCap.text = $"/{s.VillagerCapacity}";
         _resVillagersDelta.text = $"{forecast.IdleVillagers} IDLE";
@@ -321,7 +320,7 @@ public class PhaseShellController : MonoBehaviour
 
         SetCheck(_checkCourse, gsm.HasSelectedCampaignAction, "Course chosen", "Choose a course");
         SetCheck(_checkSquad, squad > 0, $"Squad selected ({squad}/{GameStateManager.MaxTeamSize})", $"Select your squad (0/{GameStateManager.MaxTeamSize})");
-        SetCheck(_checkVillagers, gsm.IdleVillagers == 0, "All villagers assigned", $"Assign villagers ({gsm.IdleVillagers} idle)");
+        SetCheck(_checkVillagers, gsm.VillagersSent > 0, $"{gsm.VillagersSent} workers sent ({gsm.IdleVillagers} stay home)", $"No workers sent ({gsm.IdleVillagers} stay home)");
 
         if (_checkBudget != null)
         {

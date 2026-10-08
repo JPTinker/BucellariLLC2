@@ -30,7 +30,7 @@
                         <ui:Label name="res-materials-val" text="185" class="stat-value"/>
                         <ui:Label name="res-materials-delta" text="-20" class="label-caps text-bold text-negative"/>
                     </ui:VisualElement>
-                    <ui:VisualElement tooltip="Villagers sent to labor directives this cycle. Idle villagers roll over to next cycle." class="stats-header__cell">
+                    <ui:VisualElement tooltip="Villagers sent as battle workers this cycle. Unsent villagers stay home safe; workers killed in battle are lost for good." class="stats-header__cell">
                         <ui:Label text="Villagers" class="label-caps text-muted"/>
                         <ui:VisualElement class="row row--baseline">
                             <ui:Label name="res-villagers-val" text="5" class="stat-value text-primary-container"/>
@@ -50,7 +50,7 @@
                     <ui:Label text="READY TO MARCH" class="label-caps text-muted readiness-title"/>
                     <ui:Label name="check-course" text="Choose a course" class="readiness-row"/>
                     <ui:Label name="check-squad" text="Select your squad" class="readiness-row"/>
-                    <ui:Label name="check-villagers" text="Assign all villagers" class="readiness-row"/>
+                    <ui:Label name="check-villagers" text="Workers sent" class="readiness-row"/>
                     <ui:Label name="check-budget" text="Cannot afford queued ship" class="readiness-row readiness-row--extra"/>
                 </ui:VisualElement>
                 <ui:Button text="MARCH TO WAR" name="btn-engage" class="engage-button">

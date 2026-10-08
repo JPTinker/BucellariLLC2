@@ -1067,8 +1067,13 @@ MonoBehaviour:
   enemySpawnCount: 8
   hpScalingPerWave: 0.15
   attackScalingPerWave: 0.2
+  maxExfilProximityLevels: 3
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
+  workerArchetype: {fileID: 0}
+  farmPrefab: {fileID: 4899142508440621048, guid: f6986b15742128d4c8c70d923844468b, type: 3}
+  lumberMillPrefab: {fileID: 6330978635909218930, guid: 0d79d48d5bdef1e49bd60506fb6cafdb, type: 3}
+  workerMovementRange: 3
   wallPrefab: {fileID: 7514974912573514939, guid: 04dc8fab069ddeb42877a9d5de78096a, type: 3}
   wallMaterialCost: 5
   fortifyMaterialCost: 2
@@ -1129,6 +1134,7 @@ MonoBehaviour:
   moveCandidatesPerStep: 6
   playerWeight: 1
   villagerWeight: 1.25
+  workerWeight: 1.75
   structureWeight: 0.5
   killBonus: 60
   killThreatBonus: 4

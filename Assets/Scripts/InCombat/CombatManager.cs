@@ -27,6 +27,19 @@ public class CombatManager : MonoBehaviour
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> enemyUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> villagerUnits = new List<UnitInstance>();
+    // Player-owned worker villagers: kept apart from villagerUnits (strays to rescue) and from playerUnits (win/loss).
+    private readonly List<UnitInstance> workerUnits = new List<UnitInstance>();
+    private WorkerVillagerAIController workerAI;
+    /// <summary>Set once the player presses Workers Escape; workers then deposit their load and leave.</summary>
+    public bool WorkersEscaping { get; private set; }
+    public bool HasActiveWorkers
+    {
+        get
+        {
+            workerUnits.RemoveAll(w => w == null);
+            return workerUnits.Count > 0;
+        }
+    }
     private readonly List<HexTile> highlightedTiles = new List<HexTile>();
     private readonly HashSet<HexTile> reachableTiles = new HashSet<HexTile>();
     private readonly List<HexTile> previewPath = new List<HexTile>();
@@ -49,6 +62,8 @@ public class CombatManager : MonoBehaviour
         if (enemyAI == null) enemyAI = gameObject.AddComponent<EnemyAIController>();
         if (villagerAI == null) villagerAI = FindAnyObjectByType<VillagerAIController>();
         if (villagerAI == null) villagerAI = gameObject.AddComponent<VillagerAIController>();
+        workerAI = FindAnyObjectByType<WorkerVillagerAIController>();
+        if (workerAI == null) workerAI = gameObject.AddComponent<WorkerVillagerAIController>();
     }
 
     private void OnEnable()
@@ -67,6 +82,12 @@ public class CombatManager : MonoBehaviour
 
     private void HandleActionRequested(CombatPhaseUIController.CombatAction action, UnitInstance unit)
     {
+        if (action == CombatPhaseUIController.CombatAction.EscapeWorkers)
+        {
+            HandleEscapeWorkersClicked();
+            return;
+        }
+
         if (unit == null)
         {
             Debug.LogWarning($"CombatManager: {action} clicked without a selected unit.");
@@ -211,7 +232,7 @@ public class CombatManager : MonoBehaviour
             }
             if (!highlightedTiles.Contains(tile)) { ClearSelection(); return; }
             if (tile.occupyingUnit != null &&
-                tile.occupyingUnit.Faction == UnitFaction.Villager)
+                tile.occupyingUnit.Faction == UnitFaction.Villager && !tile.occupyingUnit.IsWorker)
             {
                 if (pendingDestination != tile)
                 {
@@ -284,7 +305,7 @@ public class CombatManager : MonoBehaviour
             if (tile.occupyingUnit == null) continue;
             if (tile.occupyingUnit.Faction == UnitFaction.Villager)
             {
-                if (HasRescueCapacity(unit))
+                if (!tile.occupyingUnit.IsWorker && HasRescueCapacity(unit))
                 {
                     highlightedTiles.Add(tile);
                     tile.Highlight(TileHighlightType.Rescue);
@@ -358,11 +379,40 @@ public class CombatManager : MonoBehaviour
         if (villagerAI != null)
         {
             notificationManager.ShowNotification("Villager Turn begins");
-            villagerAI.ExecuteTurn(FinishVillagerTurn);
+            villagerAI.ExecuteTurn(StartWorkerTurn);
+            return;
+        }
+
+        StartWorkerTurn();
+    }
+
+    // Second pass of the villager phase: the player's autonomous workers.
+    private void StartWorkerTurn()
+    {
+        if (workerAI != null && HasActiveWorkers)
+        {
+            workerAI.ExecuteTurn(FinishVillagerTurn);
             return;
         }
 
         FinishVillagerTurn();
+    }
+
+    private void HandleEscapeWorkersClicked()
+    {
+        if (WorkersEscaping || !HasActiveWorkers) return;
+        WorkersEscaping = true;
+        notificationManager?.ShowNotification("Workers are heading for the boat");
+        combatUIManager?.RefreshWorkerEscapeButton();
+    }
+
+    /// <summary>Current enemy wave level, used to scale worker buffs.</summary>
+    public int EnemyWaveLevel => enemyWaveLevel;
+
+    public void HandleWorkerDeposited(UnitInstance worker)
+    {
+        workerUnits.Remove(worker);
+        combatUIManager?.RefreshWorkerEscapeButton();
     }
 
     private void FinishVillagerTurn()
@@ -462,7 +512,7 @@ public class CombatManager : MonoBehaviour
             list = playerUnits;
         } 
         else if(unit.Faction == UnitFaction.Villager){
-            list = villagerUnits;
+            list = unit.IsWorker ? workerUnits : villagerUnits;
         }
         else if (unit.Faction == UnitFaction.Structure) {
             return; // walls don't count toward win/loss and need no death bookkeeping
@@ -479,10 +529,11 @@ public class CombatManager : MonoBehaviour
     private void HandleUnitDeath(UnitInstance unit)
     {
         unit.OnDeath -= HandleUnitDeath;
-        playerUnits.Remove(unit); enemyUnits.Remove(unit); villagerUnits.Remove(unit);
+        playerUnits.Remove(unit); enemyUnits.Remove(unit); villagerUnits.Remove(unit); workerUnits.Remove(unit);
         GameStateManager gsm = GameStateManager.Instance;
         if (gsm != null)
         {
+            if (unit.IsWorker) gsm.ProcessWorkerDeath();
             if (unit.Faction == UnitFaction.Player) gsm.RegisterCasualty(unit.PersistentUnit);
             else if (unit.Faction == UnitFaction.Enemy) gsm.RegisterEnemyKilled();
         }

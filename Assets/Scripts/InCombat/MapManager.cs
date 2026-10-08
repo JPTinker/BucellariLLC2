@@ -102,6 +102,16 @@ public class MapManager : MonoBehaviour
     private int villagerSpawnTarget;
     private int villagersSpawned;
 
+    [Header("Worker Villagers")]
+    [Tooltip("Archetype for the player's worker villagers. Falls back to the first villager archetype if empty.")]
+    public UnitData workerArchetype;
+    [Tooltip("Farm visual built by food workers. A placeholder cube is used if empty.")]
+    public GameObject farmPrefab;
+    [Tooltip("Lumber mill visual built by materials workers. A placeholder cube is used if empty.")]
+    public GameObject lumberMillPrefab;
+    [Tooltip("Minimum movement range for workers (the base villager archetype only moves 1 tile).")]
+    [SerializeField] private int workerMovementRange = 3;
+
     [Header("Building")]
     [Tooltip("Optional wall prefab. If empty, a simple cube is generated at runtime. A UnitInstance is added automatically if the prefab lacks one.")]
     public GameObject wallPrefab;
@@ -140,6 +150,14 @@ public class MapManager : MonoBehaviour
         SpawnEnemyWave(enemySpawnCount);
         villagerSpawnTarget = GetPlayerUnitCount() * VillagersPerPlayerUnit;
         SpawnVillagers(InitialVillagerSpawnCount);
+        if (gameStateManager != null)
+        {
+            int avail = gameStateManager.Settlement.Villagers;
+            int food = Mathf.Min(gameStateManager.BattleFoodWorkers, avail);
+            int mats = Mathf.Min(gameStateManager.BattleMaterialWorkers, avail - food);
+            SpawnWorkers(food, mats);
+            
+        }
         InitializeRevealState();
     }
 
@@ -870,6 +888,111 @@ public class MapManager : MonoBehaviour
         return instance;
     }
 
+    // ---------------------------------------------------------------------
+    // Worker villagers: the player's autonomous farmers / lumberjacks. They
+    // are NOT rescue targets (UnitInstance.IsWorker) and are driven entirely
+    // by WorkerVillagerAIController.
+    // ---------------------------------------------------------------------
+    public List<UnitInstance> SpawnWorkers(int foodWorkers, int materialWorkers)
+    {
+        List<UnitInstance> workers = new List<UnitInstance>();
+        if (foodWorkers + materialWorkers <= 0) return workers;
+
+        UnitData data = workerArchetype != null ? workerArchetype
+            : (villagerArchetypes != null && villagerArchetypes.Count > 0 ? villagerArchetypes[0] : null);
+        if (data == null)
+        {
+            Debug.LogError("[MapGenerator] No worker (or villager) archetype assigned; workers not spawned.");
+            return workers;
+        }
+
+        HexTile exfil = null;
+        foreach (HexTile t in tileMap.Values)
+            if (t != null && t.IsExtractionPoint) { exfil = t; break; }
+        if (exfil == null) return workers;
+
+        // Free tiles closest to the boat first: its neighbors, then ring by ring outward.
+        List<HexTile> spawnTiles = new List<HexTile>();
+        foreach (HexTile t in tileMap.Values)
+        {
+            if (t == null || !t.CanEnter() || t.IsExtractionPoint) continue;
+            if (t.terrainType == TerrainType.Water) continue;
+            spawnTiles.Add(t);
+        }
+        spawnTiles.Sort((a, b) =>
+            HexCoordinates.GetDistance(a.gridPosition, exfil.gridPosition)
+                .CompareTo(HexCoordinates.GetDistance(b.gridPosition, exfil.gridPosition)));
+
+        int total = foodWorkers + materialWorkers;
+        for (int i = 0; i < total && i < spawnTiles.Count; i++)
+        {
+            UnitInstance worker = SpawnWorkerUnit(spawnTiles[i], data, isFood: i < foodWorkers);
+            if (worker != null) workers.Add(worker);
+        }
+
+        if (CombatManager.Instance != null) CombatManager.Instance.TrackAll(workers);
+        Debug.Log($"[MapGenerator] Spawned {workers.Count} worker villagers ({foodWorkers} food, {materialWorkers} materials).");
+        for (int i = 0; i < workers.Count; i++)
+        {
+            workers[i].playSpawnAnimation();
+        }
+        return workers;
+    }
+
+    private UnitInstance SpawnWorkerUnit(HexTile tile, UnitData data, bool isFood)
+    {
+        if (data.ModelPrefab == null) return null;
+
+        GameObject obj = Instantiate(data.ModelPrefab, tile.transform.position, Quaternion.identity);
+        if (!obj.TryGetComponent<UnitInstance>(out var instance))
+        {
+            Debug.LogError($"[MapGenerator] Worker prefab '{data.ModelPrefab.name}' is missing a UnitInstance component!");
+            Destroy(obj);
+            return null;
+        }
+
+        instance.Initialize(data);
+        instance.Faction = UnitFaction.Villager;
+        instance.IsWorker = true;
+        instance.unitName = $"{(isFood ? "Farmer" : "Lumberjack")}_{GenerateUnique4DigitString()}";
+        instance.gameObject.name = instance.unitName;
+        // Workers use one action to move and one to work each turn; HP / yield buffs come from WorkerVillager.
+        instance.maxActionsPerTurn = 1;
+        instance.actionsRemaining = 1;
+        instance.movementRange = Mathf.Max(instance.movementRange, workerMovementRange);
+
+        WorkerVillager worker = obj.AddComponent<WorkerVillager>();
+        worker.Setup(isFood);
+        instance.PlaceOnTile(tile);
+        return instance;
+    }
+
+    /// <summary>Raises the farm / lumber mill visual on a tile a worker has claimed. Returns the spawned object.</summary>
+    public GameObject BuildWorkerStructure(HexTile tile, bool isFarm)
+    {
+        if (tile == null) return null;
+
+        GameObject prefab = isFarm ? farmPrefab : lumberMillPrefab;
+        GameObject structure;
+        if (prefab != null)
+        {
+            structure = Instantiate(prefab, tile.transform.position, Quaternion.identity, tile.transform);
+        }
+        else
+        {
+            // Placeholder so the mechanic works before prefabs are assigned in the Inspector.
+            structure = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            structure.transform.SetParent(tile.transform, false);
+            structure.transform.position = tile.transform.position + Vector3.up * 0.35f;
+            structure.transform.localScale = new Vector3(0.7f, 0.5f, 0.7f);
+            if (structure.TryGetComponent<Collider>(out var col)) Destroy(col);
+            if (structure.TryGetComponent<Renderer>(out var rend))
+                rend.material.color = isFarm ? new Color(0.85f, 0.75f, 0.25f) : new Color(0.4f, 0.28f, 0.15f);
+        }
+        structure.name = isFarm ? "Farm" : "LumberMill";
+        return structure;
+    }
+
     private TerrainType PickTerrain(float noiseValue)
     {
         foreach (var band in terrainBands)
@@ -894,6 +1017,9 @@ public class MapManager : MonoBehaviour
 
         HexTile tile = tileObj.GetComponent<HexTile>();
         tile.gridPosition = gridPosition;
+        string prefabName = prefab.name.ToLowerInvariant();
+        tile.isForest = prefabName.Contains("forest");
+        tile.isHill = prefabName.Contains("hill");
         tile.isRevealed = false;
         tile.SetDarkness(tile.hiddenDarkness);
         CreateFog(tile);

@@ -12,8 +12,6 @@ public class UnitData : ScriptableObject
     public Sprite UnitIcon;          // For UI / Roster list
     public GameObject ModelPrefab;    // World space visual / Sprite Prefab
     public GameObject[] weaponPrefabs; // Array of equipment prefabs for the unit
-    [Tooltip("Weapon item whose Weapon VFX plays on targets this unit hits.")]
-    public ItemData weaponItem;
     public GameObject[] equipmentPrefabs; // Array of equipment prefabs for the unit
 
     [Header("Visual Style")]

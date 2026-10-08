@@ -28,8 +28,8 @@ public class GameStateManager : MonoBehaviour
         public int Food = 200;
         public int Materials = 185;
         [Range(0, 100)] public int Morale = 84;
-        public int Villagers = 5;          // current available villager headcount (labor pool)
-        public int VillagerCapacity = 10;  // max Villagers the settlement can support
+        public int Villagers = 2;          // current available villager headcount (worker pool)
+        public int VillagerCapacity = 5;   // max Villagers the settlement can support (+5 per boat)
         public int UnitCapacity = 5;       // max Units (FullRoster) the settlement can support
     }
 
@@ -53,11 +53,11 @@ public class GameStateManager : MonoBehaviour
     /// <summary>
     /// The player's in-progress, not-yet-committed allocation for this planning
     /// cycle. Adjusted live by the Decision screen via AdjustAllocation(), applied
-    /// to Settlement by ExecuteCycle(). ScavengeUnits/HarvestUnits/ExpansionUnits
-    /// are headcounts of Villagers despite the field name (kept for UXML/binding
-    /// compatibility). ExpansionUnits (Build a Ship) is special: TryAdjustAllocation
-    /// only ever lands it on 0 or Balance.ShipVillagerCost - it's a discrete,
-    /// fixed-cost directive, not a per-villager scaling one.
+    /// to Settlement by ExecuteCycle(). ScavengeUnits (material workers) and
+    /// HarvestUnits (food workers) are headcounts of Villagers despite the field
+    /// name (kept for UXML/binding compatibility); they spawn as autonomous
+    /// workers in the battle. ExpansionUnits (Build a Ship) is special: it is
+    /// only ever 0 or 1 (queued) and costs Materials, not Villagers.
     ///
     /// Vanguard has no field here - it's derived from ActiveTeam.Count (the
     /// units picked on the Roster tab), not manually adjustable. See
@@ -107,17 +107,17 @@ public class GameStateManager : MonoBehaviour
         public int FoodCostPerVanguardUnit = 20;  // Food spent per Unit sent to battle (Vanguard)
         public int FoodCostPerVillagerSent = 10;  // Food spent per Villager sent to ANY labor directive
 
-        [Header("Hunt and Gather (Food reward)")]
-        public float FoodPerHarvestVillager = 30f;
+        [Header("Worker villagers (in battle)")]
+        public int WorkerFoodPerGather = 30;       // food carried per gather turn at a farm
+        public int WorkerMaterialsPerGather = 20;  // materials carried per gather turn at a lumber mill
+        public int WorkerCarryCap = 60;            // max a worker carries before it must deposit
+        public float WorkerHpBonusPerLevel = 0.10f;    // +HP fraction per enemy wave level
+        public float WorkerYieldBonusPerLevel = 0.10f; // +gather yield fraction per enemy wave level
 
-        [Header("Search for Materials (Scrap reward)")]
-        public float MaterialsPerScavengeVillager = 10f;
-
-        [Header("Build a Ship - discrete, fixed-cost directive (not per-villager)")]
-        public int ShipVillagerCost = 8;         // villagers consumed/crewed when the ship completes
+        [Header("Build a Ship - discrete directive (Materials only)")]
         public int ShipMaterialsCost = 150;
         public int ShipUnitCapacityGain = 5;
-        public int ShipVillagerCapacityGain = 10;
+        public int ShipVillagerCapacityGain = 5;
 
         [Header("Morale - per-cycle allocation costs")]
         public float MoralePenaltyPerVanguardUnit = 1f;   // -1% per Unit sent to battle
@@ -750,6 +750,27 @@ public class GameStateManager : MonoBehaviour
         Destroy(villager.gameObject);
     }
 
+    /// <summary>Called when a worker villager drops its load at the boat. Credits Settlement immediately.</summary>
+    public void ProcessWorkerDeposit(bool isFood, int amount)
+    {
+        if (amount <= 0) return;
+        if (isFood) Settlement.Food += amount;
+        else Settlement.Materials += amount;
+
+        if (LastBattleReport != null)
+        {
+            if (isFood) LastBattleReport.FoodGathered += amount;
+            else LastBattleReport.MaterialsGathered += amount;
+        }
+    }
+
+    /// <summary>Called when a worker villager is killed. The loss is permanent.</summary>
+    public void ProcessWorkerDeath()
+    {
+        Settlement.Villagers = Mathf.Max(0, Settlement.Villagers - 1);
+        if (LastBattleReport != null) LastBattleReport.WorkersLost++;
+    }
+
     // ============================================================
     // SETTLEMENT / DECISION SCREEN
     // ============================================================
@@ -770,7 +791,18 @@ public class GameStateManager : MonoBehaviour
     public int IdleVillagers => Mathf.Max(0, Settlement.Villagers - VillagersSent);
 
     /// <summary>Total Villagers committed across Scavenge/Harvest/Expansion this cycle.</summary>
-    public int VillagersSent => CurrentAllocation.ScavengeUnits + CurrentAllocation.HarvestUnits + CurrentAllocation.ExpansionUnits;
+    public int VillagersSent => CurrentAllocation.ScavengeUnits + CurrentAllocation.HarvestUnits;
+
+    /// <summary>Food workers (HarvestUnits) that will spawn in the next battle.</summary>
+    public int FoodWorkersToSpawn => CurrentAllocation.HarvestUnits;
+
+    /// <summary>Material workers (ScavengeUnits) that will spawn in the next battle.</summary>
+    public int MaterialWorkersToSpawn => CurrentAllocation.ScavengeUnits;
+
+    // Worker counts committed by ExecuteCycle(), read by MapManager when the battle scene loads
+    // (CurrentAllocation is reset at the end of ExecuteCycle).
+    public int BattleFoodWorkers { get; private set; }
+    public int BattleMaterialWorkers { get; private set; }
 
     public void SelectCampaignAction(CampaignAction action)
     {
@@ -804,20 +836,17 @@ public class GameStateManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Build a Ship only ever costs exactly Balance.ShipVillagerCost Villagers -
-    /// there's no partial commitment. A positive delta queues it (if not already
-    /// queued and enough Villagers are idle); a non-positive delta cancels it.
+    /// Build a Ship is an all-or-nothing Materials-only directive. A positive
+    /// delta queues it (if not already queued); a non-positive delta cancels it.
     /// </summary>
     private bool TryToggleShipBuild(int delta)
     {
         int current = CurrentAllocation.ExpansionUnits;
-        int cost = Balance.ShipVillagerCost;
 
         if (delta > 0)
         {
             if (current != 0) return false;
-            if (IdleVillagers < cost) return false;
-            CurrentAllocation.ExpansionUnits = cost;
+            CurrentAllocation.ExpansionUnits = 1;
             return true;
         }
 
@@ -841,20 +870,15 @@ public class GameStateManager : MonoBehaviour
         // Roster tab), not a manually steppable allocation field.
         int vanguardUnits = ActiveTeam.Count;
         int villagersSent = VillagersSent;
-        bool willBuildShip = a.ExpansionUnits >= b.ShipVillagerCost;
+        bool willBuildShip = a.ExpansionUnits > 0;
 
-        // Stay Put (Campaign Map): the settlement isn't moving this cycle, so
-        // labor directives work the site twice as hard.
-        float yieldMultiplier = SelectedCampaignAction == CampaignAction.StayPut ? 2f : 1f;
-
+        // Worker income is no longer projected here: villagers gather in the
+        // battle and credit Settlement via ProcessWorkerDeposit().
         int foodDelta = Mathf.RoundToInt(
-            a.HarvestUnits * b.FoodPerHarvestVillager * yieldMultiplier
             - vanguardUnits * b.FoodCostPerVanguardUnit
             - villagersSent * b.FoodCostPerVillagerSent);
 
-        int materialsDelta = Mathf.RoundToInt(
-            a.ScavengeUnits * b.MaterialsPerScavengeVillager * yieldMultiplier
-            - (willBuildShip ? b.ShipMaterialsCost : 0));
+        int materialsDelta = willBuildShip ? -b.ShipMaterialsCost : 0;
 
         float moraleDelta =
             - vanguardUnits * b.MoralePenaltyPerVanguardUnit
@@ -899,9 +923,6 @@ public class GameStateManager : MonoBehaviour
 
         if (forecast.WillBuildShip)
         {
-            // The 8 villagers crew the ship and leave the settlement's labor pool
-            // for good - only the capacity they unlock stays behind.
-            Settlement.Villagers = Mathf.Max(0, Settlement.Villagers - Balance.ShipVillagerCost);
             Settlement.UnitCapacity += Balance.ShipUnitCapacityGain;
             Settlement.VillagerCapacity += Balance.ShipVillagerCapacityGain;
         }
@@ -926,6 +947,10 @@ public class GameStateManager : MonoBehaviour
         }
         SelectedCampaignAction = CampaignAction.Travel;
         HasSelectedCampaignAction = false;
+
+        // Commit worker counts for the battle scene (allocation resets below).
+        BattleFoodWorkers = CurrentAllocation.HarvestUnits;
+        BattleMaterialWorkers = CurrentAllocation.ScavengeUnits;
 
         // Hand the Vanguard block off to combat - ActiveTeam already holds
         // whichever units are picked on the Roster tab (kept live in sync by

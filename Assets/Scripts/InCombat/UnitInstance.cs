@@ -70,6 +70,8 @@ public class UnitInstance : MonoBehaviour
     public event Action<UnitInstance> OnDeath;
 
     public bool IsExtracted = false;
+    /// <summary>True for player-owned worker villagers (see WorkerVillager). They are never rescued or auto-evacuated like strays.</summary>
+    public bool IsWorker = false;
     public bool IsFortified = false;
     public bool IsRevealed = false;
     public event Action<UnitInstance> OnStatsChanged;
@@ -156,7 +158,8 @@ public class UnitInstance : MonoBehaviour
             GameStateManager.Instance.LastBattleReport.GetOrCreate(unit);
         ApplyColorScheme(unit.Archetype);
         ConfigureAnimatorStyle(unit.Archetype);
-        weaponItem = unit.Archetype != null ? unit.Archetype.weaponItem : null;
+        // Weapon stats / hit VFX live on the weapon prefab itself.
+        weaponItem = unit.WeaponPrefab != null ? unit.WeaponPrefab.GetComponent<ItemData>() : null;
         if (unit.WeaponPrefab != null && rightHand != null){
             GameObject.Instantiate(unit.WeaponPrefab, rightHand.transform, false);
         }
@@ -746,7 +749,7 @@ public class UnitInstance : MonoBehaviour
     /// </summary>
     public bool Rescue(UnitInstance villager)
     {
-        if (villager == null || villager.Faction != UnitFaction.Villager ||
+        if (villager == null || villager.Faction != UnitFaction.Villager || villager.IsWorker ||
             villager.currentTile == null || rescuedUnitData == null || !CanAttack(villager))
             return false;
 

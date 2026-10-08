@@ -150,6 +150,6 @@ public class VillagerAIController : MonoBehaviour
 
     private static bool IsActiveVillager(UnitInstance unit)
     {
-        return EnemyBattlefieldState.IsOnField(unit) && unit.Faction == UnitFaction.Villager;
+        return EnemyBattlefieldState.IsOnField(unit) && unit.Faction == UnitFaction.Villager && !unit.IsWorker;
     }
 }

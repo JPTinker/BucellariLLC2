@@ -18,13 +18,15 @@ MonoBehaviour:
   UnitIcon: {fileID: 21300000, guid: a0fd38703c111ed458dd7bdc87f7598e, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: a1e8404917e7e64439141499ff75b0c4, type: 3}
   weaponPrefabs:
-  - {fileID: 919132149155446097, guid: fa1f668a2416cfd4abae717d4ca3adc9, type: 3}
-  - {fileID: 919132149155446097, guid: 135162d19e27b0640866d411ff024f6b, type: 3}
+  - {fileID: 5835892989144266217, guid: 33e5229d8a79e21439d4dfbd927de613, type: 3}
+  - {fileID: 3929213920266815046, guid: 891ee8e756e988248b7cadc6212e363e, type: 3}
   equipmentPrefabs: []
   ColorScheme: 0
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  RandomizeColorScheme: 1
   MaxHP: 100
   BaseAttack: 6
   AttackRange: 3

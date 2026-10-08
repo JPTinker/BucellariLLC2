@@ -49,6 +49,9 @@ public class BattleReport
     public readonly List<UnitReportEntry> Entries = new List<UnitReportEntry>();
     public int EnemiesKilled;
     public int VillagersSaved;
+    public int FoodGathered;
+    public int MaterialsGathered;
+    public int WorkersLost;
     public bool Won;
 
     public bool IsEmpty => Entries.Count == 0;

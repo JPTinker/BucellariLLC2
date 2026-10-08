@@ -18,25 +18,27 @@ MonoBehaviour:
   UnitIcon: {fileID: 21300000, guid: 13119243c05cf2c45b5ca012d55d2827, type: 3}
   ModelPrefab: {fileID: 6163759254571570966, guid: c22b4874198c9a7419da2b901c1efc31, type: 3}
   weaponPrefabs:
-  - {fileID: 919132149155446097, guid: d8be8a951bb97e141a40843f05ee6db8, type: 3}
-  - {fileID: 919132149155446097, guid: 6cab2b566ec71fd4b88d18093d631b96, type: 3}
-  - {fileID: 919132149155446097, guid: 7c40cc5f53d7258469829163de57368d, type: 3}
-  - {fileID: 919132149155446097, guid: d777029abafcd264d8514afd14d962a1, type: 3}
+  - {fileID: 4171208253908074077, guid: fdbaf3e853eeee348a9dcee5c269ec84, type: 3}
+  - {fileID: 5683071014610038634, guid: f76da166c4727014d9be27296f84f50b, type: 3}
+  - {fileID: 2123689659879842759, guid: e28cf121cb1bc7a49bf48b415cd19986, type: 3}
+  - {fileID: 9146655064991083296, guid: 05d0f3f9c6d76654abdf459e670fc007, type: 3}
   equipmentPrefabs:
-  - {fileID: 919132149155446097, guid: ac6c7c27d2d53024c8d8d6ca9ab71382, type: 3}
-  - {fileID: 919132149155446097, guid: 548bc03ac04aaa749b604417fbde3a1b, type: 3}
-  - {fileID: 919132149155446097, guid: 3411db656b5ff954aabb55ae93089352, type: 3}
-  - {fileID: 919132149155446097, guid: 316dd9597b881c04eae245e258ab6c10, type: 3}
-  - {fileID: 919132149155446097, guid: e0c58b1b18c9a4946b4723ba97c25d50, type: 3}
-  - {fileID: 919132149155446097, guid: 9f0176474608fe94bb510d58469ffe57, type: 3}
-  - {fileID: 919132149155446097, guid: d85f5c6fc671fce40ae1fa7aa62db301, type: 3}
-  - {fileID: 919132149155446097, guid: 539f4d0f1eb10bf43bb017bbc123a406, type: 3}
-  - {fileID: 919132149155446097, guid: c4812c3325a38214fa85817f51c6037e, type: 3}
-  - {fileID: 919132149155446097, guid: 98d93f7b54d72be4e9e818b9cadaf5ba, type: 3}
+  - {fileID: 525933808488557593, guid: 636aac9993214fc47b5df71bd8a6a975, type: 3}
+  - {fileID: 6933703316759818675, guid: c0fa248f41ffe2a4f932dc022b11cd9e, type: 3}
+  - {fileID: 6447590355987698244, guid: 8f87ad8b9fcb2674a8d71cf078c5bc42, type: 3}
+  - {fileID: 3476254959847901210, guid: e97ca64e1807f744dac93e87fd99004a, type: 3}
+  - {fileID: 1900770461927456114, guid: 63af2654cabf9a94caba76103c927253, type: 3}
+  - {fileID: 7952120861741311206, guid: 357862ea359c4424c8b61dd5a7abc82c, type: 3}
+  - {fileID: 5126618621418065991, guid: b488436364b2b1b4882d9cf618cc2b2c, type: 3}
+  - {fileID: 6087357906071841240, guid: 3b164360fce368240a9963774032f36a, type: 3}
+  - {fileID: 4963174504935253501, guid: 4696d88c1849c084a8566cafd842f3fc, type: 3}
+  - {fileID: 2718603775508475012, guid: b56d97a2b2419d54dbb7709185b163e4, type: 3}
   ColorScheme: 0
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  RandomizeColorScheme: 1
   MaxHP: 100
   BaseAttack: 9
   AttackRange: 1

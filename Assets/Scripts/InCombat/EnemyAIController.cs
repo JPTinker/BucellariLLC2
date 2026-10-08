@@ -28,6 +28,8 @@ public class EnemyAIController : MonoBehaviour
     [Header("Target Priorities")]
     [SerializeField] private float playerWeight = 1f;
     [SerializeField] private float villagerWeight = 1.25f;
+    [Tooltip("Player-owned worker villagers (farmers / lumberjacks) - the juiciest targets on the field.")]
+    [SerializeField] private float workerWeight = 1.75f;
     [Tooltip("Value of hitting a wall relative to a player unit. Below 1 = enemies prefer units but chew through walls in their way.")]
     [SerializeField] private float structureWeight = 0.5f;
     [Tooltip("Value for finishing a unit off, on top of the damage dealt.")]
@@ -421,7 +423,7 @@ public class EnemyAIController : MonoBehaviour
 
         float weight = target.Faction switch
         {
-            UnitFaction.Villager => villagerWeight,
+            UnitFaction.Villager => target.IsWorker ? workerWeight : villagerWeight,
             UnitFaction.Structure => structureWeight,
             _ => playerWeight
         };
