@@ -12,7 +12,7 @@ public class CameraController : MonoBehaviour
 
     [Header("Movement")]
     public float moveSpeed = 10f;
-    public float dragSpeed = 0.01f;
+    public float dragSpeed = 0.1f;
 
     [Header("Zoom")]
     public float zoomSpeed = 5f;

@@ -1238,7 +1238,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6163759254571570966}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 3.41467, y: -0, z: 1.30956}
   m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
   m_ConstrainProportionsScale: 0
@@ -1252,7 +1252,7 @@ Transform:
   - {fileID: 7255090677207587196}
   - {fileID: 8855496035588173851}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!95 &9044025287680559029
 Animator:
   serializedVersion: 7
@@ -1288,7 +1288,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitInstance
   unitName: Unit
-  isEnemy: 0
   Faction: 0
   maxHealth: 10000
   currentHealth: 10
@@ -1296,16 +1295,16 @@ MonoBehaviour:
   attackRange: 1
   defensePower: 1
   movementRange: 3
-  healsOthers: 0
   visibilityRange: 3
   colorScheme: 0
   leftHand: {fileID: 1293140953068115594}
   rightHand: {fileID: 5020485674931322097}
+  projectileSpawnPoint: {fileID: 0}
+  aimHeight: 1
   ColorScheme1: {fileID: 2800000, guid: e3aaf3b965de8ab44ad64d9878b7dba9, type: 3}
   ColorScheme2: {fileID: 2800000, guid: 16d5834580bb4fe4ea85dd5bec657f31, type: 3}
   ColorScheme3: {fileID: 2800000, guid: 4f4ac592c98379d4eb1eb211e631bf3f, type: 3}
   ColorScheme4: {fileID: 2800000, guid: 1ba7fde2e7b0a6144b86897d19b233e7, type: 3}
-  tileVisualOffset: 0.5
   currentTile: {fileID: 0}
   maxActionsPerTurn: 2
   actionsRemaining: 2
@@ -1313,12 +1312,16 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   IsExtracted: 0
+  IsWorker: 0
   IsFortified: 0
+  IsRevealed: 0
   lightHitThreshold: 0.15
   heavyHitThreshold: 0.35
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashOnDuration: 0.08
   flashOffDuration: 0.08
+  hitWhirl: {fileID: 0}
+  vfx: {fileID: 0}
 --- !u!1 &6887465573869192097
 GameObject:
   m_ObjectHideFlags: 0
