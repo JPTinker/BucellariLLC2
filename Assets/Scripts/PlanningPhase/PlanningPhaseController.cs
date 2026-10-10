@@ -144,8 +144,12 @@ public class PlanningPhaseController : MonoBehaviour
         _revealOverlay?.RegisterCallback<ClickEvent>(OnRevealTapped);
         _levelUpOverlay?.RegisterCallback<ClickEvent>(OnLevelUpTapped);
 
+        _renamePanel = new RenamePanel(_root);
+
         BuildInitialState();
     }
+
+    private RenamePanel _renamePanel;
 
     private void WarnIfMissing(VisualElement element, string expectedName)
     {
@@ -188,6 +192,19 @@ public class PlanningPhaseController : MonoBehaviour
             StartCoroutine(PlayLevelUpsThenReveals());
         }
     }
+    /// <summary>Call after something outside this tab (e.g. an event) added/removed roster units.</summary>
+    public void OnRosterChangedExternally()
+    {
+        var gsm = GameStateManager.Instance;
+        if (gsm == null) return;
+
+        _selectedUnits.RemoveAll(u => !gsm.FullRoster.Contains(u));
+        gsm.ActiveTeam = new List<Unit>(_selectedUnits);
+        RefreshRosterList();
+        RefreshSelectionCounter();
+        StartCoroutine(PlayLevelUpsThenReveals());
+    }
+
     public void LevelChangeDraftOffer()
     {
         var gsm = GameStateManager.Instance;
@@ -260,9 +277,28 @@ public class PlanningPhaseController : MonoBehaviour
 
         cardRoot.RegisterCallback<ClickEvent>(_ => ToggleSelection(unit, cardRoot));
 
+        cardRoot.Add(BuildRenameButton(unit, card));
         cardRoot.Add(BuildDismissButton(unit));
 
         return card;
+    }
+
+    /// <summary>Opens the rename overlay (type a name or roll a random one from the names CSV).</summary>
+    private Button BuildRenameButton(Unit unit, VisualElement card)
+    {
+        var button = new Button { text = "RENAME" };
+        button.AddToClassList("unit-dismiss-button");
+        button.style.marginTop = 4;
+        button.style.fontSize = 11;
+        button.clicked += () => _renamePanel?.Show(unit, () =>
+        {
+            // Update in place so the card keeps its selection highlight.
+            var nameLabel = card.Q<Label>("unit-name");
+            if (nameLabel != null) nameLabel.text = unit.UnitName.ToUpperInvariant();
+        });
+        // Don't let the click also toggle the card's selection.
+        button.RegisterCallback<ClickEvent>(e => e.StopPropagation());
+        return button;
     }
 
     /// <summary>

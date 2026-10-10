@@ -29,6 +29,13 @@ public class TitleScreenController : MonoBehaviour
         _saveHint = root.Q<Label>("save-hint");
         _confirmOverlay = root.Q<VisualElement>("confirm-overlay");
 
+        // Settings: button goes under New Game; overlay lives on the root so it covers the screen.
+        if (root.Q<Button>("btn-settings") == null)
+        {
+            var settingsButton = SettingsPanel.Attach(root, _btnNewGame?.parent, _btnNewGame != null ? _btnNewGame.parent.IndexOf(_btnNewGame) + 1 : -1);
+            if (settingsButton != null) settingsButton.AddToClassList("btn");
+        }
+
         bool hasSave = SaveSystem.HasSave;
         _btnContinue?.SetEnabled(hasSave);
         if (_saveHint != null) _saveHint.style.display = hasSave ? DisplayStyle.None : DisplayStyle.Flex;

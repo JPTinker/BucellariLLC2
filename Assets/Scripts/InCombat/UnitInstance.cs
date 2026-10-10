@@ -252,64 +252,7 @@ public class UnitInstance : MonoBehaviour
 
     private void ApplyColorScheme(UnitData archetype)
     {
-        if (archetype == null) return;
-
-        Material selectedMaterial = archetype.GetSchemeMaterial(colorScheme);
-
-        // No material for this scheme: recolor by swapping the texture on this unit's own copy of its materials.
-        if (selectedMaterial == null)
-        {
-            ApplySchemeTexture(GetSchemeTexture(colorScheme));
-            return;
-        }
-
-        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
-        {
-            Material[] materials = renderer.sharedMaterials;
-            if (materials == null || materials.Length == 0)
-            {
-                renderer.sharedMaterial = selectedMaterial;
-                continue;
-            }
-
-            for (int i = 0; i < materials.Length; i++)
-                materials[i] = selectedMaterial;
-
-            renderer.sharedMaterials = materials;
-        }
-    }
-    private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
-    private static readonly int MainTexId = Shader.PropertyToID("_MainTex");
-
-    /// Per-unit material instances (not a MaterialPropertyBlock: the damage flash resets the block).
-    private void ApplySchemeTexture(Texture2D texture)
-    {
-        if (texture == null) return;
-
-        var instances = new Dictionary<Material, Material>();
-        foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
-        {
-            if (renderer is ParticleSystemRenderer || renderer is TrailRenderer || renderer is LineRenderer) continue;
-
-            Material[] materials = renderer.sharedMaterials;
-            for (int i = 0; i < materials.Length; i++)
-            {
-                Material source = materials[i];
-                if (source == null) continue;
-
-                int property = source.HasProperty(BaseMapId) ? BaseMapId : source.HasProperty(MainTexId) ? MainTexId : -1;
-                if (property < 0) continue;
-
-                if (!instances.TryGetValue(source, out Material copy))
-                {
-                    copy = new Material(source);
-                    copy.SetTexture(property, texture);
-                    instances[source] = copy;
-                }
-                materials[i] = copy;
-            }
-            renderer.sharedMaterials = materials;
-        }
+        UnitColorSchemeApplier.Apply(gameObject, archetype, colorScheme, this);
     }
 
     // ---------------------------

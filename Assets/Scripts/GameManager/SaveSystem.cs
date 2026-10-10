@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 
@@ -100,6 +100,14 @@ public class SaveData
     public int LastCycleVillagersSaved;
     public int LastCycleCasualties;
     public int LastCycleMoraleDelta;
+
+    // Event system (version 2). Missing in older saves -> empty/zero.
+    public int CycleNumber;
+    public string PendingEventId;
+    public int LastEventRollCycle;
+    public List<string> FiredEventIds = new List<string>();
+    public List<string> EventCooldownIds = new List<string>();
+    public List<int> EventCooldownValues = new List<int>();
 }
 
 /// <summary>

@@ -9,7 +9,9 @@ public class UnitData : ScriptableObject
     public string UnitName;
     [TextArea(2, 4)]
     public string Description;
-    public Sprite UnitIcon;          // For UI / Roster list
+    public Sprite UnitIcon;          // For UI / Roster list (fallback when no rendered portrait)
+    [Tooltip("Render a portrait from ModelPrefab at runtime instead of using the Unit Icon sprite.")]
+    public bool UseRenderedPortrait = true;
     public GameObject ModelPrefab;    // World space visual / Sprite Prefab
     public GameObject[] weaponPrefabs; // Array of equipment prefabs for the unit
     public GameObject[] equipmentPrefabs; // Array of equipment prefabs for the unit
@@ -206,7 +208,20 @@ public class Unit
     [Header("Archetype Reference")]
     public UnitData Archetype;
 
-    public Sprite UnitIcon => Archetype != null ? Archetype.UnitIcon : null;
+    /// <summary>Rendered 3D portrait when the archetype allows it and has a model; otherwise the hand-drawn icon.</summary>
+    public Sprite UnitIcon
+    {
+        get
+        {
+            if (Archetype == null) return null;
+            if (Archetype.UseRenderedPortrait)
+            {
+                Sprite rendered = UnitPortraitRenderer.GetPortrait(this);
+                if (rendered != null) return rendered;
+            }
+            return Archetype.UnitIcon;
+        }
+    }
 
     public Unit(UnitData archetype) : this(archetype, UnitRarity.Common) { }
 

@@ -38,6 +38,8 @@ public class PhaseShellController : MonoBehaviour
     [SerializeField] private PlanningPhaseController rosterController;
     [SerializeField] private DecisionPhaseController decisionController;
     [SerializeField] private CampaignMapController campaignMapController;
+    [Tooltip("Optional: shows narrative events. Auto-added if left empty.")]
+    [SerializeField] private EventPhaseController eventController;
 
     private UIDocument _document;
     private VisualElement _root;
@@ -70,6 +72,7 @@ public class PhaseShellController : MonoBehaviour
         {
             var gsm = GameStateManager.Instance;
             return gsm != null &&
+                !gsm.Events.HasPendingEvent &&
                 gsm.HasSelectedCampaignAction &&
                 rosterController != null &&
                 (gsm.SelectedCampaignAction == GameStateManager.CampaignAction.Rest ||
@@ -96,6 +99,14 @@ public class PhaseShellController : MonoBehaviour
         QueryHeader();
         QueryFooter();
         _contentSlot = _root.Q<VisualElement>("content-slot");
+
+        // Settings button sits beside Save in the header; its overlay covers the whole shell.
+        if (_saveButton != null && _saveButton.parent != null)
+        {
+            var settingsButton = SettingsPanel.Attach(_root.Q<VisualElement>("phase-root") ?? _root,
+                _saveButton.parent, _saveButton.parent.IndexOf(_saveButton));
+            settingsButton?.AddToClassList("nav-button");
+        }
 
         BuildContent();
         WireNav();
@@ -209,6 +220,11 @@ public class PhaseShellController : MonoBehaviour
             catch (System.Exception e) { Debug.LogError($"PhaseShellController: Campaign Map Controller threw during Initialize() - {e}"); }
         }
         else Debug.LogError("PhaseShellController: Campaign Map Controller isn't assigned in the Inspector.");
+
+        // Last, so the event overlay's "wait for draft/reveal" check sees the roster tab's state.
+        if (eventController == null) eventController = GetComponent<EventPhaseController>() ?? gameObject.AddComponent<EventPhaseController>();
+        try { eventController.Initialize(_root); }
+        catch (System.Exception e) { Debug.LogError($"PhaseShellController: Event Controller threw during Initialize() - {e}"); }
     }
 
     private static void SetPlaceholderText(VisualElement placeholderRoot, string title, string body)

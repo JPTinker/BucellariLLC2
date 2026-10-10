@@ -174,6 +174,8 @@ public class WorkerVillagerAIController : MonoBehaviour
         foreach (HexTile tile in MapManager.Instance.Tiles.Values)
         {
             if (tile == null) continue;
+            // Never build on the exfil or the tiles around it: heroes extract from those.
+            if (HexCoordinates.GetDistance(tile.gridPosition, exfil.gridPosition) <= 1) continue;
             bool ok = worker.IsFood ? tile.IsFarmable : tile.IsLumberable;
             // The worker's own tile is unwalkable (it is standing on it) but still a fine site.
             if (!ok && tile == unit.currentTile)

@@ -105,6 +105,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
     private void OnDisable()
     {
+        GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
         if (MapManager.Instance != null)
             MapManager.Instance.VillagerCountChanged -= HandleVillagerCountChanged;
     }
@@ -163,6 +164,15 @@ public class CombatPhaseUIController : MonoBehaviour
             RefreshWorkerEscapeButton();
         }
 
+        // Settings (scroll speed / volume) beside End Turn; styled like the other action buttons.
+        if (endTurnButton != null && endTurnButton.parent != null)
+        {
+            var settingsButton = SettingsPanel.Attach(root, endTurnButton.parent, endTurnButton.parent.IndexOf(endTurnButton));
+            if (settingsButton != null)
+                foreach (string cls in endTurnButton.GetClasses())
+                    settingsButton.AddToClassList(cls);
+        }
+
         unitList = root.Q<ScrollView>("unit-list");
 
         // End Turn doesn't depend on a selected unit; the rest start disabled.
@@ -176,6 +186,10 @@ public class CombatPhaseUIController : MonoBehaviour
         SetRound(combatManager.currentRound);
         SetGold(GameStateManager.Instance.Resources.Gold);
         RefreshSettlementLedger();
+
+        // Repaint the top bar the moment workers deposit food/materials.
+        GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
+        GameStateManager.OnSettlementChanged += RefreshSettlementLedger;
     }
 
     /// <summary>
@@ -198,6 +212,48 @@ public class CombatPhaseUIController : MonoBehaviour
         if (settlementFoodLabel != null) settlementFoodLabel.text = s.Food.ToString();
         if (settlementMaterialsLabel != null) settlementMaterialsLabel.text = s.Materials.ToString();
         if (settlementMoraleLabel != null) settlementMoraleLabel.text = $"{s.Morale}%";
+
+        // Pulse + "+N" float when a resource goes up (skipped on the first paint).
+        if (lastFood >= 0 && s.Food > lastFood)
+            PlayGainAnimation("food", settlementFoodLabel, s.Food - lastFood);
+        if (lastMaterials >= 0 && s.Materials > lastMaterials)
+            PlayGainAnimation("materials", settlementMaterialsLabel, s.Materials - lastMaterials);
+        lastFood = s.Food;
+        lastMaterials = s.Materials;
+    }
+
+    private int lastFood = -1;
+    private int lastMaterials = -1;
+
+    /// <summary>Glow + icon pop + value flash + rising "+N" on the matching top-HUD block.</summary>
+    private void PlayGainAnimation(string key, Label valueLabel, int amount)
+    {
+        if (uiDocument == null || uiDocument.rootVisualElement == null) return;
+        VisualElement root = uiDocument.rootVisualElement;
+        VisualElement block = root.Q<VisualElement>($"{key}-block");
+        VisualElement icon = root.Q<VisualElement>($"{key}-icon");
+        VisualElement glow = root.Q<VisualElement>($"{key}-glow");
+        if (block == null) return;
+
+        glow?.AddToClassList("hud-glow--active");
+        icon?.AddToClassList("hud-icon--gain");
+        valueLabel?.AddToClassList("value-gain");
+
+        // Let the transition back out after the pop.
+        block.schedule.Execute(() =>
+        {
+            glow?.RemoveFromClassList("hud-glow--active");
+            icon?.RemoveFromClassList("hud-icon--gain");
+            valueLabel?.RemoveFromClassList("value-gain");
+        }).StartingIn(180);
+
+        var floater = new Label($"+{amount}") { pickingMode = PickingMode.Ignore };
+        floater.AddToClassList("gain-float");
+        floater.AddToClassList($"gain-float--{key}");
+        block.Add(floater);
+        // Add the end-state class a tick later so the transition actually runs.
+        floater.schedule.Execute(() => floater.AddToClassList("gain-float--rise")).StartingIn(30);
+        floater.schedule.Execute(() => floater.RemoveFromHierarchy()).StartingIn(1000);
     }
 
     private void HandleVillagerCountChanged(int spawned, int target)

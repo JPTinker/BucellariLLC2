@@ -6,12 +6,12 @@
 }
 
 .resource-bar {
-    min-height: 74px;
+    min-height: 64px;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background-color: rgba(26, 38, 52, 0.78);
+    justify-content: center;
+    padding: 8px 16px;
+    background-color: rgba(26, 38, 52, 0.82);
     border-bottom-width: 2px;
     border-bottom-color: #00f2ff;
 }
@@ -23,14 +23,64 @@
     letter-spacing: 1px;
 }
 .location-name { font-size: 19px; -unity-font-style: bold; color: #e0fbff; }
-.resource-group { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-end; }
-.resource-item { min-width: 84px; padding-left: 12px; margin-top: 4px; margin-bottom: 4px; border-left-width: 1px; border-left-color: #35506a; }
-.resource-value { font-size: 15px; -unity-font-style: bold; color: #e0fbff; }
+.resource-value { font-size: 17px; -unity-font-style: bold; color: #e0fbff; transition-property: color, scale; transition-duration: 0.35s; transform-origin: left center; }
 .resource-value-positive { color: #8db58c; }
-.resource-value-gold { color: #d4a359; }
-.resource-item-divider { margin-left: 10px; padding-left: 22px; border-left-width: 1px; border-left-color: #4a525d; }
-.round-item { margin-left: 14px; padding-left: 18px; border-left-width: 1px; border-left-color: #00f2ff; }
+.resource-value-food { color: #d4a359; }
+.resource-value-materials { color: #e09a55; }
 .round-value { font-size: 26px; -unity-font-style: bold; color: #00f2ff; }
+
+/* Top HUD blocks: icon + label/value, separated by thin dividers. Set .hud-icon background-image later. */
+.hud-block { flex-direction: row; align-items: center; padding-left: 14px; padding-right: 14px; }
+.hud-icon-wrap { width: 34px; height: 34px; margin-right: 10px; }
+.hud-icon {
+    position: absolute; left: 4px; top: 4px; right: 4px; bottom: 4px;
+    background-color: rgba(160, 200, 220, 0.10);
+    border-radius: 6px;
+    -unity-background-scale-mode: scale-to-fit;
+    transition-property: scale;
+    transition-duration: 0.18s;
+}
+.hud-icon--hero { background-color: rgba(0, 242, 255, 0.14); }
+.hud-icon--villager { background-color: rgba(224, 251, 255, 0.14); }
+.hud-icon--saveable { background-color: rgba(141, 181, 140, 0.18); }
+.hud-icon--food { background-color: rgba(212, 163, 89, 0.18); }
+.hud-icon--materials { background-color: rgba(125, 65, 0, 0.35); }
+.hud-icon--gain { scale: 1.15 1.15; }
+
+.hud-glow {
+    position: absolute; left: -14px; top: -14px; right: -14px; bottom: -14px;
+    border-radius: 24px;
+    opacity: 0;
+    transition-property: opacity;
+    transition-duration: 0.5s;
+}
+.hud-glow--hero { background-color: rgba(0, 242, 255, 0.25); }
+.hud-glow--villager { background-color: rgba(224, 251, 255, 0.2); }
+.hud-glow--saveable { background-color: rgba(141, 181, 140, 0.3); }
+.hud-glow--food { background-color: rgba(212, 163, 89, 0.55); }
+.hud-glow--materials { background-color: rgba(214, 120, 30, 0.55); }
+.hud-glow--active { opacity: 1; transition-duration: 0.08s; }
+
+.hud-text-col { justify-content: center; }
+.hud-separator { width: 1px; height: 30px; margin-left: 20px; background-color: #35506a; }
+.hud-block--round { padding-left: 22px; }
+.hud-block--round .hud-text-col { align-items: center; }
+
+.value-gain { color: #ffffff; scale: 1.25 1.25; }
+
+/* Floating "+N" that rises off a block when food/materials are gained. */
+.gain-float {
+    position: absolute;
+    left: 48px; top: 2px;
+    font-size: 14px; -unity-font-style: bold;
+    opacity: 1;
+    transition-property: translate, opacity;
+    transition-duration: 0.9s;
+    transition-timing-function: ease-out;
+}
+.gain-float--food { color: #f0c27a; }
+.gain-float--materials { color: #f09a4a; }
+.gain-float--rise { translate: 0 -24px; opacity: 0; }
 
 .play-area { flex-grow: 1; flex-direction: row; margin-top: 14px; margin-bottom: 14px; background-color: rgba(26, 38, 52, 0); }
 .unit-roster { width: 272px; padding: 14px; background-color: rgba(17, 21, 26, 0.82); border-width: 1px; border-color: #2a3038; }

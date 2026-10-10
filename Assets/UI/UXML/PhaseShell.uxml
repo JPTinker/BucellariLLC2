@@ -96,5 +96,17 @@
             <ui:Label text="CHOOSE A RECRUIT OR VILLAGER" class="reveal-eyebrow"/>
             <ui:VisualElement name="draft-options" class="draft-options-row"/>
         </ui:VisualElement>
+        <ui:VisualElement name="event-overlay" class="draft-overlay hidden">
+            <ui:VisualElement name="event-card" class="event-card">
+                <ui:Label text="EVENT" class="reveal-eyebrow"/>
+                <ui:Label name="event-title" text="" class="reveal-name"/>
+                <ui:VisualElement name="event-image" class="event-image"/>
+                <ui:Label name="event-body" text="" class="event-body"/>
+                <ui:VisualElement name="event-choices" class="event-choices"/>
+                <ui:Label name="event-result" text="" class="event-body hidden"/>
+                <ui:Label name="event-effects" text="" class="event-effects hidden"/>
+                <ui:Button name="event-continue" text="CONTINUE" class="nav-button hidden"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

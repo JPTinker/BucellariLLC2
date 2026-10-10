@@ -148,7 +148,7 @@ public class CameraController : MonoBehaviour
         Vector3 dir = new Vector3(h, 0f, v).normalized;
 
         float zoomFactor = ZoomScaledSpeed();
-        transform.Translate(dir * moveSpeed * zoomFactor * Time.deltaTime, Space.World);
+        transform.Translate(dir * moveSpeed * GameSettings.ScrollSpeed * zoomFactor * Time.deltaTime, Space.World);
     }
     // -----------------------
     // PC Zoom (Mouse Wheel)
@@ -168,7 +168,7 @@ public class CameraController : MonoBehaviour
 
         // 4. Update the orthographic size
         //Debug.Log($"Mouse scroll detected: {scroll}, normalized: {scrollNormalized}");
-        cam.orthographicSize -= scrollNormalized * zoomSpeed;
+        cam.orthographicSize -= scrollNormalized * zoomSpeed * GameSettings.ScrollSpeed;
         cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
     }
 
@@ -211,9 +211,9 @@ public class CameraController : MonoBehaviour
                 Vector3 delta = currentPos - lastTouchPosition;
 
                 Vector3 move = new Vector3(
-                    -delta.x * dragSpeed,
+                    -delta.x * dragSpeed * GameSettings.ScrollSpeed,
                     0f,
-                    -delta.y * dragSpeed
+                    -delta.y * dragSpeed * GameSettings.ScrollSpeed
                 );
 
                 float zoomFactor = ZoomScaledSpeed();
@@ -241,7 +241,7 @@ public class CameraController : MonoBehaviour
 
                 float delta = currDist - prevDist;
 
-                cam.orthographicSize -= delta * pinchZoomSpeed;
+                cam.orthographicSize -= delta * pinchZoomSpeed * GameSettings.ScrollSpeed;
                 cam.orthographicSize = Mathf.Clamp(cam.orthographicSize, minZoom, maxZoom);
             }
         }

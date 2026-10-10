@@ -127,6 +127,9 @@ public class GameStateManager : MonoBehaviour
         public float EnemyKilledMoraleBonus = 0.25f;      // per confirmed kill, applied post-battle
         public int VillagerSavedMoraleBonus = 5;          // per rescued villager extracted, applied post-battle
         public int UnitLostMoralePenalty = 10;            // per casualty, applied post-battle
+
+        [Header("Events")]
+        [Range(0f, 1f)] public float EventChance = 0.5f;  // odds a Random event fires when DecisionPhase loads
     }
 
     /// <summary>
@@ -181,6 +184,15 @@ public class GameStateManager : MonoBehaviour
 
     [Header("Available Unit Templates")]
     public List<UnitData> AvailablePlayerArchetypes; // Drag 'Knight' and 'Warrior' assets here
+
+    [Header("Events")]
+    public List<EventData> AvailableEvents; // Drag EventData assets here (asset name is the save ID)
+
+    private EventManager _events;
+    public EventManager Events => _events ??= new EventManager(this);
+
+    /// <summary>Cycles executed so far this campaign (used for event cooldowns).</summary>
+    public int CycleNumber { get; private set; }
 
     // Maximum number of units the player can bring into a single battle.
     public const int MaxTeamSize = 5;
@@ -335,7 +347,11 @@ public class GameStateManager : MonoBehaviour
                 planningController?.LevelChangeDraftOffer();
             }
             SavedVillagersThisBattle = 0;
-        }   
+
+            // Roll this cycle's narrative event last, so the popup sits on top of
+            // any draft/reveal. Pending state is saved, so reloads can't reroll it.
+            Events.TryQueueEvent();
+        }
     }
     /// <summary>
     /// Sets up whatever the current scene needs on startup:
@@ -762,13 +778,18 @@ public class GameStateManager : MonoBehaviour
             if (isFood) LastBattleReport.FoodGathered += amount;
             else LastBattleReport.MaterialsGathered += amount;
         }
+        OnSettlementChanged?.Invoke();
     }
+
+    /// <summary>Raised when Settlement values change mid-scene (worker deposits, spending) so HUDs can repaint.</summary>
+    public static event Action OnSettlementChanged;
 
     /// <summary>Called when a worker villager is killed. The loss is permanent.</summary>
     public void ProcessWorkerDeath()
     {
         Settlement.Villagers = Mathf.Max(0, Settlement.Villagers - 1);
         if (LastBattleReport != null) LastBattleReport.WorkersLost++;
+        OnSettlementChanged?.Invoke();
     }
 
     // ============================================================
@@ -917,6 +938,7 @@ public class GameStateManager : MonoBehaviour
             return false;
         }
 
+        CycleNumber++;
         Settlement.Food = Mathf.Max(0, Settlement.Food + forecast.FoodDelta);
         Settlement.Materials = Mathf.Max(0, Settlement.Materials + forecast.MaterialsDelta);
         Settlement.Morale = Mathf.Clamp(Settlement.Morale + forecast.MoraleDelta, 0, 100);
@@ -976,6 +998,7 @@ public class GameStateManager : MonoBehaviour
     {
         if (amount < 0 || Settlement.Materials < amount) return false;
         Settlement.Materials -= amount;
+        OnSettlementChanged?.Invoke();
         return true;
     }
 
@@ -1053,8 +1076,10 @@ public class GameStateManager : MonoBehaviour
             LastCycleKills = LastCycleKills,
             LastCycleVillagersSaved = LastCycleVillagersSaved,
             LastCycleCasualties = LastCycleCasualties,
-            LastCycleMoraleDelta = LastCycleMoraleDelta
+            LastCycleMoraleDelta = LastCycleMoraleDelta,
+            CycleNumber = CycleNumber
         };
+        Events.WriteTo(data);
 
         foreach (Unit unit in FullRoster)
         {
@@ -1128,6 +1153,9 @@ public class GameStateManager : MonoBehaviour
         LastCycleVillagersSaved = d.LastCycleVillagersSaved;
         LastCycleCasualties = d.LastCycleCasualties;
         LastCycleMoraleDelta = d.LastCycleMoraleDelta;
+
+        CycleNumber = d.CycleNumber;
+        Events.ReadFrom(d);
 
         // A save with an empty roster (e.g. every unit fell) still needs a squad to play.
         if (FullRoster.Count == 0) GrantStarterUnits(2);
