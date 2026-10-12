@@ -42,7 +42,8 @@ public class CombatVfxConfig : ScriptableObject
     {
         if (prefab == null || at == null) return;
 
-        Vector3 pos = at.position + Vector3.up * hitHeight;
+        // The prefab's own position is an authored offset that makes the effect read better.
+        Vector3 pos = at.position + Vector3.up * hitHeight + prefab.transform.position * scale;
         GameObject go = Instantiate(prefab, pos, Quaternion.identity, follow ? at : null);
         go.transform.localScale *= scale;
         if (!follow) PlayOnce(go);
@@ -66,7 +67,7 @@ public class CombatVfxConfig : ScriptableObject
     public void SpawnAt(GameObject prefab, Vector3 worldPos, bool raise = true)
     {
         if (prefab == null) return;
-        GameObject go = Instantiate(prefab, worldPos + (raise ? Vector3.up * hitHeight : Vector3.zero), Quaternion.identity);
+        GameObject go = Instantiate(prefab, worldPos + (raise ? Vector3.up * hitHeight : Vector3.zero) + prefab.transform.position * scale, Quaternion.identity);
         go.transform.localScale *= scale;
         PlayOnce(go);
         Destroy(go, lifetime);
