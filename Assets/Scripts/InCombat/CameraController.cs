@@ -311,6 +311,15 @@ public class CameraController : MonoBehaviour
         panRoutine = StartCoroutine(PanAndZoom(transform.position, focusPosition, cam.orthographicSize, cam.orthographicSize, duration));
     }
 
+    /// <summary>Pans to frame a world point and stays there (zoom unchanged). Skipped while a spawn focus is running.</summary>
+    public void PanToPoint(Vector3 point, float duration = 0.4f)
+    {
+        if (isFocusing) return;
+        if (panRoutine != null) StopCoroutine(panRoutine);
+        Vector3 focusPosition = new Vector3(point.x, transform.position.y, point.z - 5.5f);
+        panRoutine = StartCoroutine(PanAndZoom(transform.position, focusPosition, cam.orthographicSize, cam.orthographicSize, duration));
+    }
+
     private Coroutine panRoutine;
 
     private IEnumerator PanAndZoom(Vector3 fromPosition, Vector3 toPosition, float fromZoom, float toZoom, float duration)

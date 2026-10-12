@@ -1129,6 +1129,8 @@ MonoBehaviour:
   actionDelay: 0.05
   moveTimeout: 5
   logDecisions: 1
+  attackPanDuration: 0.5
+  postAttackDelay: 0.8
   lookaheadTurns: 2
   futureDiscount: 0.6
   moveCandidatesPerStep: 6

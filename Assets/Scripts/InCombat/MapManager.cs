@@ -446,7 +446,7 @@ public class MapManager : MonoBehaviour
         }
 
         Vector2Int gridPosition = new Vector2Int(x, y);
-        TerrainType terrain = gridPosition == ExfilTilePosition
+        TerrainType terrain = gridPosition == ExfilTilePosition || ExtraBoatPositions().Contains(gridPosition)
             ? TerrainType.Exfil
             : PickTerrain(noiseValue);
 
@@ -787,6 +787,38 @@ public class MapManager : MonoBehaviour
 
         exfilTile.IsExtractionPoint = true;
         exfilTile.isWalkable = false;
+
+        foreach (Vector2Int boatPosition in ExtraBoatPositions())
+        {
+            HexTile boatTile = GetTile(boatPosition);
+            if (boatTile == null) continue;
+            boatTile.IsExtractionPoint = true;
+            boatTile.isWalkable = false;
+        }
+    }
+
+    // Extra boats dock along the map's outer edge beside the original (0,0):
+    // (0,1) then (1,0), then further out. (1,1) is deliberately skipped - it would sit inward.
+    private static readonly Vector2Int[] ExtraBoatSlots =
+    {
+        new Vector2Int(0, 1), new Vector2Int(1, 0), new Vector2Int(0, 2), new Vector2Int(2, 0),
+    };
+
+    private static List<Vector2Int> ExtraBoatPositions()
+    {
+        var positions = new List<Vector2Int>();
+        GameStateManager gsm = GameStateManager.Instance;
+        int count = gsm != null ? Mathf.Min(gsm.Settlement.ExtraBoats, ExtraBoatSlots.Length) : 0;
+        for (int i = 0; i < count; i++) positions.Add(ExtraBoatSlots[i]);
+        return positions;
+    }
+
+    private bool IsAdjacentToBoat(Vector2Int position)
+    {
+        if (HexCoordinates.GetDistance(position, ExfilTilePosition) == 1) return true;
+        foreach (Vector2Int boat in ExtraBoatPositions())
+            if (HexCoordinates.GetDistance(position, boat) == 1) return true;
+        return false;
     }
 
     /// <summary>Call when a unit attempts to leave the battle from its current tile.</summary>
@@ -795,8 +827,7 @@ public class MapManager : MonoBehaviour
         if (unit == null || unit.currentTile == null) return false;
 
         HexTile exfilTile = GetTile(ExfilTilePosition);
-        if (exfilTile == null ||
-            HexCoordinates.GetDistance(unit.currentTile.gridPosition, ExfilTilePosition) != 1)
+        if (exfilTile == null || !IsAdjacentToBoat(unit.currentTile.gridPosition))
         {
             Debug.Log($"[MapGenerator] {unit.name} is not adjacent to the exfil tile.");
             return false;

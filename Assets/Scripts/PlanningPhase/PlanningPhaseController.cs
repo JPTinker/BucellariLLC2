@@ -759,7 +759,7 @@ public class PlanningPhaseController : MonoBehaviour
         {
             var unit = options[i];
             if (unit == null) continue;
-            var card = BuildDraftCard(unit, GameStateManager.Instance.GetDraftRarity(i));
+            var card = BuildDraftCard(unit, GameStateManager.Instance.GetDraftRarity(i), i);
             _draftOptionsContainer.Add(card);
             built.Add(card);
         }
@@ -820,14 +820,16 @@ public class PlanningPhaseController : MonoBehaviour
         return card;
     }
 
-    private VisualElement BuildDraftCard(UnitData unit, UnitRarity rarity)
+    private VisualElement BuildDraftCard(UnitData unit, UnitRarity rarity, int index)
     {
         var card = unitCardTemplate.Instantiate();
         var cardRoot = card.Q<VisualElement>("player-card");
         cardRoot.AddToClassList("draft-card");
 
         // A fresh recruit hasn't fought yet - full health, level 1, no wounds.
-        PopulateCardTemplate(card, unit.UnitIcon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
+        // Archetype only has the hand-drawn icon; use the draft's pre-built Unit so the portrait matches the roster.
+        Sprite icon = GameStateManager.Instance.GetDraftUnit(index)?.UnitIcon ?? unit.UnitIcon;
+        PopulateCardTemplate(card, icon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
             unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, rarity);
 
         SetCardTag(card, "[ CHOOSE ]");

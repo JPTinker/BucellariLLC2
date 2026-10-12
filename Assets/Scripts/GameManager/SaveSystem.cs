@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 2;
+    public const int CurrentVersion = 4;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 
@@ -108,6 +108,9 @@ public class SaveData
     public List<string> FiredEventIds = new List<string>();
     public List<string> EventCooldownIds = new List<string>();
     public List<int> EventCooldownValues = new List<int>();
+
+    // Memorial (version 3). Missing in older saves -> empty.
+    public List<FallenRecord> Memorial = new List<FallenRecord>();
 }
 
 /// <summary>
@@ -136,9 +139,13 @@ public class UnitSaveData
     public int MaxMovementPoints;
     public UnitColorScheme ColorScheme;
     public UnitFaction Faction;
+    public string WeaponPrefabName;
+    public string EquipmentPrefabName;
 
     public static UnitSaveData From(Unit unit) => new UnitSaveData
     {
+        WeaponPrefabName = unit.WeaponPrefab != null ? unit.WeaponPrefab.name : null,
+        EquipmentPrefabName = unit.EquipmentPrefab != null ? unit.EquipmentPrefab.name : null,
         ArchetypeName = unit.Archetype != null ? unit.Archetype.name : null,
         InstanceID = unit.InstanceID,
         UnitName = unit.UnitName,
@@ -181,6 +188,9 @@ public class UnitSaveData
             ColorScheme = ColorScheme,
             Faction = Faction
         };
+        // Restore the rolled loadout (old saves have no names and fall back to the first option).
+        unit.WeaponPrefab = Unit.FindPrefab(archetype.weaponPrefabs, WeaponPrefabName);
+        unit.EquipmentPrefab = Unit.FindPrefab(archetype.equipmentPrefabs, EquipmentPrefabName);
         return unit;
     }
 }

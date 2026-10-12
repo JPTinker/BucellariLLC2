@@ -245,10 +245,31 @@ public class Unit
         DefensePower = archetype.defensePower;
         ColorScheme = archetype.RollColorScheme();
         Faction = archetype.Faction;
-        WeaponPrefab = archetype.weaponPrefabs != null && archetype.weaponPrefabs.Length > 0 ? archetype.weaponPrefabs[0] : null;
-        EquipmentPrefab = archetype.equipmentPrefabs != null && archetype.equipmentPrefabs.Length > 0 ? archetype.equipmentPrefabs[0] : null;
-        
+        WeaponPrefab = RollPrefab(archetype.weaponPrefabs);
+        EquipmentPrefab = RollPrefab(archetype.equipmentPrefabs);
     }
+
+    private static GameObject RollPrefab(GameObject[] options)
+    {
+        if (options == null || options.Length == 0) return null;
+        return options[UnityEngine.Random.Range(0, options.Length)];
+    }
+
+    /// <summary>Finds a saved prefab by name among the archetype's options; falls back to the first option.</summary>
+    public static GameObject FindPrefab(GameObject[] options, string prefabName)
+    {
+        if (options == null || options.Length == 0) return null;
+        if (!string.IsNullOrEmpty(prefabName))
+            foreach (GameObject option in options)
+                if (option != null && option.name == prefabName) return option;
+        return options[0];
+    }
+
+    private static ItemData ItemOf(GameObject prefab) => prefab != null ? prefab.GetComponent<ItemData>() : null;
+
+    /// <summary>Weapon/equipment base stats are a bonus on top of the unit's own stats.</summary>
+    public int GearAttackBonus => (ItemOf(WeaponPrefab)?.damage ?? 0) + (ItemOf(EquipmentPrefab)?.damage ?? 0);
+    public int GearDefenseBonus => (ItemOf(WeaponPrefab)?.defense ?? 0) + (ItemOf(EquipmentPrefab)?.defense ?? 0);
 
     /// <summary>Share of max HP a unit must lose (cumulatively) to gain one wound.</summary>
     public const float WoundDamageFraction = 0.10f;

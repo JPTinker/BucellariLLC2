@@ -22,7 +22,7 @@ public class PhaseShellController : MonoBehaviour
 {
     public static PhaseShellController Instance { get; private set; }
 
-    public enum Tab { Plan, Store }
+    public enum Tab { Plan, Store, Memorial }
 
     /// <summary>Lets other tabs (e.g. Decision's Combat Vanguard card) read the Roster tab's live selection.</summary>
     public PlanningPhaseController RosterController => rosterController;
@@ -32,12 +32,16 @@ public class PhaseShellController : MonoBehaviour
     [SerializeField] private VisualTreeAsset decisionContentTemplate;
     [Tooltip("TabPlaceholder.uxml. Reused for Store until it has real content.")]
     [SerializeField] private VisualTreeAsset placeholderContentTemplate;
+    [Tooltip("MemorialContent.uxml - list of units lost for good.")]
+    [SerializeField] private VisualTreeAsset memorialContentTemplate;
 
     [Header("Tab controllers")]
     [Tooltip("Plain component now - no longer requires its own UIDocument.")]
     [SerializeField] private PlanningPhaseController rosterController;
     [SerializeField] private DecisionPhaseController decisionController;
     [SerializeField] private CampaignMapController campaignMapController;
+    [Tooltip("Optional: Memorial tab. Auto-added if left empty.")]
+    [SerializeField] private MemorialController memorialController;
     [Tooltip("Optional: shows narrative events. Auto-added if left empty.")]
     [SerializeField] private EventPhaseController eventController;
 
@@ -47,6 +51,7 @@ public class PhaseShellController : MonoBehaviour
 
     private VisualElement _planRoot;
     private VisualElement _storePlaceholderRoot;
+    private VisualElement _memorialRoot;
 
     // Header (Live Asset Ledger)
     private Label _resUnitsVal, _resUnitsCap, _resUnitsDelta;
@@ -61,7 +66,7 @@ public class PhaseShellController : MonoBehaviour
     private Label _checkCourse, _checkSquad, _checkVillagers, _checkBudget;
 
     // Footer
-    private Button _navPlan, _navStore;
+    private Button _navPlan, _navStore, _navMemorial;
     private Button _engageButton;
 
     public Tab CurrentTab { get; private set; } = Tab.Plan;
@@ -165,6 +170,7 @@ public class PhaseShellController : MonoBehaviour
     {
         _navPlan = _root.Q<Button>("nav-plan");
         _navStore = _root.Q<Button>("nav-store");
+        _navMemorial = _root.Q<Button>("nav-memorial");
         _engageButton = _root.Q<Button>("btn-engage");
         _engageButton?.SetEnabled(false);
     }
@@ -195,6 +201,13 @@ public class PhaseShellController : MonoBehaviour
         _contentSlot.Add(_planRoot);
         _contentSlot.Add(_storePlaceholderRoot);
 
+        if (memorialContentTemplate != null)
+        {
+            _memorialRoot = memorialContentTemplate.Instantiate();
+            _contentSlot.Add(_memorialRoot);
+        }
+        else Debug.LogWarning("PhaseShellController: Memorial content template isn't assigned in the Inspector.");
+
         // Each Initialize() call is wrapped so one tab throwing (e.g. a
         // missing/renamed UXML element) can't abort the rest of BuildContent()/
         // Start() - without this, an exception here would skip WireNav() and
@@ -221,6 +234,13 @@ public class PhaseShellController : MonoBehaviour
         }
         else Debug.LogError("PhaseShellController: Campaign Map Controller isn't assigned in the Inspector.");
 
+        if (_memorialRoot != null)
+        {
+            if (memorialController == null) memorialController = GetComponent<MemorialController>() ?? gameObject.AddComponent<MemorialController>();
+            try { memorialController.Initialize(_root); }
+            catch (System.Exception e) { Debug.LogError($"PhaseShellController: Memorial Controller threw during Initialize() - {e}"); }
+        }
+
         // Last, so the event overlay's "wait for draft/reveal" check sees the roster tab's state.
         if (eventController == null) eventController = GetComponent<EventPhaseController>() ?? gameObject.AddComponent<EventPhaseController>();
         try { eventController.Initialize(_root); }
@@ -239,6 +259,7 @@ public class PhaseShellController : MonoBehaviour
     {
         if (_navPlan != null) _navPlan.clicked += () => Show(Tab.Plan);
         if (_navStore != null) _navStore.clicked += () => Show(Tab.Store);
+        if (_navMemorial != null) _navMemorial.clicked += () => Show(Tab.Memorial);
         if (_saveButton != null) _saveButton.clicked += SaveGame;
     }
 
@@ -265,11 +286,14 @@ public class PhaseShellController : MonoBehaviour
 
         SetVisible(_planRoot, tab == Tab.Plan);
         SetVisible(_storePlaceholderRoot, tab == Tab.Store);
+        SetVisible(_memorialRoot, tab == Tab.Memorial);
 
         SetActiveNav(_navPlan, tab == Tab.Plan);
         SetActiveNav(_navStore, tab == Tab.Store);
+        SetActiveNav(_navMemorial, tab == Tab.Memorial);
 
         if (tab == Tab.Plan) decisionController?.Refresh();
+        if (tab == Tab.Memorial) memorialController?.Refresh();
     }
 
     private static void SetVisible(VisualElement element, bool visible)

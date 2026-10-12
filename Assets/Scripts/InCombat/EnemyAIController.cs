@@ -17,6 +17,12 @@ public class EnemyAIController : MonoBehaviour
     [SerializeField] private float moveTimeout = 5f;
     [SerializeField] private bool logDecisions = true;
 
+    [Header("Attack Presentation")]
+    [Tooltip("Seconds the camera takes to pan to an attack before it lands.")]
+    [SerializeField] private float attackPanDuration = 0.5f;
+    [Tooltip("Extra pause after an enemy attack, before the next enemy action.")]
+    [SerializeField] private float postAttackDelay = 0.8f;
+
     [Header("Lookahead")]
     [Tooltip("Future enemy turns scored from a unit's end position, on top of the current turn.")]
     [SerializeField, Range(0, 4)] private int lookaheadTurns = 2;
@@ -191,6 +197,20 @@ public class EnemyAIController : MonoBehaviour
 
             if (action.Target != null)
             {
+                if (!unit.CanAttack(action.Target))
+                {
+                    onFinished(false);
+                    yield break;
+                }
+
+                // Frame the exchange before it happens so the player can follow it.
+                if (CameraController.Instance != null && (unit.IsRevealed || action.Target.IsRevealed))
+                {
+                    Vector3 midpoint = (unit.transform.position + action.Target.transform.position) * 0.5f;
+                    CameraController.Instance.PanToPoint(midpoint, attackPanDuration);
+                    yield return new WaitForSeconds(attackPanDuration);
+                }
+
                 if (!unit.Attack(action.Target))
                 {
                     onFinished(false);
@@ -198,7 +218,7 @@ public class EnemyAIController : MonoBehaviour
                 }
 
                 SpendAction(unit);
-                yield return new WaitForSeconds(actionDelay);
+                yield return new WaitForSeconds(actionDelay + postAttackDelay);
             }
             else
             {

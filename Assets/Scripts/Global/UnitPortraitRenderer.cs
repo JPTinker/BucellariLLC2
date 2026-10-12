@@ -96,7 +96,9 @@ public static class UnitPortraitRenderer
         Sprite result = Capture(model);
 
         // Materials copied by ApplyScheme belong to the booth copy only.
-        Object.Destroy(holder);
+        // Immediate: a deferred Destroy leaves this model in the booth for the next portrait rendered
+        // in the same frame, so two units would end up in one picture.
+        Object.DestroyImmediate(holder);
         return result;
     }
 

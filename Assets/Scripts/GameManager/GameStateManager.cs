@@ -31,6 +31,7 @@ public class GameStateManager : MonoBehaviour
         public int Villagers = 2;          // current available villager headcount (worker pool)
         public int VillagerCapacity = 5;   // max Villagers the settlement can support (+5 per boat)
         public int UnitCapacity = 5;       // max Units (FullRoster) the settlement can support
+        public int ExtraBoats;             // ships built beyond the starting boat; each docks beside it in battle
     }
 
     /// <summary>
@@ -117,7 +118,10 @@ public class GameStateManager : MonoBehaviour
         [Header("Build a Ship - discrete directive (Materials only)")]
         public int ShipMaterialsCost = 150;
         public int ShipUnitCapacityGain = 5;
-        public int ShipVillagerCapacityGain = 5;
+        public int ShipVillagerCapacityGain = 3;
+
+        [Header("Leveling")]
+        public int FoodCostPerLevelUp = 5;        // Food the settlement spends each time a unit levels up
 
         [Header("Morale - per-cycle allocation costs")]
         public float MoralePenaltyPerVanguardUnit = 1f;   // -1% per Unit sent to battle
@@ -224,6 +228,9 @@ public class GameStateManager : MonoBehaviour
 
     // Roster of all owned units (the pool shown on the team-selection screen).
     public List<Unit> FullRoster = new List<Unit>();
+
+    // Units lost for good (battle deaths, event losses), newest last. Shown on the Memorial tab.
+    public List<FallenRecord> Memorial = new List<FallenRecord>();
 
     // Units the player has picked to bring into the current battle (max MaxTeamSize).
     public List<Unit> ActiveTeam = new List<Unit>();
@@ -538,11 +545,43 @@ public class GameStateManager : MonoBehaviour
 
     public void ResolveUnitDraft(UnitData chosen, UnitRarity rarity)
     {
+        // Reuse the unit the draft card showed so the roster portrait (colour scheme) matches it.
+        int index = PendingDraftOptions.IndexOf(chosen);
+        Unit previewed = index >= 0 ? GetDraftUnit(index) : null;
+
         PendingDraftOptions.Clear();
         PendingDraftRarities.Clear();
+        _draftPreviewUnits.Clear();
         CanDraftSavedVillager = false;
         if (chosen == null) return;
-        AddUnitToRoster(chosen, flagAsNew: true, rarity: rarity);
+
+        if (previewed != null && previewed.Rarity == rarity)
+        {
+            FullRoster.Add(previewed);
+            PendingReveal.Add(previewed);
+        }
+        else
+        {
+            AddUnitToRoster(chosen, flagAsNew: true, rarity: rarity);
+        }
+    }
+
+    private readonly List<Unit> _draftPreviewUnits = new List<Unit>();
+
+    /// <summary>
+    /// The concrete unit the draft option at <paramref name="index"/> will become if picked.
+    /// Built once so its rolled colour scheme stays the same between the card and the roster.
+    /// </summary>
+    public Unit GetDraftUnit(int index)
+    {
+        if (index < 0 || index >= PendingDraftOptions.Count || PendingDraftOptions[index] == null) return null;
+        while (_draftPreviewUnits.Count <= index) _draftPreviewUnits.Add(null);
+
+        UnitRarity rarity = GetDraftRarity(index);
+        Unit cached = _draftPreviewUnits[index];
+        if (cached == null || cached.Archetype != PendingDraftOptions[index] || cached.Rarity != rarity)
+            _draftPreviewUnits[index] = cached = new Unit(PendingDraftOptions[index], rarity);
+        return cached;
     }
 
     public void ResolveVillagerDraft()
@@ -947,6 +986,7 @@ public class GameStateManager : MonoBehaviour
         {
             Settlement.UnitCapacity += Balance.ShipUnitCapacityGain;
             Settlement.VillagerCapacity += Balance.ShipVillagerCapacityGain;
+            Settlement.ExtraBoats++;
         }
 
         // Apply this cycle's Campaign Map course. Stay Put's yield doubling
@@ -1077,7 +1117,8 @@ public class GameStateManager : MonoBehaviour
             LastCycleVillagersSaved = LastCycleVillagersSaved,
             LastCycleCasualties = LastCycleCasualties,
             LastCycleMoraleDelta = LastCycleMoraleDelta,
-            CycleNumber = CycleNumber
+            CycleNumber = CycleNumber,
+            Memorial = new List<FallenRecord>(Memorial)
         };
         Events.WriteTo(data);
 
@@ -1155,6 +1196,7 @@ public class GameStateManager : MonoBehaviour
         LastCycleMoraleDelta = d.LastCycleMoraleDelta;
 
         CycleNumber = d.CycleNumber;
+        Memorial = d.Memorial != null ? new List<FallenRecord>(d.Memorial) : new List<FallenRecord>();
         Events.ReadFrom(d);
 
         // A save with an empty roster (e.g. every unit fell) still needs a squad to play.
@@ -1172,11 +1214,19 @@ public class GameStateManager : MonoBehaviour
         return null;
     }
 
+    /// <summary>Adds a Memorial entry for a unit that is about to leave the roster permanently.</summary>
+    public void RecordFallen(Unit unit, LossCause cause, string detail = null)
+    {
+        if (unit == null) return;
+        Memorial.Add(FallenRecord.From(unit, CycleNumber, cause, detail));
+    }
+
     /// <summary>Call from CombatManager when a player unit dies (not extracted).</summary>
     public void RegisterCasualty(Unit unit)
     {
         if (unit != null)
         {
+            RecordFallen(unit, LossCause.Battle);
             FullRoster.Remove(unit);
             ActiveTeam.Remove(unit);
             PendingReveal.Remove(unit);

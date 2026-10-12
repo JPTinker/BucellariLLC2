@@ -156,7 +156,7 @@ MonoBehaviour:
   unitSpacing: 2.1
   runInDistance: 12
   runSpeed: 7
-  padColor: {r: 0, g: 0.95, b: 1, a: 1}
+  padColor: {r: 0, g: 0.9490196, b: 1, a: 0.5882353}
   fillSecondsPer100: 1.1
   holdAfterCard: 0.7
 --- !u!114 &517032588

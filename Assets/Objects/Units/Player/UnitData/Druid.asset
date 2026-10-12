@@ -16,10 +16,12 @@ MonoBehaviour:
   UnitName: Druid
   Description: 
   UnitIcon: {fileID: 21300000, guid: 0bb38fd6ccc632b4483bd7b2d41e212a, type: 3}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 6163759254571570966, guid: 1aa8fe58972640c429c50c22f7ae6197, type: 3}
   weaponPrefabs:
   - {fileID: 277295588432668615, guid: e4215d8044177a449bbf69238de0376f, type: 3}
   - {fileID: 5664150871557968518, guid: f926438ee78d4394b94417a665abbff0, type: 3}
+  - {fileID: 7615142541652611929, guid: 41e20c9434b9b2942b44889adb3ca048, type: 3}
   equipmentPrefabs:
   - {fileID: 919132149155446097, guid: 0b0d59fa24f33fb4db371c36a925be13, type: 3}
   - {fileID: 919132149155446097, guid: 538a0724a3f4e77458d5db703a749079, type: 3}

@@ -58,14 +58,14 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 135162d19e27b0640866d411ff024f6b, type: 3}
       insertIndex: -1
-      addedObject: {fileID: -5786759451334784425}
+      addedObject: {fileID: -1592933305613580742}
   m_SourcePrefab: {fileID: 100100000, guid: 135162d19e27b0640866d411ff024f6b, type: 3}
 --- !u!1 &3929213920266815046 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 135162d19e27b0640866d411ff024f6b, type: 3}
   m_PrefabInstance: {fileID: 4199104106856135447}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &-5786759451334784425
+--- !u!114 &-1592933305613580742
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -84,5 +84,5 @@ MonoBehaviour:
   range: 0
   healing: 0
   defense: 0
-  weaponHitVfx: {fileID: 0}
-  weaponHeavyHitVfx: {fileID: 0}
+  weaponHitVfx: {fileID: 8719263370430895187, guid: 7d34a61c458188a47ba85f8bcac01f94, type: 3}
+  weaponHeavyHitVfx: {fileID: 2427901435903505602, guid: 8a915dbbc4b23bf4f931629039cfbf6f, type: 3}

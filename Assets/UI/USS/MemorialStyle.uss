@@ -1,0 +1,53 @@
+.memorial-content {
+    flex-grow: 1;
+    padding: 16px;
+}
+
+.memorial-title {
+    font-size: 28px;
+    letter-spacing: 6px;
+    -unity-font-style: bold;
+    color: rgb(150, 156, 163);
+}
+
+.memorial-subtitle {
+    font-size: 13px;
+    margin-bottom: 12px;
+    color: rgb(89, 97, 105);
+}
+
+.memorial-empty {
+    font-size: 16px;
+    margin-top: 24px;
+    -unity-text-align: upper-center;
+    color: rgb(89, 97, 105);
+}
+
+.memorial-list {
+    flex-grow: 1;
+}
+
+.memorial-row {
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    background-color: rgba(20, 24, 30, 0.85);
+    border-left-width: 4px;
+    border-left-color: rgb(89, 97, 105);
+    border-radius: 4px;
+}
+
+.memorial-row-name {
+    font-size: 18px;
+    -unity-font-style: bold;
+}
+
+.memorial-row-class {
+    font-size: 13px;
+    color: rgb(170, 176, 183);
+}
+
+.memorial-row-when {
+    font-size: 12px;
+    margin-top: 2px;
+    color: rgb(110, 118, 126);
+}

@@ -61,6 +61,7 @@
             <ui:VisualElement name="bottom-nav-bar" class="bottom-nav-bar">
                 <ui:Button name="nav-plan" text="PLAN" class="nav-button nav-button-active"/>
                 <ui:Button name="nav-store" text="STORE" class="nav-button"/>
+                <ui:Button name="nav-memorial" text="MEMORIAL" class="nav-button"/>
             </ui:VisualElement>
           </ui:VisualElement>
           <ui:VisualElement name="content-slot" class="content-slot"/>

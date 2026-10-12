@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -356,12 +357,25 @@ public class CombatManager : MonoBehaviour
         Debug.Log("Ending player's turn and starting enemy's turn.");
         nonPlayerTurnInProgress = true;
         ClearSelection();
+        StartCoroutine(BeginEnemyTurnWhenUnitsSettle());
+    }
+
+    // The last player action may still be animating; enemies must plan against
+    // where units actually are, not the tile they just left.
+    private IEnumerator BeginEnemyTurnWhenUnitsSettle()
+    {
+        float waited = 0f;
+        while (waited < 5f && playerUnits.Exists(u => u != null && u.IsMoving))
+        {
+            waited += Time.deltaTime;
+            yield return null;
+        }
 
         if (enemyAI != null)
         {
             notificationManager.ShowNotification("Enemy Turn begins");
             enemyAI.ExecuteTurn(FinishEnemyTurn);
-            return;
+            yield break;
         }
 
         FinishEnemyTurn();

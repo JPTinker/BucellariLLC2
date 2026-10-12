@@ -16,10 +16,14 @@ MonoBehaviour:
   UnitName: Mage
   Description: 
   UnitIcon: {fileID: 21300000, guid: e7eade246229302428c8e510f9f664d0, type: 3}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 6163759254571570966, guid: adb8871f9b10baf40bd6d4be379d01e4, type: 3}
   weaponPrefabs:
   - {fileID: 277295588432668615, guid: e4215d8044177a449bbf69238de0376f, type: 3}
   - {fileID: 3613758694625329741, guid: d70bdca369a5c49488f535fcfc3c1a8e, type: 3}
+  - {fileID: 4900050050438703651, guid: 10a1241306d291c42b9ba18ec12e08c2, type: 3}
+  - {fileID: 7615142541652611929, guid: 41e20c9434b9b2942b44889adb3ca048, type: 3}
+  - {fileID: 1449910541500068854, guid: d7676a5163926df408911721ea19957d, type: 3}
   equipmentPrefabs:
   - {fileID: 919132149155446097, guid: e2d20812f80f2734e96689ea247d0134, type: 3}
   - {fileID: 919132149155446097, guid: 720bb877a2fc1b049855fa248085c6d4, type: 3}

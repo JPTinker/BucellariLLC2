@@ -16,15 +16,38 @@ MonoBehaviour:
   UnitName: Barbarian
   Description: 
   UnitIcon: {fileID: 21300000, guid: 13119243c05cf2c45b5ca012d55d2827, type: 3}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 6163759254571570966, guid: c22b4874198c9a7419da2b901c1efc31, type: 3}
   weaponPrefabs:
   - {fileID: 4171208253908074077, guid: fdbaf3e853eeee348a9dcee5c269ec84, type: 3}
   - {fileID: 5683071014610038634, guid: f76da166c4727014d9be27296f84f50b, type: 3}
   - {fileID: 2123689659879842759, guid: e28cf121cb1bc7a49bf48b415cd19986, type: 3}
   - {fileID: 9146655064991083296, guid: 05d0f3f9c6d76654abdf459e670fc007, type: 3}
+  - {fileID: 4171208253908074077, guid: fdbaf3e853eeee348a9dcee5c269ec84, type: 3}
+  - {fileID: 5683071014610038634, guid: f76da166c4727014d9be27296f84f50b, type: 3}
+  - {fileID: 2123689659879842759, guid: e28cf121cb1bc7a49bf48b415cd19986, type: 3}
+  - {fileID: 9146655064991083296, guid: 05d0f3f9c6d76654abdf459e670fc007, type: 3}
+  - {fileID: 5817036467145320333, guid: f6ddd622f055a6e47b34ac4a658f5590, type: 3}
+  - {fileID: 7118142981790315842, guid: 5e0b71b16a9b39649aabce5b92c4ec93, type: 3}
+  - {fileID: 8810128317959045784, guid: 9732c52a82103b1458792c5f40cb9051, type: 3}
+  - {fileID: 4520982768420663885, guid: 2d29b3771d645e643b403d77dd1123e4, type: 3}
+  - {fileID: 684493912890884751, guid: b3544cd251648574f99c89a2f0ebdadc, type: 3}
   equipmentPrefabs:
   - {fileID: 525933808488557593, guid: 636aac9993214fc47b5df71bd8a6a975, type: 3}
   - {fileID: 6933703316759818675, guid: c0fa248f41ffe2a4f932dc022b11cd9e, type: 3}
+  - {fileID: 6447590355987698244, guid: 8f87ad8b9fcb2674a8d71cf078c5bc42, type: 3}
+  - {fileID: 3476254959847901210, guid: e97ca64e1807f744dac93e87fd99004a, type: 3}
+  - {fileID: 1900770461927456114, guid: 63af2654cabf9a94caba76103c927253, type: 3}
+  - {fileID: 7952120861741311206, guid: 357862ea359c4424c8b61dd5a7abc82c, type: 3}
+  - {fileID: 5126618621418065991, guid: b488436364b2b1b4882d9cf618cc2b2c, type: 3}
+  - {fileID: 6087357906071841240, guid: 3b164360fce368240a9963774032f36a, type: 3}
+  - {fileID: 4963174504935253501, guid: 4696d88c1849c084a8566cafd842f3fc, type: 3}
+  - {fileID: 2718603775508475012, guid: b56d97a2b2419d54dbb7709185b163e4, type: 3}
+  - {fileID: 5865168412419525093, guid: 3e5a9d2ac6ebfa743a15901944ba4bdc, type: 3}
+  - {fileID: 5073121162225901920, guid: d3614fdcbd622ae419a85dc687958aed, type: 3}
+  - {fileID: 525933808488557593, guid: 636aac9993214fc47b5df71bd8a6a975, type: 3}
+  - {fileID: 6933703316759818675, guid: c0fa248f41ffe2a4f932dc022b11cd9e, type: 3}
+  - {fileID: 642453137022534911, guid: e0737fbdbf875784e9bab5be6f3b80b5, type: 3}
   - {fileID: 6447590355987698244, guid: 8f87ad8b9fcb2674a8d71cf078c5bc42, type: 3}
   - {fileID: 3476254959847901210, guid: e97ca64e1807f744dac93e87fd99004a, type: 3}
   - {fileID: 1900770461927456114, guid: 63af2654cabf9a94caba76103c927253, type: 3}

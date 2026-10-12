@@ -144,9 +144,9 @@ public class UnitInstance : MonoBehaviour
         // Carry damage over between battles rather than always spawning at full
         // HP - there is no healing, so lost HP stays lost.
         currentHealth = unit.CurrentHP > 0 ? Mathf.Min(unit.CurrentHP, maxHealth) : maxHealth;
-        attackPower = unit.BaseAttack;
+        attackPower = unit.BaseAttack + unit.GearAttackBonus;
         attackRange = unit.AttackRange;
-        defensePower = unit.DefensePower;
+        defensePower = unit.DefensePower + unit.GearDefenseBonus;
         movementRange = unit.MoveRange;
         visibilityRange = unit.VisibilityRange;
         colorScheme = unit.ColorScheme;
@@ -223,6 +223,11 @@ public class UnitInstance : MonoBehaviour
         ReportEntry()?.LevelSteps.Add(step);
         SyncProgressionStats();
         vfx?.Spawn(vfx.levelUp, transform, true);
+
+        GameStateManager gsm = GameStateManager.Instance;
+        if (gsm != null && Faction == UnitFaction.Player)
+            gsm.Settlement.Food = Mathf.Max(0, gsm.Settlement.Food - gsm.Balance.FoodCostPerLevelUp);
+
         Debug.Log($"{unitName} reached level {Level}.");
     }
 
@@ -245,8 +250,8 @@ public class UnitInstance : MonoBehaviour
         Level = PersistentUnit.Level;
         maxHealth = PersistentUnit.MaxHP;
         currentHealth = Mathf.Min(currentHealth, maxHealth);
-        attackPower = PersistentUnit.BaseAttack;
-        defensePower = PersistentUnit.DefensePower;
+        attackPower = PersistentUnit.BaseAttack + PersistentUnit.GearAttackBonus;
+        defensePower = PersistentUnit.DefensePower + PersistentUnit.GearDefenseBonus;
         NotifyStatsChanged();
     }
 

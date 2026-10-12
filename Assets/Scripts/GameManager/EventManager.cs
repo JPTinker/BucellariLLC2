@@ -185,6 +185,7 @@ public class EventManager
         for (int i = 0; i < count && _gsm.FullRoster.Count > 1; i++)
         {
             Unit u = _gsm.FullRoster[UnityEngine.Random.Range(0, _gsm.FullRoster.Count)];
+            _gsm.RecordFallen(u, LossCause.Event, PendingEvent != null ? PendingEvent.Title : null);
             _gsm.FullRoster.Remove(u);
             _gsm.ActiveTeam.Remove(u);
             _gsm.PendingReveal.Remove(u);

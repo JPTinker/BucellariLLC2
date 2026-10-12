@@ -217,6 +217,7 @@ public class UnitStatusOverlayController : MonoBehaviour
             RefreshBuffs();
 
             Root.EnableInClassList("unit-status-exhausted", unit.actionsRemaining <= 0);
+            Root.EnableInClassList("unit-status-enemy", unit.Faction == UnitFaction.Enemy);
         }
 
         private void RefreshHealth()
