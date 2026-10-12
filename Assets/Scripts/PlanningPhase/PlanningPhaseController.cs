@@ -208,14 +208,14 @@ public class PlanningPhaseController : MonoBehaviour
     public void LevelChangeDraftOffer()
     {
         var gsm = GameStateManager.Instance;
-        if (gsm.HasPendingDraft &&_draftOverlay != null && _draftOptionsContainer != null)
+        if (gsm.HasPendingDraft && _draftOverlay != null && _draftOptionsContainer != null)
         {
             StartCoroutine(PlayDraftSequence());
         }
         else
         {
             StartCoroutine(PlayLevelUpsThenReveals());
-        }        
+        }
     }
 
     /// <summary>
@@ -826,11 +826,16 @@ public class PlanningPhaseController : MonoBehaviour
         var cardRoot = card.Q<VisualElement>("player-card");
         cardRoot.AddToClassList("draft-card");
 
-        // A fresh recruit hasn't fought yet - full health, level 1, no wounds.
-        // Archetype only has the hand-drawn icon; use the draft's pre-built Unit so the portrait matches the roster.
-        Sprite icon = GameStateManager.Instance.GetDraftUnit(index)?.UnitIcon ?? unit.UnitIcon;
-        PopulateCardTemplate(card, icon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
-            unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, rarity);
+        // A fresh recruit hasn't fought yet - full health, no wounds, but later drafts start at a higher level.
+        // Archetype only has the hand-drawn icon; use the draft's pre-built Unit so the portrait and stats match the roster.
+        Unit preview = GameStateManager.Instance.GetDraftUnit(index);
+        Sprite icon = preview?.UnitIcon ?? unit.UnitIcon;
+        if (preview != null)
+            PopulateCardTemplate(card, icon, unit.UnitName, preview.Level, preview.MaxHP, preview.MaxHP,
+                preview.BaseAttack, preview.AttackRange, preview.MaxMovementPoints, preview.Faction, rarity);
+        else
+            PopulateCardTemplate(card, icon, unit.UnitName, 1, unit.MaxHP, unit.MaxHP,
+                unit.BaseAttack, unit.AttackRange, unit.MaxMovementPoints, unit.Faction, rarity);
 
         SetCardTag(card, "[ CHOOSE ]");
 

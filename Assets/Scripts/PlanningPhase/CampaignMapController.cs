@@ -88,6 +88,18 @@ public class CampaignMapController : MonoBehaviour
                 : "Evacuation Zone Reached";
         }
 
+        var cycleLabel = _root.Q<Label>("cycle-number");
+        if (cycleLabel != null) cycleLabel.text = $"CYCLE {_gsm.CycleNumber + 1}";
+
+        var gaugeFill = _root.Q<VisualElement>("evac-gauge-fill");
+        if (gaugeFill != null)
+        {
+            int remaining = _gsm.EvacuationCyclesRemaining;
+            float progress = 1f - Mathf.Clamp01(remaining / (float)GameStateManager.EvacuationCyclesTotal);
+            gaugeFill.style.width = Length.Percent(progress * 100f);
+            gaugeFill.EnableInClassList("evac-gauge__fill--urgent", remaining <= 3);
+        }
+
         // The chosen course changes what the Decision tab's forecast (and
         // therefore the shared header) would yield this cycle - refresh it
         // immediately rather than waiting for the player to switch tabs.

@@ -21,39 +21,83 @@
     color: var(--color-on-surface);
 }
 
+/* Faint cyan glow at the center; sits behind the panel and ignores picking. */
+.title-backdrop {
+    position: absolute;
+    left: 0; top: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 242, 255, 0.04);
+    border-width: 0;
+}
+
 .title-panel {
     width: 480px;
     max-width: 90%;
     align-items: stretch;
 }
 
+.title-eyebrow-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.title-eyebrow-line {
+    width: 28px;
+    height: 1px;
+    background-color: var(--color-primary-fixed-dim);
+    opacity: 0.7;
+}
 .title-eyebrow {
     font-size: 11px;
     letter-spacing: 4px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     color: var(--color-primary-fixed-dim);
+    margin: 0 12px;
 }
 
 .title-heading {
-    font-size: 40px;
+    font-size: 56px;
     -unity-font-style: bold;
     -unity-text-align: middle-center;
     color: var(--color-primary);
     margin-top: 6px;
-    margin-bottom: 40px;
+    margin-bottom: 8px;
     white-space: normal;
+    text-shadow: 0 0 18px rgba(0, 242, 255, 0.45);
+}
+
+.title-divider {
+    flex-direction: row;
+    align-items: center;
+    margin: 0 60px 36px 60px;
+}
+.title-divider__line { flex-grow: 1; height: 1px; background-color: var(--color-outline-variant); }
+.title-divider__notch {
+    width: 6px;
+    height: 6px;
+    margin: 0 8px;
+    background-color: var(--color-primary-fixed-dim);
+    rotate: 45deg;
 }
 
 .btn {
     height: 68px;
-    border-radius: 6px;
+    border-radius: 3px;
     border-width: 0;
     font-size: 18px;
     -unity-font-style: bold;
     letter-spacing: 2px;
     margin: 0 0 14px 0;
+    padding: 0 20px;
 }
+.btn__row {
+    flex-direction: row;
+    flex-grow: 1;
+    align-items: center;
+    justify-content: space-between;
+}
+.btn__label { font-size: 18px; letter-spacing: 2px; -unity-font-style: bold; }
+.btn__detail { font-size: 11px; letter-spacing: 1px; -unity-font-style: bold; opacity: 0.8; }
 .btn--primary { background-color: var(--color-primary-container); color: var(--color-on-primary); }
 .btn--primary:hover { background-color: var(--color-primary-fixed-dim); }
 .btn--ghost {

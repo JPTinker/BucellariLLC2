@@ -39,3 +39,7 @@ Many tuning values live in `[SerializeField]`/Inspector fields (e.g. `CycleBalan
 ## Conventions
 
 Version tags are the commit messages (`V 0.4.7`, etc.); work is committed as whole-project snapshots.
+
+## Linting
+
+`.editorconfig` defines the rules (first-party C# only: `Assets/Scripts`, `Assets/Editor`; third-party packages are excluded). Run `./lint.sh` (needs the .NET SDK and the Unity-generated `.csproj` files) — it builds both projects and runs `dotnet format whitespace/style --verify-no-changes`. Fix with `dotnet format whitespace|style Assembly-CSharp.csproj --no-restore --include Assets/Scripts/ Assets/Editor/`.

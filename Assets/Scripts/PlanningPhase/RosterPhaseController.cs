@@ -213,7 +213,7 @@ public class RosterPhaseController : MonoBehaviour
         else
         {
             StartCoroutine(PlayLevelUpsThenReveals());
-        }        
+        }
     }
 
     /// <summary>

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -129,8 +128,12 @@ public class GameStateManager : MonoBehaviour
 
         [Header("Morale - post-battle bonuses/penalties")]
         public float EnemyKilledMoraleBonus = 0.25f;      // per confirmed kill, applied post-battle
-        public int VillagerSavedMoraleBonus = 5;          // per rescued villager extracted, applied post-battle
+        public int VillagerSavedMoraleBonus = 5;         // per rescued villager extracted, applied post-battle
         public int UnitLostMoralePenalty = 10;            // per casualty, applied post-battle
+
+        [Header("Travel progression")]
+        [Tooltip("Travel cycles toward the Evacuation Zone needed for each +1 level on newly drafted units.")]
+        public int TravelsPerDraftLevel = 3;
 
         [Header("Events")]
         [Range(0f, 1f)] public float EventChance = 0.5f;  // odds a Random event fires when DecisionPhase loads
@@ -216,6 +219,12 @@ public class GameStateManager : MonoBehaviour
     public const int EvacuationCyclesTotal = 10;
     public int EvacuationCyclesRemaining = EvacuationCyclesTotal;
 
+    /// <summary>How many times the player has travelled toward the Evacuation Zone.</summary>
+    public int TravelCount => Mathf.Clamp(EvacuationCyclesTotal - EvacuationCyclesRemaining, 0, EvacuationCyclesTotal);
+
+    /// <summary>Extra levels newly drafted units start with: +1 per <see cref="CycleBalanceConfig.TravelsPerDraftLevel"/> travels.</summary>
+    public int DraftLevelBonus => TravelCount / Mathf.Max(1, Balance.TravelsPerDraftLevel);
+
     /// <summary>Set by ExecuteCycle when the course was Travel; consumed by the Voyage scene.</summary>
     public bool HasPendingVoyage { get; private set; }
     public int VoyageFromRemaining { get; private set; }
@@ -244,7 +253,7 @@ public class GameStateManager : MonoBehaviour
     // "level up" animation shown yet. The UI drains this queue with QueueLevelUp
     // and calls ClearPendingLevelUps() once it has shown them all. Populate it by
     // calling QueueLevelUp() from wherever your XP/leveling logic lives.
-    public Queue<LevelUpInfo> PendingLevelUps = new Queue<LevelUpInfo>();
+    [NonSerialized] public Queue<LevelUpInfo> PendingLevelUps = new Queue<LevelUpInfo>();
 
     // When populated, the team-selection screen shows two unit candidates. The
     // player can also choose to add the saved person as a Villager instead.
@@ -252,7 +261,13 @@ public class GameStateManager : MonoBehaviour
     // Rarity pre-rolled for each draft option (same index) so the card can show
     // it before the pick, and the recruited unit matches what was shown.
     public List<UnitRarity> PendingDraftRarities = new List<UnitRarity>();
-    public int PendingDraftsToOffer { get; private set; }
+    /// <summary>
+    /// Rescued people not yet turned into recruits ("potential people saved").
+    /// +1 per villager extracted; each draft resolved (unit or villager) spends 1.
+    /// Kept while the settlement is full, so the draft is offered once space frees up.
+    /// </summary>
+    public int PeopleSaved { get; private set; }
+    public int PendingDraftsToOffer => PeopleSaved;
     public bool CanDraftSavedVillager { get; private set; }
 
     public bool UnitsFull => FullRoster.Count >= Settlement.UnitCapacity;
@@ -348,12 +363,13 @@ public class GameStateManager : MonoBehaviour
             // ledger, so the Morale value on screen already reflects last cycle.
             ApplyPostBattleResults();
 
-            if (SavedVillagersThisBattle > 0){
-                PendingDraftsToOffer = Mathf.Max(1, (SavedVillagersThisBattle + 2) / 3);
+            PeopleSaved += SavedVillagersThisBattle;
+            SavedVillagersThisBattle = 0;
+            if (PeopleSaved > 0 && !HasPendingDraft)
+            {
                 OfferNextUnitDraft();
                 planningController?.LevelChangeDraftOffer();
             }
-            SavedVillagersThisBattle = 0;
 
             // Roll this cycle's narrative event last, so the popup sits on top of
             // any draft/reveal. Pending state is saved, so reloads can't reroll it.
@@ -507,14 +523,15 @@ public class GameStateManager : MonoBehaviour
 
     public void OfferNextUnitDraft()
     {
-        // Keep consuming offers until one actually has something to show; if the
-        // settlement is full on both counts the remaining rewards are forfeited.
-        while (PendingDraftsToOffer > 0)
-        {
+        // If the settlement is full on both counts nothing is shown and the
+        // people stay banked in PeopleSaved until there is room.
+        if (PeopleSaved > 0)
             OfferUnitDraft(2, allowVillagerChoice: true);
-            PendingDraftsToOffer--;
-            if (HasPendingDraft) return;
-        }
+    }
+
+    private void SpendSavedPerson()
+    {
+        if (PeopleSaved > 0) PeopleSaved--;
     }
 
     /// <summary>Why <paramref name="unit"/> can't be dismissed, or null when it can.</summary>
@@ -554,9 +571,11 @@ public class GameStateManager : MonoBehaviour
         _draftPreviewUnits.Clear();
         CanDraftSavedVillager = false;
         if (chosen == null) return;
+        SpendSavedPerson();
 
         if (previewed != null && previewed.Rarity == rarity)
         {
+            previewed.UnitName = NameGenerator.Random();
             FullRoster.Add(previewed);
             PendingReveal.Add(previewed);
         }
@@ -580,7 +599,10 @@ public class GameStateManager : MonoBehaviour
         UnitRarity rarity = GetDraftRarity(index);
         Unit cached = _draftPreviewUnits[index];
         if (cached == null || cached.Archetype != PendingDraftOptions[index] || cached.Rarity != rarity)
+        {
             _draftPreviewUnits[index] = cached = new Unit(PendingDraftOptions[index], rarity);
+            cached.GrantLevels(DraftLevelBonus);
+        }
         return cached;
     }
 
@@ -596,6 +618,7 @@ public class GameStateManager : MonoBehaviour
         PendingDraftRarities.Clear();
         CanDraftSavedVillager = false;
         Settlement.Villagers++;
+        SpendSavedPerson();
     }
 
     /// <summary>
@@ -611,6 +634,8 @@ public class GameStateManager : MonoBehaviour
         {
             if (archetype == null) continue;
             Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
+            unit.UnitName = NameGenerator.Random();
+            unit.GrantLevels(DraftLevelBonus);
             FullRoster.Add(unit);
             if (flagAsNew) PendingReveal.Add(unit);
         }
@@ -935,13 +960,13 @@ public class GameStateManager : MonoBehaviour
         // Worker income is no longer projected here: villagers gather in the
         // battle and credit Settlement via ProcessWorkerDeposit().
         int foodDelta = Mathf.RoundToInt(
-            - vanguardUnits * b.FoodCostPerVanguardUnit
+            -vanguardUnits * b.FoodCostPerVanguardUnit
             - villagersSent * b.FoodCostPerVillagerSent);
 
         int materialsDelta = willBuildShip ? -b.ShipMaterialsCost : 0;
 
         float moraleDelta =
-            - vanguardUnits * b.MoralePenaltyPerVanguardUnit
+            -vanguardUnits * b.MoralePenaltyPerVanguardUnit
             - villagersSent * b.MoralePenaltyPerVillagerSent;
 
         bool isOverBudget = willBuildShip && Settlement.Materials < b.ShipMaterialsCost;
@@ -1111,7 +1136,7 @@ public class GameStateManager : MonoBehaviour
             HasSelectedCampaignAction = HasSelectedCampaignAction,
             EvacuationCyclesRemaining = EvacuationCyclesRemaining,
             PendingDraftRarities = new List<UnitRarity>(PendingDraftRarities),
-            PendingDraftsToOffer = PendingDraftsToOffer,
+            PeopleSaved = PeopleSaved,
             CanDraftSavedVillager = CanDraftSavedVillager,
             LastCycleKills = LastCycleKills,
             LastCycleVillagersSaved = LastCycleVillagersSaved,
@@ -1187,7 +1212,8 @@ public class GameStateManager : MonoBehaviour
             PendingDraftOptions.Add(archetype);
             PendingDraftRarities.Add(i < d.PendingDraftRarities.Count ? d.PendingDraftRarities[i] : UnitRarity.Common);
         }
-        PendingDraftsToOffer = d.PendingDraftsToOffer;
+        // Older saves stored a queued-draft count instead of a pool.
+        PeopleSaved = d.Version >= 5 ? d.PeopleSaved : d.PendingDraftsToOffer;
         CanDraftSavedVillager = d.CanDraftSavedVillager;
 
         LastCycleKills = d.LastCycleKills;

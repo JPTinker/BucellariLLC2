@@ -95,6 +95,8 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float attackScalingPerWave = 0.20f;
     [Tooltip("Extra enemy levels (same scaling as waves) for an enemy spawning right next to the exfil zone. Falls off linearly to 0 at the far corner of the map.")]
     [SerializeField] private float maxExfilProximityLevels = 3f;
+    [Tooltip("Wave levels added to every enemy spawn per travel cycle toward the Evacuation Zone (0.5 = +1 level every 2 travels).")]
+    [SerializeField] private float enemyLevelsPerTravel = 0.5f;
 
     [Header("Villagers / Rescue")]
     [Tooltip("Archetypes used when spawning rescuable villagers. Rescue logic itself lives on UnitInstance.")]
@@ -156,7 +158,7 @@ public class MapManager : MonoBehaviour
             int food = Mathf.Min(gameStateManager.BattleFoodWorkers, avail);
             int mats = Mathf.Min(gameStateManager.BattleMaterialWorkers, avail - food);
             SpawnWorkers(food, mats);
-            
+
         }
         InitializeRevealState();
     }
@@ -198,7 +200,7 @@ public class MapManager : MonoBehaviour
         {
             RevealAround(newVillagers[0].currentTile, 0);
         }
-        
+
     }
 
     public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null, int waveLevel = 0)
@@ -231,7 +233,7 @@ public class MapManager : MonoBehaviour
             Debug.LogError("[MapGenerator] Spawn failed: no valid unit prefab specified.");
             return null;
         }
-        
+
         // 4. Instantiate & Component Verification
         GameObject spawnedObj = Instantiate(targetPrefab, tile.transform.position, Quaternion.identity);
         if (!spawnedObj.TryGetComponent<UnitInstance>(out var instance))
@@ -244,9 +246,10 @@ public class MapManager : MonoBehaviour
         // 5. Initialize Unit State & Grid Mapping
 
         instance.Initialize(enemyData);
-        if (isEnemy){
-            instance.Faction =  UnitFaction.Enemy;
-            ApplyWaveScaling(instance, waveLevel + GetExfilProximityLevels(tile));
+        if (isEnemy)
+        {
+            instance.Faction = UnitFaction.Enemy;
+            ApplyWaveScaling(instance, waveLevel + GetExfilProximityLevels(tile) + GetTravelLevels());
         }
         string uniqueId = GenerateUnique4DigitString();
         instance.unitName = $"{enemyData.UnitName}_{uniqueId}";
@@ -258,6 +261,13 @@ public class MapManager : MonoBehaviour
         //PlaySpawnEffects(tile.transform.position);
 
         return instance;
+    }
+
+    /// <summary>Bonus levels from how far the player has travelled toward the Evacuation Zone; applies to every spawn, including the opening wave.</summary>
+    private int GetTravelLevels()
+    {
+        GameStateManager gsm = GameStateManager.Instance;
+        return gsm != null ? Mathf.FloorToInt(gsm.TravelCount * enemyLevelsPerTravel) : 0;
     }
 
     /// <summary>Bonus levels for spawning close to the exfil tile: full at distance 0, none at the map's far corner.</summary>
@@ -696,7 +706,7 @@ public class MapManager : MonoBehaviour
                     continue;
                 }
 
-                GameObject spawnedUnit = Instantiate(unitPrefab, tile.transform.position, Quaternion.identity);
+                GameObject spawnedUnit = Instantiate(unitPrefab, tile.transform.position, unitPrefab.transform.rotation);
                 UnitInstance instance = spawnedUnit.GetComponent<UnitInstance>();
                 if (instance == null)
                 {
@@ -714,7 +724,7 @@ public class MapManager : MonoBehaviour
             }
         }
 
-        for (int i =0; i < spawnedUnits.Count; i++)
+        for (int i = 0; i < spawnedUnits.Count; i++)
         {
             PlaySpawnEffects(spawnedUnits[i].currentTile.transform.position);
             spawnedUnits[i].playSpawnAnimation();
@@ -725,7 +735,7 @@ public class MapManager : MonoBehaviour
         return spawnedUnits;
     }
 
-    private IEnumerator PlayInitialUnitSpawnTour( UnitInstance unit)
+    private IEnumerator PlayInitialUnitSpawnTour(UnitInstance unit)
     {
         yield return PlayUnitSpawnFocusTour(unit);
         initialUnitSpawnTourComplete = true;
@@ -880,7 +890,8 @@ public class MapManager : MonoBehaviour
         VillagerCountChanged?.Invoke(villagersSpawned, villagerSpawnTarget);
 
 
-        if (spawnedVillagers.Count > 0){
+        if (spawnedVillagers.Count > 0)
+        {
             for (int i = 0; i < count; i++)
             {
                 spawnedVillagers[i].playSpawnAnimation();
@@ -905,7 +916,7 @@ public class MapManager : MonoBehaviour
     {
         if (tile == null || !tile.CanEnter() || data == null || data.ModelPrefab == null) return null;
 
-        GameObject spawnedObj = Instantiate(data.ModelPrefab, tile.transform.position, Quaternion.identity);
+        GameObject spawnedObj = Instantiate(data.ModelPrefab, tile.transform.position, data.ModelPrefab.transform.rotation);
         if (!spawnedObj.TryGetComponent<UnitInstance>(out var instance))
         {
             Debug.LogError($"[MapGenerator] Villager prefab '{data.ModelPrefab.name}' is missing a UnitInstance component!");
@@ -1183,10 +1194,10 @@ public class MapManager : MonoBehaviour
         {
             // Generates a random integer between 0 and 9999
             int randomNum = UnityEngine.Random.Range(0, 10000);
-            
+
             // Formats the number to always be 4 digits with leading zeros (e.g., "0042")
             newCode = randomNum.ToString("D4");
-        } 
+        }
         while (!usedCodes.Add(newCode)); // Repeats if the code already exists in the set
 
         return newCode;

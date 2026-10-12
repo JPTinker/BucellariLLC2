@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewUnitData", menuName = "Game/Unit Data")]
 public class UnitData : ScriptableObject
@@ -168,6 +168,9 @@ public static class UnitRarityTable
     }
 }
 
+/// <summary>Special bonus a unit earns at level 10, chosen at random.</summary>
+public enum UnitMastery { None = 0, Actions = 1, Speed = 2, Reach = 3 }
+
 /// <summary>
 /// A unit owned by the player. UnitData is the immutable archetype/template;
 /// this class stores the individual's progression and persistent stats.
@@ -183,6 +186,8 @@ public class Unit
     public int Experience;
     [Tooltip("Rolled once on recruitment. Higher tiers gain more per level; Mythical units never take wounds.")]
     public UnitRarity Rarity;
+    [Tooltip("One-time bonus earned on reaching MasteryLevel. Already baked into the stats below.")]
+    public UnitMastery Mastery;
 
     [Header("Scars of Battle")]
     [Tooltip("Permanent negative levels - one is gained each time this unit takes WoundDamageFraction of its max HP in damage.")]
@@ -279,6 +284,9 @@ public class Unit
     /// <summary>Mythical units shrug off the scars of battle entirely.</summary>
     public bool IgnoresWounds => Rarity == UnitRarity.Mythical;
 
+    /// <summary>Level at which a unit earns its one-time mastery bonus.</summary>
+    public const int MasteryLevel = 10;
+
     public void ApplyLevelUp()
     {
         var tier = UnitRarityTable.Get(Rarity);
@@ -288,7 +296,37 @@ public class Unit
 
         if (UnityEngine.Random.value < tier.HpGainChance)
             MaxHP += tier.HpGain;
+
+        if (Level >= MasteryLevel && Mastery == UnitMastery.None)
+            GrantMastery();
     }
+
+    /// <summary>Recruits a unit at a higher level (no XP, full health). Used for draft units that scale with campaign progress.</summary>
+    public void GrantLevels(int levels)
+    {
+        for (int i = 0; i < levels; i++) ApplyLevelUp();
+        CurrentHP = MaxHP;
+    }
+
+    /// <summary>Picks one of the mastery bonuses at random and applies it permanently.</summary>
+    private void GrantMastery()
+    {
+        Mastery = (UnitMastery)UnityEngine.Random.Range(1, 4);
+        switch (Mastery)
+        {
+            case UnitMastery.Actions: MaxMovementPoints += 1; break;
+            case UnitMastery.Speed: MoveRange += 1; break;
+            case UnitMastery.Reach: AttackRange += 1; VisibilityRange += 1; break;
+        }
+    }
+
+    public static string DescribeMastery(UnitMastery mastery) => mastery switch
+    {
+        UnitMastery.Actions => "+1 Max Actions",
+        UnitMastery.Speed => "+1 Speed",
+        UnitMastery.Reach => "+1 Range & +1 Sight",
+        _ => "None"
+    };
 
     /// <summary>
     /// Tallies damage toward the next wound and applies every wound it earns.

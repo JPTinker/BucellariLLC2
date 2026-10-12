@@ -13,7 +13,7 @@ public class HexTile : MonoBehaviour
     [Header("Occupancy")] public UnitInstance occupyingUnit;
     [Header("Movement")] public bool isWalkable = true; public int movementCost = 1; public float heightOffset = 0.187f;
     [Header("Combat Modifiers")] public int defenseBonus; public int attackBonus;
-    [Header("Visuals")] public bool isHighlighted; public Material movementHighlightMaterial; public Material pathPreviewHighlightMaterial; public Material attackHighlightMaterial; public Material buildHighlightMaterial;public Material rescueHighlightMaterial;
+    [Header("Visuals")] public bool isHighlighted; public Material movementHighlightMaterial; public Material pathPreviewHighlightMaterial; public Material attackHighlightMaterial; public Material buildHighlightMaterial; public Material rescueHighlightMaterial;
     [Header("Fog of War")] public GameObject fogInstance; public bool isRevealed;
     [Range(0.01f, 0.6f)] public float hiddenDarkness = 0.01f;
     public int foodLeftOnTile;
@@ -28,7 +28,7 @@ public class HexTile : MonoBehaviour
     [Header("Click Feedback")]
     [SerializeField, Min(0f)] private float clickBounceHeight = 0.25f;
     [SerializeField, Min(0.01f)] private float clickBounceDuration = 0.3f;
-    [Header("Farming Visuals")] [Range(0f, 1f)] public float depletedDarkness = 0.5f;
+    [Header("Farming Visuals")][Range(0f, 1f)] public float depletedDarkness = 0.5f;
     public bool IsOccupied => occupyingUnit != null;
     public bool IsExtractionPoint = false;
     public bool CanEnter(UnitInstance unit) => isWalkable && !IsOccupied;
@@ -164,7 +164,7 @@ public class HexTile : MonoBehaviour
 
         clickBounceCoroutine = StartCoroutine(PlayClickBounce());
         CombatManager.Instance?.SelectedTile(this);
-    } 
+    }
 
     private IEnumerator PlayClickBounce()
     {

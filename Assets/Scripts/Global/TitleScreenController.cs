@@ -38,6 +38,14 @@ public class TitleScreenController : MonoBehaviour
 
         bool hasSave = SaveSystem.HasSave;
         _btnContinue?.SetEnabled(hasSave);
+
+        var continueDetail = root.Q<Label>("continue-detail");
+        if (continueDetail != null)
+        {
+            continueDetail.text = hasSave && SaveSystem.TryRead(out var save)
+                ? $"CYCLE {save.CycleNumber + 1} | {save.Roster.Count} UNITS"
+                : "";
+        }
         if (_saveHint != null) _saveHint.style.display = hasSave ? DisplayStyle.None : DisplayStyle.Flex;
 
         if (_btnContinue != null) _btnContinue.clicked += ContinueGame;

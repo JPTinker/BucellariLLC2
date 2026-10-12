@@ -15,10 +15,17 @@
                 <ui:Label text="LAST CYCLE" class="label-caps text-muted"/>
                 <ui:Label name="debrief-kills" text="0 Kills" class="stat-text"/>
                 <ui:Label name="debrief-saved" text="0 Saved" class="stat-text"/>
+                <ui:Label name="people-saved" text="0 People Saved" tooltip="Rescued people waiting to be recruited. Each draft uses one." class="stat-text"/>
                 <ui:Label name="debrief-losses" text="0 Lost" class="stat-text"/>
                 <ui:Label name="debrief-morale-total" text="+0% MORALE" class="label-caps text-bold text-positive"/>
             </ui:VisualElement>
-            <ui:Label name="evacuation-status" text="" class="label-caps chip"/>
+            <ui:VisualElement class="row row--gap-sm">
+                <ui:Label name="cycle-number" text="CYCLE 1" class="label-caps chip"/>
+                <ui:Label name="evacuation-status" text="" class="label-caps chip"/>
+                <ui:VisualElement class="evac-gauge">
+                    <ui:VisualElement name="evac-gauge-fill" class="evac-gauge__fill"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
         </ui:VisualElement>
 
         <ui:VisualElement name="plan-columns" class="plan-columns">
@@ -28,14 +35,20 @@
                     <ui:Button name="option-stay-put" tooltip="Hold position and work the site harder. x2 Food/Scrap from directives, no progress toward the evacuation zone." class="course-option">
                         <ui:Label text="STAY PUT" class="label-caps card-title"/>
                         <ui:Label text="x2 yields, no progress" class="body-text text-muted"/>
+                        <ui:Label text="HOLD CAMP" class="course-option__tag"/>
+                        <ui:Label text="SELECTED" picking-mode="Ignore" class="course-option__selected"/>
                     </ui:Button>
                     <ui:Button name="option-travel" tooltip="Keep the convoy moving. -1 cycle until the evacuation zone, standard yields." class="course-option">
                         <ui:Label text="TRAVEL" class="label-caps card-title"/>
                         <ui:Label text="-1 cycle to evac" class="body-text text-muted"/>
+                        <ui:Label text="MARCH" class="course-option__tag"/>
+                        <ui:Label text="SELECTED" picking-mode="Ignore" class="course-option__selected"/>
                     </ui:Button>
                     <ui:Button name="option-rest" tooltip="Break camp and tend to the wounded. Heals all units to full HP, no progress toward the evacuation zone." class="course-option">
                         <ui:Label text="REST" class="label-caps card-title"/>
                         <ui:Label text="Heal all units" class="body-text text-muted"/>
+                        <ui:Label text="HEAL SQUAD" class="course-option__tag"/>
+                        <ui:Label text="SELECTED" picking-mode="Ignore" class="course-option__selected"/>
                     </ui:Button>
                 </ui:VisualElement>
 

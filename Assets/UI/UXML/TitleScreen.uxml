@@ -1,11 +1,30 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
     <Style src="project://database/Assets/UI/USS/TitleScreen.uss?fileID=7433441132597879392&amp;guid=ee7e4db464f14d7babd1eea9c294cda7&amp;type=3#TitleScreen"/>
     <ui:VisualElement name="title-root" class="title-root">
+        <ui:VisualElement picking-mode="Ignore" class="title-backdrop"/>
         <ui:VisualElement class="title-panel">
-            <ui:Label text="ESCAPE PARTY" class="title-eyebrow"/>
+            <ui:VisualElement class="title-eyebrow-row">
+                <ui:VisualElement class="title-eyebrow-line"/>
+                <ui:Label text="ESCAPE PARTY" class="title-eyebrow"/>
+                <ui:VisualElement class="title-eyebrow-line"/>
+            </ui:VisualElement>
             <ui:Label name="title-heading" text="BUCELLARI" class="title-heading"/>
-            <ui:Button name="btn-continue" text="CONTINUE" class="btn btn--primary" style="height: 120px;"/>
-            <ui:Button name="btn-new-game" text="NEW GAME" class="btn btn--ghost" style="height: 120px;"/>
+            <ui:VisualElement class="title-divider">
+                <ui:VisualElement class="title-divider__line"/>
+                <ui:VisualElement class="title-divider__notch"/>
+                <ui:VisualElement class="title-divider__line"/>
+            </ui:VisualElement>
+            <ui:Button name="btn-continue" class="btn btn--primary">
+                <ui:VisualElement picking-mode="Ignore" class="btn__row">
+                    <ui:Label text="CONTINUE" class="btn__label"/>
+                    <ui:Label name="continue-detail" text="" class="btn__detail"/>
+                </ui:VisualElement>
+            </ui:Button>
+            <ui:Button name="btn-new-game" class="btn btn--ghost">
+                <ui:VisualElement picking-mode="Ignore" class="btn__row">
+                    <ui:Label text="NEW GAME" class="btn__label"/>
+                </ui:VisualElement>
+            </ui:Button>
             <ui:Label name="save-hint" text="No saved game found" class="save-hint"/>
         </ui:VisualElement>
         <ui:VisualElement name="confirm-overlay" class="confirm-overlay hidden">

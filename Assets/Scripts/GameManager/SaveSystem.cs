@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 4;
+    public const int CurrentVersion = 6;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 
@@ -93,7 +93,8 @@ public class SaveData
     // Saved so reloading can't reroll an offered draft.
     public List<string> PendingDraftArchetypes = new List<string>();
     public List<UnitRarity> PendingDraftRarities = new List<UnitRarity>();
-    public int PendingDraftsToOffer;
+    public int PendingDraftsToOffer; // legacy (version < 5); replaced by PeopleSaved
+    public int PeopleSaved;          // version 5
     public bool CanDraftSavedVillager;
 
     public int LastCycleKills;
@@ -127,6 +128,7 @@ public class UnitSaveData
     public int Level;
     public int Experience;
     public UnitRarity Rarity;
+    public UnitMastery Mastery; // version 6
     public int Wounds;
     public int DamageTowardNextWound;
     public int MaxHP;
@@ -152,6 +154,7 @@ public class UnitSaveData
         Level = unit.Level,
         Experience = unit.Experience,
         Rarity = unit.Rarity,
+        Mastery = unit.Mastery,
         Wounds = unit.Wounds,
         DamageTowardNextWound = unit.DamageTowardNextWound,
         MaxHP = unit.MaxHP,
@@ -175,6 +178,7 @@ public class UnitSaveData
             UnitName = UnitName,
             Level = Level,
             Experience = Experience,
+            Mastery = Mastery,
             Wounds = Wounds,
             DamageTowardNextWound = DamageTowardNextWound,
             MaxHP = MaxHP,

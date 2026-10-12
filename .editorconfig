@@ -1,0 +1,40 @@
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{uxml,uss,json,asmdef,yml,yaml}]
+indent_size = 2
+
+# Lint rules apply to first-party code only. Third-party packages under Assets (TextMesh Pro, VFX packs, ...) are left alone.
+[Assets/{Scripts,Editor}/**.cs]
+dotnet_sort_system_directives_first = true
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+
+# Style preferences
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = true:silent
+csharp_prefer_braces = true:silent
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_property = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_event = false:warning
+
+# Diagnostics (enforced with: dotnet format --verify-no-changes)
+dotnet_diagnostic.IDE0005.severity = warning   # unnecessary using directive
+dotnet_diagnostic.IDE0055.severity = warning   # formatting
+dotnet_diagnostic.IDE0065.severity = warning   # using placement
+dotnet_diagnostic.CS0105.severity = error      # duplicate using directive
+dotnet_diagnostic.CS0162.severity = warning    # unreachable code
+dotnet_diagnostic.CS0219.severity = warning    # assigned but never used local
+dotnet_diagnostic.CS0168.severity = warning    # declared but never used local

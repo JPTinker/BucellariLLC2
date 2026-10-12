@@ -1,8 +1,8 @@
-using UnityEngine;
-using TMPro;
 using System.Collections;
+using TMPro;
+using UnityEngine;
 
-public class NotificationManager: MonoBehaviour
+public class NotificationManager : MonoBehaviour
 {
     [Header("References")]
     public TextMeshProUGUI notificationText;

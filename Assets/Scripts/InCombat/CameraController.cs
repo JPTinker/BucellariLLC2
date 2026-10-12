@@ -1,8 +1,8 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
 using UnityEngine.InputSystem.EnhancedTouch;
+using UnityEngine.UIElements;
 using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch; // Alias to prevent namespace conflicts
 using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 
@@ -86,9 +86,9 @@ public class CameraController : MonoBehaviour
         HandleKeyboardMovement();
         HandleMouseZoom();
         // Mobile / Touch Controls (also compiled in-editor so it can be tested via the Device Simulator)
-        #if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
+#if UNITY_IOS || UNITY_ANDROID || UNITY_EDITOR
         HandleTouchControls();
-        #endif
+#endif
         //ClampPosition();
         HandleMouseClick();
     }

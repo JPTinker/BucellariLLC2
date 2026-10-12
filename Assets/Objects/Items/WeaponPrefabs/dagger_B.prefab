@@ -84,5 +84,5 @@ MonoBehaviour:
   range: 0
   healing: 0
   defense: 0
-  weaponHitVfx: {fileID: 8719263370430895187, guid: 7d34a61c458188a47ba85f8bcac01f94, type: 3}
+  weaponHitVfx: {fileID: 4060967071236614201, guid: 3d164b7d14e44244589693d586e6a368, type: 3}
   weaponHeavyHitVfx: {fileID: 2427901435903505602, guid: 8a915dbbc4b23bf4f931629039cfbf6f, type: 3}

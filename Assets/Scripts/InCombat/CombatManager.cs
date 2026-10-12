@@ -217,13 +217,15 @@ public class CombatManager : MonoBehaviour
         if (buildMode) { HandleBuildClick(tile); return; }
         if (selectedUnit == null)
         {
-            if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player)) {
+            if (tile.occupyingUnit != null && (tile.occupyingUnit.Faction == UnitFaction.Player))
+            {
                 SelectUnit(tile.occupyingUnit);
                 combatUIManager.SelectUnit(tile.occupyingUnit);
             }
             return;
         }
-        else {
+        else
+        {
             if (tile.occupyingUnit != null &&
                 tile.occupyingUnit.Faction == UnitFaction.Player)
             {
@@ -256,15 +258,16 @@ public class CombatManager : MonoBehaviour
                     pendingDestination = tile;
                     tile.Highlight(TileHighlightType.Path);
                 }
-                else {
+                else
+                {
                     Debug.Log($"Attacking enemy unit on {tile.name}");
-                    selectedUnit.Attack(tile.occupyingUnit); 
+                    selectedUnit.Attack(tile.occupyingUnit);
                     TakeAction(selectedUnit);
                     ClearSelection();
                 }
                 return;
             }
-            
+
             // First click previews a route. Clicking the same destination commits it.
             if (pendingDestination != tile) { PreviewDestination(tile); return; }
             if (selectedUnit.MoveTo(tile)) TakeAction(selectedUnit);
@@ -519,19 +522,24 @@ public class CombatManager : MonoBehaviour
         if (unit == null) return;
         List<UnitInstance> list;
 
-        if (unit.Faction == UnitFaction.Enemy) {
+        if (unit.Faction == UnitFaction.Enemy)
+        {
             list = enemyUnits;
-        } 
-        else if (unit.Faction == UnitFaction.Player) {
+        }
+        else if (unit.Faction == UnitFaction.Player)
+        {
             list = playerUnits;
-        } 
-        else if(unit.Faction == UnitFaction.Villager){
+        }
+        else if (unit.Faction == UnitFaction.Villager)
+        {
             list = unit.IsWorker ? workerUnits : villagerUnits;
         }
-        else if (unit.Faction == UnitFaction.Structure) {
+        else if (unit.Faction == UnitFaction.Structure)
+        {
             return; // walls don't count toward win/loss and need no death bookkeeping
         }
-        else {
+        else
+        {
             Debug.LogWarning($"CombatManager: Track called with unit {unit.name} of unknown faction {unit.Faction}. Ignoring.");
             return;
         }

@@ -78,12 +78,14 @@ public static class SettingsPanel
             GameSettings.ResetToDefaults();
             scroll.SetValueWithoutNotify(GameSettings.ScrollSpeed);
             volume.SetValueWithoutNotify(GameSettings.MasterVolume);
-        }) { text = "RESET" };
+        })
+        { text = "RESET" };
         var close = new Button(() =>
         {
             GameSettings.Save();
             overlay.style.display = DisplayStyle.None;
-        }) { text = "CLOSE" };
+        })
+        { text = "CLOSE" };
         foreach (var b in new[] { reset, close })
         {
             b.style.flexGrow = 1;

@@ -168,8 +168,36 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Settlement.UnitCapacity
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: EvacuationCyclesRemaining
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Balance.FoodCostPerLevelUp
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Balance.WorkerFoodPerGather
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Settlement.VillagerCapacity
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Balance.ShipUnitCapacityGain
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Balance.ShipVillagerCapacityGain
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: Balance.WorkerMaterialsPerGather
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 7801607055821855217, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: m_Name
@@ -381,9 +409,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PhaseShellController
   decisionContentTemplate: {fileID: 9197481963319205126, guid: bb399d0cd62b14b4782ec95725f5de38, type: 3}
   placeholderContentTemplate: {fileID: 9197481963319205126, guid: ec99ce3a144a4f145bc69d6c26e88da8, type: 3}
+  memorialContentTemplate: {fileID: 0}
   rosterController: {fileID: 1380302194}
   decisionController: {fileID: 1380302193}
   campaignMapController: {fileID: 1380302198}
+  memorialController: {fileID: 0}
+  eventController: {fileID: 0}
 --- !u!114 &1380302196
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -214,6 +214,21 @@
 }
 .plan-strip .stat-text { margin-right: 8px; }
 
+.evac-gauge {
+    width: 80px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: var(--color-surface-container-high);
+    overflow: hidden;
+}
+.evac-gauge__fill {
+    height: 100%;
+    width: 0;
+    border-radius: 4px;
+    background-color: var(--color-primary-fixed);
+}
+.evac-gauge__fill--urgent { background-color: var(--color-error); }
+
 .plan-columns { flex-grow: 1; flex-direction: row; }
 
 .plan-orders { width: 380px; flex-shrink: 0; margin-right: 12px; }
@@ -243,6 +258,29 @@
     border-color: var(--color-primary-fixed);
     background-color: var(--color-surface-container);
 }
+.course-option { overflow: visible; }
+.course-option__tag {
+    font-size: 9px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+    color: var(--color-outline);
+    margin-top: 6px;
+}
+.campaign-option--selected .course-option__tag { color: var(--color-primary-fixed); }
+.course-option__selected {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: -2px;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-size: 8px;
+    letter-spacing: 1px;
+    -unity-font-style: bold;
+    color: var(--color-on-primary);
+    background-color: var(--color-primary-container);
+}
+.campaign-option--selected .course-option__selected { display: flex; }
 
 /* ---------- Compact directive rows ---------- */
 .directive-row {

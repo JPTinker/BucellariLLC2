@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Projectile
   speed: 2.25
   arcHeight: 0.65
+  modelRotationOffset: {x: 0, y: 0, z: 0}
   impactEffectPrefab: {fileID: 4060967071236614201, guid: 3d164b7d14e44244589693d586e6a368, type: 3}
   impactEffectLifetime: 2
   trailFadeTime: 0.5
@@ -84,7 +85,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalRotation.x
@@ -92,7 +93,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalRotation.z
@@ -104,7 +105,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 180
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 3c975badcb520f749a2c6573145bbc14, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z

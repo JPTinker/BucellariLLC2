@@ -28,7 +28,7 @@ public class DecisionPhaseController : MonoBehaviour
     private GameStateManager _gsm;
 
     // Debrief
-    private Label _debriefMoraleTotal, _debriefKills, _debriefSaved, _debriefLosses;
+    private Label _debriefMoraleTotal, _debriefKills, _debriefSaved, _debriefLosses, _peopleSaved;
 
     // Directive counters
     private Label _countVanguard, _countScavenge, _countHarvest, _countExpansion;
@@ -81,6 +81,7 @@ public class DecisionPhaseController : MonoBehaviour
         _debriefMoraleTotal = _root.Q<Label>("debrief-morale-total");
         _debriefKills = _root.Q<Label>("debrief-kills");
         _debriefSaved = _root.Q<Label>("debrief-saved");
+        _peopleSaved = _root.Q<Label>("people-saved");
         _debriefLosses = _root.Q<Label>("debrief-losses");
 
         _countVanguard = _root.Q<Label>("count-vanguard");
@@ -159,6 +160,9 @@ public class DecisionPhaseController : MonoBehaviour
         var forecast = _gsm.ComputeForecast();
 
         PhaseShellController.Instance?.RefreshHeader();
+
+        if (_peopleSaved != null)
+            _peopleSaved.text = $"{_gsm.PeopleSaved} People Saved";
 
         RefreshVanguardRoster();
         _countScavenge.text = a.ScavengeUnits.ToString();

@@ -389,7 +389,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
         // Rule 3: If the unit is already fortified then fortify is disabled
         // (Change 'isFortified' to 'IsFortified' if your property casing differs)
-        bool isFortified = unit.IsFortified; 
+        bool isFortified = unit.IsFortified;
 
         // Scout can be used if they have actions remaining
         scoutButton?.SetEnabled(true);

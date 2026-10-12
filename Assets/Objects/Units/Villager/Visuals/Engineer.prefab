@@ -121,7 +121,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -524,7 +524,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -673,7 +673,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -788,7 +788,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -967,7 +967,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 919132149155446097}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: -1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.2, y: 0.2, z: 0.2}
   m_ConstrainProportionsScale: 0
@@ -982,7 +982,7 @@ Transform:
   - {fileID: -5374351658660048622}
   - {fileID: 3695356595909225138}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -180, z: 0}
 --- !u!95 &3828714767597424483
 Animator:
   serializedVersion: 7
@@ -1025,16 +1025,17 @@ MonoBehaviour:
   attackRange: 1
   defensePower: 1
   movementRange: 1
-  healsOthers: 0
   visibilityRange: 1
   colorScheme: 0
   leftHand: {fileID: 0}
   rightHand: {fileID: 0}
+  projectileSpawnPoint: {fileID: 0}
+  aimHeight: 1
+  aimAtBodyCenter: 1
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
   ColorScheme4: {fileID: 0}
-  tileVisualOffset: 0.5
   currentTile: {fileID: 0}
   maxActionsPerTurn: 2
   actionsRemaining: 2
@@ -1042,13 +1043,16 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   IsExtracted: 0
+  IsWorker: 0
   IsFortified: 0
-  isRevealed: 0
+  IsRevealed: 0
   lightHitThreshold: 0.15
   heavyHitThreshold: 0.35
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
   flashOnDuration: 0.08
   flashOffDuration: 0.08
+  hitWhirl: {fileID: 0}
+  vfx: {fileID: 0}
 --- !u!1 &1836331795753964598
 GameObject:
   m_ObjectHideFlags: 0
@@ -1106,7 +1110,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1253,7 +1257,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1494,7 +1498,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1609,7 +1613,7 @@ SkinnedMeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 66d43f6de7d5faf40a0ffcd681a6a237, type: 2}
+  - {fileID: 2100000, guid: 715aaae962748487db5ce4287017c4c3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

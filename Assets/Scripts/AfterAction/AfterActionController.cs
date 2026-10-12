@@ -401,7 +401,7 @@ public class AfterActionController : MonoBehaviour
             Destroy(beam.GetComponent<Collider>());
             beam.transform.position = a.Pad;
             beam.transform.localScale = new Vector3(1.1f, 0.01f, 1.1f);
-            beam.GetComponent<Renderer>().material = MakeMaterial(Color.Lerp(padColor, Color.white, 0.5f));
+            beam.GetComponent<Renderer>().material = MakeMaterial(padColor);
             beams.Add(beam.transform);
             CombatVfxConfig.Load()?.SpawnAt(CombatVfxConfig.Load().teleport, a.Pad, false);
         }

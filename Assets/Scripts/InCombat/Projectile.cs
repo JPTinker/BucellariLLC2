@@ -12,6 +12,9 @@ public class Projectile : MonoBehaviour
     [Tooltip("Peak height of the flight arc above the straight line. ~1 for arrows, 0 for a straight magic missile.")]
     [SerializeField] private float arcHeight = 0f;
 
+    [Tooltip("Euler correction if the model doesn't point down +Z. E.g. (90,0,0) for a model along +Y, (0,-90,0) for +X, (0,90,0) for -X.")]
+    [SerializeField] private Vector3 modelRotationOffset = Vector3.zero;
+
     [Header("Impact")]
     [Tooltip("Optional effect spawned where the projectile lands (sparks, magic burst).")]
     [SerializeField] private GameObject impactEffectPrefab;
@@ -29,7 +32,7 @@ public class Projectile : MonoBehaviour
         transform.position = start;
         Vector3 initialDirection = GetPoint(start, end, 0.05f) - start;
         if (initialDirection.sqrMagnitude > 0.0001f)
-            transform.rotation = Quaternion.LookRotation(initialDirection);
+            transform.rotation = Quaternion.LookRotation(initialDirection) * Quaternion.Euler(modelRotationOffset);
 
         StartCoroutine(FlyRoutine(start, end));
     }
@@ -48,7 +51,7 @@ public class Projectile : MonoBehaviour
             // Point along the direction of travel so arrows nose over on the arc.
             Vector3 direction = position - previous;
             if (direction.sqrMagnitude > 0.0001f)
-                transform.rotation = Quaternion.LookRotation(direction);
+                transform.rotation = Quaternion.LookRotation(direction) * Quaternion.Euler(modelRotationOffset);
 
             transform.position = position;
             previous = position;
