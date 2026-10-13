@@ -178,6 +178,12 @@ public class CombatManager : MonoBehaviour
     {
         MapManager map = MapManager.Instance;
         GameStateManager gsm = GameStateManager.Instance;
+        if (!unit.CanFortifyFurther)
+        {
+            notificationManager?.ShowNotification("Already at max fortification");
+            return;
+        }
+
         int cost = map != null ? map.fortifyMaterialCost : 0;
         if (gsm == null || !gsm.TrySpendMaterials(cost))
         {
@@ -186,7 +192,7 @@ public class CombatManager : MonoBehaviour
         }
 
         unit.onFortify();
-        Debug.Log($"CombatManager: Fortify clicked for {unit.unitName}.");
+        Debug.Log($"CombatManager: Fortify clicked for {unit.unitName} (level {unit.FortifyLevel}).");
     }
 
     private static void HandleExtractClicked(UnitInstance unit)

@@ -16,17 +16,20 @@ MonoBehaviour:
   UnitName: EnemyMage
   Description: 'A deadly magic user from the evil plane. '
   UnitIcon: {fileID: 0}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 2781382901639996558, guid: ef5e5642e7e2a3b42934cd9d631f9042, type: 3}
   weaponPrefabs:
-  - {fileID: 919132149155446097, guid: db1123090ffe8e24290d578689aea87a, type: 3}
+  - {fileID: 1165975564514317200, guid: 28773b7161f9a96478cd6340fda746fa, type: 3}
   equipmentPrefabs:
   - {fileID: 919132149155446097, guid: d6fc426a489fa264d8f4c492e38c69a8, type: 3}
   ColorScheme: 0
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  RandomizeColorScheme: 1
   MaxHP: 10
-  BaseAttack: 2
+  BaseAttack: 4
   AttackRange: 2
   MoveSpeed: 1
   MaxMovementPoints: 2

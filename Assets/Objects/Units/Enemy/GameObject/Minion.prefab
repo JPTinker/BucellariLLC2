@@ -59,6 +59,7 @@ MonoBehaviour:
   rightHand: {fileID: 5881341140425345838}
   projectileSpawnPoint: {fileID: 0}
   aimHeight: 1
+  aimAtBodyCenter: 1
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
@@ -70,8 +71,17 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   IsExtracted: 0
-  IsFortified: 0
+  IsWorker: 0
   IsRevealed: 0
+  fortifyAttackBonus: 030000000400000005000000
+  fortifyDefenseBonus: 030000000400000005000000
+  fortifySightBonus: 1
+  fortifyRangeBonus: 1
+  fortificationPrefabs:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  fortificationOffset: {x: 0, y: 0, z: 0}
   lightHitThreshold: 0.15
   heavyHitThreshold: 0.35
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
@@ -139,10 +149,42 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8380783556237360187, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -6838469388590892448, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -4408481997133810135, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -2962718905970087091, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -1547348769253965558, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: 796407376638139366, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     - target: {fileID: 919132149155446097, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
       propertyPath: m_Name
       value: Skeleton_Minion
       objectReference: {fileID: 0}
+    - target: {fileID: 3000256035407954547, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: 4523480060844978375, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     - target: {fileID: 5866666021909216657, guid: 70023d309a0f7ad4eaa58faca5fe106a, type: 3}
       propertyPath: m_Controller
       value: 

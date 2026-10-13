@@ -186,7 +186,7 @@ public class Unit
     public int Experience;
     [Tooltip("Rolled once on recruitment. Higher tiers gain more per level; Mythical units never take wounds.")]
     public UnitRarity Rarity;
-    [Tooltip("One-time bonus earned on reaching MasteryLevel. Already baked into the stats below.")]
+    [Tooltip("Most recent bonus earned at a multiple of MasteryLevel. Already baked into the stats below.")]
     public UnitMastery Mastery;
 
     [Header("Scars of Battle")]
@@ -284,10 +284,11 @@ public class Unit
     /// <summary>Mythical units shrug off the scars of battle entirely.</summary>
     public bool IgnoresWounds => Rarity == UnitRarity.Mythical;
 
-    /// <summary>Level at which a unit earns its one-time mastery bonus.</summary>
+    /// <summary>A unit earns a mastery bonus every time it reaches a multiple of this level.</summary>
     public const int MasteryLevel = 10;
 
-    public void ApplyLevelUp()
+    /// <summary>Levels the unit up. Returns the mastery bonus earned at this level, or None.</summary>
+    public UnitMastery ApplyLevelUp()
     {
         var tier = UnitRarityTable.Get(Rarity);
         Level++;
@@ -297,8 +298,9 @@ public class Unit
         if (UnityEngine.Random.value < tier.HpGainChance)
             MaxHP += tier.HpGain;
 
-        if (Level >= MasteryLevel && Mastery == UnitMastery.None)
-            GrantMastery();
+        if (Level % MasteryLevel == 0)
+            return GrantMastery();
+        return UnitMastery.None;
     }
 
     /// <summary>Recruits a unit at a higher level (no XP, full health). Used for draft units that scale with campaign progress.</summary>
@@ -309,7 +311,7 @@ public class Unit
     }
 
     /// <summary>Picks one of the mastery bonuses at random and applies it permanently.</summary>
-    private void GrantMastery()
+    private UnitMastery GrantMastery()
     {
         Mastery = (UnitMastery)UnityEngine.Random.Range(1, 4);
         switch (Mastery)
@@ -318,6 +320,7 @@ public class Unit
             case UnitMastery.Speed: MoveRange += 1; break;
             case UnitMastery.Reach: AttackRange += 1; VisibilityRange += 1; break;
         }
+        return Mastery;
     }
 
     public static string DescribeMastery(UnitMastery mastery) => mastery switch

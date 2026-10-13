@@ -59,6 +59,7 @@ MonoBehaviour:
   rightHand: {fileID: 764255794544988791}
   projectileSpawnPoint: {fileID: 0}
   aimHeight: 1
+  aimAtBodyCenter: 1
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
@@ -70,8 +71,17 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   IsExtracted: 0
-  IsFortified: 0
+  IsWorker: 0
   IsRevealed: 0
+  fortifyAttackBonus: 030000000400000005000000
+  fortifyDefenseBonus: 030000000400000005000000
+  fortifySightBonus: 1
+  fortifyRangeBonus: 1
+  fortificationPrefabs:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  fortificationOffset: {x: 0, y: 0, z: 0}
   lightHitThreshold: 0.15
   heavyHitThreshold: 0.35
   damageFlashColor: {r: 1, g: 0, b: 0, a: 1}
@@ -87,6 +97,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2084727712776223458}
     m_Modifications:
+    - target: {fileID: -8753333483642116288, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     - target: {fileID: -8679921383154817045, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.2
@@ -139,14 +153,42 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4219506802544589539, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -2591594810243057547, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: -1296569131805605410, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     - target: {fileID: 919132149155446097, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
       propertyPath: m_Name
       value: Skeleton_Mage
       objectReference: {fileID: 0}
+    - target: {fileID: 1766107317688927939, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: 2131620637271574675, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
+    - target: {fileID: 4728413743036674231, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     - target: {fileID: 5866666021909216657, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 6a3d09f1786d664409dbec0be856250d, type: 2}
+    - target: {fileID: 6800260847235997587, guid: 01eebd49d1fa0f54b8bbce7b5bf73910, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7eb89f7a2f733174491e6224fb606c63, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

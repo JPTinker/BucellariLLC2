@@ -376,20 +376,14 @@ public class CombatPhaseUIController : MonoBehaviour
             return;
         }
 
-        // Rule 2: If they are not adjacent to (0,0) then extract is disabled
-        bool isAdjacentToOrigin = false;
-        if (unit.currentTile != null)
-        {
-            Vector2Int pos = unit.currentTile.gridPosition;
-            int dx = Mathf.Abs(pos.x);
-            int dy = Mathf.Abs(pos.y);
-            isAdjacentToOrigin = (Mathf.Max(dx, dy) == 1);
-        }
+        // Rule 2: Extract is only enabled next to a boat (the original or any extra one)
+        bool isAdjacentToOrigin = unit.currentTile != null &&
+            (unit.currentTile.IsExtractable ||
+             (MapManager.Instance != null && MapManager.Instance.IsAdjacentToBoat(unit.currentTile.gridPosition)));
         extractButton?.SetEnabled(isAdjacentToOrigin);
 
-        // Rule 3: If the unit is already fortified then fortify is disabled
-        // (Change 'isFortified' to 'IsFortified' if your property casing differs)
-        bool isFortified = unit.IsFortified;
+        // Rule 3: Fortify can be stacked up to the max level, then it is disabled
+        bool maxFortified = !unit.CanFortifyFurther;
 
         // Scout can be used if they have actions remaining
         scoutButton?.SetEnabled(true);
@@ -397,7 +391,7 @@ public class CombatPhaseUIController : MonoBehaviour
         // Build Wall needs enough Materials and a free adjacent tile.
         MapManager map = MapManager.Instance;
         GameStateManager gsm = GameStateManager.Instance;
-        bool canFortify = !isFortified && map != null && gsm != null &&
+        bool canFortify = !maxFortified && map != null && gsm != null &&
                           gsm.Settlement.Materials >= map.fortifyMaterialCost;
         fortifyButton?.SetEnabled(canFortify);
         bool canBuild = map != null && gsm != null &&

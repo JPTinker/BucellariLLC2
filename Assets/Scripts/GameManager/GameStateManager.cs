@@ -1014,6 +1014,8 @@ public class GameStateManager : MonoBehaviour
             Settlement.ExtraBoats++;
         }
 
+        HealBenchedUnits();
+
         // Apply this cycle's Campaign Map course. Stay Put's yield doubling
         // already happened above (it's baked into the forecast); Rest and
         // Travel have their own effects to commit here.
@@ -1065,6 +1067,19 @@ public class GameStateManager : MonoBehaviour
         Settlement.Materials -= amount;
         OnSettlementChanged?.Invoke();
         return true;
+    }
+
+    private const float BenchedHealFraction = 0.05f;
+
+    /// <summary>Roster units not picked for the battle recover 5% of their max HP each cycle.</summary>
+    private void HealBenchedUnits()
+    {
+        foreach (Unit unit in FullRoster)
+        {
+            if (ActiveTeam.Contains(unit) || unit.CurrentHP >= unit.MaxHP) continue;
+            int heal = Mathf.Max(1, Mathf.RoundToInt(unit.MaxHP * BenchedHealFraction));
+            unit.CurrentHP = Mathf.Min(unit.MaxHP, unit.CurrentHP + heal);
+        }
     }
 
     /// <summary>Heals every roster unit's persistent HP to full - the Campaign Map "Rest" action.</summary>

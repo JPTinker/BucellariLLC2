@@ -91,11 +91,13 @@ public class UnitInstance : MonoBehaviour
     public bool IsExtracted = false;
     /// <summary>True for player-owned worker villagers (see WorkerVillager). They are never rescued or auto-evacuated like strays.</summary>
     public bool IsWorker = false;
-    /// <summary>Fortify is a state tied to the tile the unit stood on; it ends as soon as the unit leaves.</summary>
-    public bool IsFortified { get; private set; }
+    /// <summary>Fortifications belong to the tile and outlast the unit; a player unit standing on one gets its bonuses.</summary>
+    public int FortifyLevel => Faction == UnitFaction.Player && currentTile != null ? currentTile.FortificationLevel : 0;
+    public bool IsFortified => FortifyLevel > 0;
+    public bool CanFortifyFurther => currentTile != null && currentTile.FortificationLevel < MapManager.MaxFortificationLevel;
     public bool IsRevealed = false;
 
-    [Header("Fortify (tier = unit level, clamped 1-3)")]
+    [Header("Fortify bonuses (tier = fortification level of the tile stood on, max 3)")]
     [Tooltip("Flat attack bonus while fortified, indexed by tier (level 1, 2, 3).")]
     [SerializeField] private int[] fortifyAttackBonus = { 3, 4, 5 };
     [Tooltip("Flat damage reduction while fortified, indexed by tier (level 1, 2, 3).")]
@@ -104,17 +106,12 @@ public class UnitInstance : MonoBehaviour
     [SerializeField] private int fortifySightBonus = 1;
     [Tooltip("Tier 3: extra attack range while fortified.")]
     [SerializeField] private int fortifyRangeBonus = 1;
-    [Tooltip("Optional fortification objects spawned on the unit's tile, indexed by tier (level 1, 2, 3). Destroyed when the unit leaves the tile. A missing entry falls back to the nearest lower tier.")]
-    [SerializeField] private GameObject[] fortificationPrefabs = new GameObject[3];
-    [Tooltip("Offset from the tile's top surface where the fortification object is placed.")]
-    [SerializeField] private Vector3 fortificationOffset = Vector3.zero;
 
-    private GameObject fortificationObject;
     private int appliedSightBonus;
     private int appliedRangeBonus;
 
     /// <summary>1-3 while fortified, otherwise 0.</summary>
-    public int FortifyTier => IsFortified ? Mathf.Clamp(Level, 1, 3) : 0;
+    public int FortifyTier => FortifyLevel;
     public int FortifyAttackBonus => IsFortified ? TierValue(fortifyAttackBonus, FortifyTier) : 0;
     public int FortifyDefenseBonus => IsFortified ? TierValue(fortifyDefenseBonus, FortifyTier) : 0;
 
@@ -269,11 +266,10 @@ public class UnitInstance : MonoBehaviour
             OldAttack = PersistentUnit.BaseAttack,
             OldDefense = PersistentUnit.DefensePower
         };
-        UnitMastery masteryBefore = PersistentUnit.Mastery;
-        PersistentUnit.ApplyLevelUp();
-        if (masteryBefore == UnitMastery.None && PersistentUnit.Mastery != UnitMastery.None)
+        UnitMastery earned = PersistentUnit.ApplyLevelUp();
+        if (earned != UnitMastery.None)
         {
-            string bonus = Unit.DescribeMastery(PersistentUnit.Mastery);
+            string bonus = Unit.DescribeMastery(earned);
             Debug.Log($"{unitName} reached mastery: {bonus}.");
             FindAnyObjectByType<NotificationManager>()?.ShowNotification($"{unitName} mastered: {bonus}");
         }
@@ -310,7 +306,7 @@ public class UnitInstance : MonoBehaviour
         RemoveFortifyStatBonuses();
         Level = PersistentUnit.Level;
 
-        // Level-10 mastery changes these; the fortify range/sight bonus is already stripped above.
+        // Mastery (every 10th level) changes these; the fortify range/sight bonus is already stripped above.
         movementRange = PersistentUnit.MoveRange;
         attackRange = PersistentUnit.AttackRange;
         visibilityRange = PersistentUnit.VisibilityRange;
@@ -342,13 +338,14 @@ public class UnitInstance : MonoBehaviour
 
         if (currentTile != null)
         {
-            if (currentTile != tile) Unfortify();
+            if (currentTile != tile) RemoveFortifyStatBonuses();
             currentTile.RemoveUnit();
         }
 
         currentTile = tile;
         tile.SetUnit(this);
         transform.position = tile.transform.position + Vector3.up * tile.heightOffset;
+        RefreshFortifyBonuses();
 
         // Always sync with the tile: a freshly spawned unit has IsRevealed == false
         // but visible renderers, so on a fogged tile it must be explicitly hidden.
@@ -360,8 +357,12 @@ public class UnitInstance : MonoBehaviour
 
     private IEnumerator MoveAlongPathRoutine(List<HexTile> path)
     {
-        // Leaving the tile ends fortify (and removes its fortification object).
-        Unfortify();
+        // Leaving the tile drops the fortify bonuses; the fortification itself stays on the tile.
+        if (IsFortified)
+        {
+            RemoveFortifyStatBonuses();
+            NotifyStatsChanged();
+        }
 
         // Free up the starting tile immediately so other units/pathfinding don't treat it as blocked
         if (currentTile != null)
@@ -408,6 +409,7 @@ public class UnitInstance : MonoBehaviour
         HexTile destinationTile = path[path.Count - 1];
         currentTile = destinationTile;
         destinationTile.SetUnit(this);
+        RefreshFortifyBonuses();
 
         // Update map visibility and fog of war
         MapManager.Instance?.RevealAroundUnit(this);
@@ -715,7 +717,6 @@ public class UnitInstance : MonoBehaviour
     /// around long enough for an incoming projectile to visibly hit it.
     private void Die(float destroyDelay = 0f)
     {
-        Unfortify();
         if (currentTile != null)
         {
             currentTile.RemoveUnit();
@@ -821,32 +822,24 @@ public class UnitInstance : MonoBehaviour
         vfx.SpawnAt(vfx.death, transform.position);
     }
 
+    /// Builds the next fortification level on this unit's tile. The fortification stays when the unit leaves.
     public void onFortify()
     {
-        if (!IsFortified)
+        if (CanFortifyFurther && MapManager.Instance != null &&
+            MapManager.Instance.BuildFortification(currentTile))
         {
-            IsFortified = true;
-            ApplyFortifyStatBonuses();
-            SpawnFortificationObject();
+            RefreshFortifyBonuses();
         }
         vfx?.Spawn(vfx.fortify, transform, true);
         NotifyStatsChanged();
         CombatManager.Instance?.TakeAction(this);
     }
 
-    /// Ends the fortified state: bonuses go away and the fortification object is destroyed.
-    public void Unfortify()
+    /// Re-applies (or strips) the sight/range bonuses for the tile the unit now stands on.
+    private void RefreshFortifyBonuses()
     {
-        if (!IsFortified && fortificationObject == null) return;
-
-        RemoveFortifyStatBonuses();
-        IsFortified = false;
-        if (fortificationObject != null)
-        {
-            Destroy(fortificationObject);
-            fortificationObject = null;
-        }
-        NotifyStatsChanged();
+        if (IsFortified) ApplyFortifyStatBonuses();
+        else RemoveFortifyStatBonuses();
     }
 
     // Tier 1: attack/defense only. Tier 2: +sight. Tier 3: +sight and +range.
@@ -870,22 +863,6 @@ public class UnitInstance : MonoBehaviour
         appliedRangeBonus = 0;
     }
 
-    // Scaffold: assign prefabs in fortificationPrefabs and they appear on the unit's tile.
-    private void SpawnFortificationObject()
-    {
-        if (currentTile == null || fortificationPrefabs == null) return;
-
-        GameObject prefab = null;
-        for (int tier = FortifyTier; tier >= 1 && prefab == null; tier--)
-        {
-            if (tier - 1 < fortificationPrefabs.Length)
-                prefab = fortificationPrefabs[tier - 1];
-        }
-        if (prefab == null) return;
-
-        Vector3 position = currentTile.transform.position + Vector3.up * currentTile.heightOffset + fortificationOffset;
-        fortificationObject = Instantiate(prefab, position, transform.rotation, currentTile.transform);
-    }
     public void onScout()
     {
         int temp = visibilityRange;

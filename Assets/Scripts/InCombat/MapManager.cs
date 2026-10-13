@@ -93,6 +93,14 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float hpScalingPerWave = 0.15f;
     [Tooltip("Each reinforcement wave adds this fraction of base attack. Attack is a small integer, so this is higher than the HP rate.")]
     [SerializeField] private float attackScalingPerWave = 0.20f;
+    [Tooltip("Each level adds this fraction of base defense (rounded, so +1 defense shows up after a few levels).")]
+    [SerializeField] private float defenseScalingPerWave = 0.15f;
+    [Tooltip("Levels needed per +1 movement range (0 disables).")]
+    [SerializeField] private int levelsPerMovementBonus = 6;
+    [Tooltip("Levels needed per +1 attack range (0 disables). Capped at +1 so ranged enemies don't outrange everything.")]
+    [SerializeField] private int levelsForRangeBonus = 15;
+    [Tooltip("Level at which enemies gain an extra action per turn (0 disables).")]
+    [SerializeField] private int levelForExtraAction = 15;
     [Tooltip("Extra enemy levels (same scaling as waves) for an enemy spawning right next to the exfil zone. Falls off linearly to 0 at the far corner of the map.")]
     [SerializeField] private float maxExfilProximityLevels = 3f;
     [Tooltip("Wave levels added to every enemy spawn per travel cycle toward the Evacuation Zone (0.5 = +1 level every 2 travels).")]
@@ -119,8 +127,12 @@ public class MapManager : MonoBehaviour
     public GameObject wallPrefab;
     [Tooltip("Settlement Materials spent per wall.")]
     public int wallMaterialCost = 5;
-    [Tooltip("Settlement Materials spent per Fortify.")]
+    [Tooltip("Settlement Materials spent per Fortify (each click builds the next fortification level on the unit's tile).")]
     public int fortifyMaterialCost = 2;
+    [Tooltip("Fortification objects spawned on the tile, indexed by level (1, 2, 3). They stay after the unit leaves. A missing entry falls back to the nearest lower level.")]
+    [SerializeField] private GameObject[] fortificationPrefabs = new GameObject[3];
+    [Tooltip("Offset from the tile's top surface where the fortification object is placed.")]
+    [SerializeField] private Vector3 fortificationOffset = Vector3.zero;
     public int wallMaxHealth = 12;
     public int wallDefense = 1;
     [SerializeField] private Color fallbackWallColor = new Color(0.45f, 0.33f, 0.22f);
@@ -289,6 +301,16 @@ public class MapManager : MonoBehaviour
         enemy.maxHealth = Mathf.RoundToInt(enemy.maxHealth * (1f + waveLevel * hpScalingPerWave));
         enemy.currentHealth = enemy.maxHealth;
         enemy.attackPower = Mathf.RoundToInt(enemy.attackPower * (1f + waveLevel * attackScalingPerWave));
+        enemy.defensePower += Mathf.RoundToInt(enemy.defensePower * waveLevel * defenseScalingPerWave);
+        if (levelsPerMovementBonus > 0)
+            enemy.movementRange += waveLevel / levelsPerMovementBonus;
+        if (levelsForRangeBonus > 0 && waveLevel >= levelsForRangeBonus)
+            enemy.attackRange += 1;
+        if (levelForExtraAction > 0 && waveLevel >= levelForExtraAction)
+        {
+            enemy.maxActionsPerTurn += 1;
+            enemy.actionsRemaining = enemy.maxActionsPerTurn;
+        }
         enemy.NotifyStatsChanged();
     }
 
@@ -805,6 +827,13 @@ public class MapManager : MonoBehaviour
             boatTile.IsExtractionPoint = true;
             boatTile.isWalkable = false;
         }
+
+        // Every tile adjacent to any boat (original or extra) is extractable.
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile == null || tile.IsExtractionPoint) continue;
+            tile.IsExtractable = IsAdjacentToBoat(tile.gridPosition);
+        }
     }
 
     // Extra boats dock along the map's outer edge beside the original (0,0):
@@ -823,12 +852,28 @@ public class MapManager : MonoBehaviour
         return positions;
     }
 
-    private bool IsAdjacentToBoat(Vector2Int position)
+    public bool IsAdjacentToBoat(Vector2Int position)
     {
         if (HexCoordinates.GetDistance(position, ExfilTilePosition) == 1) return true;
         foreach (Vector2Int boat in ExtraBoatPositions())
             if (HexCoordinates.GetDistance(position, boat) == 1) return true;
         return false;
+    }
+
+    public const int MaxFortificationLevel = 3;
+
+    /// <summary>Builds the next fortification level on a tile (permanent for the battle). Returns false at max level.</summary>
+    public bool BuildFortification(HexTile tile)
+    {
+        if (tile == null || tile.FortificationLevel >= MaxFortificationLevel) return false;
+
+        int level = tile.FortificationLevel + 1;
+        GameObject prefab = null;
+        for (int l = level; l >= 1 && prefab == null; l--)
+            if (fortificationPrefabs != null && l - 1 < fortificationPrefabs.Length)
+                prefab = fortificationPrefabs[l - 1];
+        tile.SetFortification(level, prefab, fortificationOffset);
+        return true;
     }
 
     /// <summary>Call when a unit attempts to leave the battle from its current tile.</summary>

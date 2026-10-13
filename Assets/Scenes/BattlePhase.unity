@@ -1067,7 +1067,12 @@ MonoBehaviour:
   enemySpawnCount: 8
   hpScalingPerWave: 0.15
   attackScalingPerWave: 0.2
+  defenseScalingPerWave: 0.15
+  levelsPerMovementBonus: 6
+  levelsForRangeBonus: 15
+  levelForExtraAction: 15
   maxExfilProximityLevels: 3
+  enemyLevelsPerTravel: 0.5
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
   workerArchetype: {fileID: 11400000, guid: 34479a0b4bef7964295e802427034eca, type: 2}
@@ -1077,6 +1082,11 @@ MonoBehaviour:
   wallPrefab: {fileID: 7514974912573514939, guid: 04dc8fab069ddeb42877a9d5de78096a, type: 3}
   wallMaterialCost: 5
   fortifyMaterialCost: 2
+  fortificationPrefabs:
+  - {fileID: 6282545201122703717, guid: 404d51c2a87aadf46848b598e7c1f39d, type: 3}
+  - {fileID: 8765643343690653172, guid: 0edc64d130f1cf34da7a168a320d7180, type: 3}
+  - {fileID: 997931668268542045, guid: 2b6b95a749ce3a041ab9334029b6d7ff, type: 3}
+  fortificationOffset: {x: 0, y: 0, z: 0}
   wallMaxHealth: 12
   wallDefense: 1
   fallbackWallColor: {r: 0.45, g: 0.33, b: 0.22, a: 1}

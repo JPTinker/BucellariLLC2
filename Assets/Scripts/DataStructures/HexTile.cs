@@ -31,6 +31,25 @@ public class HexTile : MonoBehaviour
     [Header("Farming Visuals")][Range(0f, 1f)] public float depletedDarkness = 0.5f;
     public bool IsOccupied => occupyingUnit != null;
     public bool IsExtractionPoint = false;
+    /// <summary>Fortification level built on this tile (0 = none). Stays when units leave; player units standing here get the fortify bonuses.</summary>
+    public int FortificationLevel { get; private set; }
+    private GameObject fortificationObject;
+    /// <summary>Sets the fortification level and swaps in that level's object (null = no visual).</summary>
+    public void SetFortification(int level, GameObject prefab, Vector3 offset)
+    {
+        FortificationLevel = level;
+        if (fortificationObject != null)
+        {
+            Destroy(fortificationObject);
+            fortificationObject = null;
+        }
+        if (prefab == null) return;
+        fortificationObject = Instantiate(prefab, transform);
+        fortificationObject.transform.localPosition = Vector3.up * heightOffset + offset;
+        fortificationObject.transform.localRotation = Quaternion.identity;
+    }
+    /// <summary>True on every tile adjacent to any boat; units standing here can Extract.</summary>
+    public bool IsExtractable = false;
     public bool CanEnter(UnitInstance unit) => isWalkable && !IsOccupied;
     public bool CanEnter() => isWalkable && !IsOccupied;
     public void SetUnit(UnitInstance unit) { occupyingUnit = unit; isWalkable = false; }
