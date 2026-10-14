@@ -204,6 +204,7 @@ public class CombatManager : MonoBehaviour
         // Tell GameStateManager to handle the extraction logic (saving, tracking villagers, etc.)
         if (GameStateManager.Instance != null)
         {
+            unit.Say(UnitSpeechTrigger.Extract);
             unit.currentTile.RemoveUnit();
             GameStateManager.Instance.ProcessExtraction(unit);
         }
@@ -452,6 +453,8 @@ public class CombatManager : MonoBehaviour
             }
         }
         SpawnEnemyReinforcements();
+        foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
+            unit.ClearRoundAttackers();
         currentRound++;
         combatUIManager?.SetRound(currentRound);
         combatUIManager?.RefreshTownsfolkDisplay();

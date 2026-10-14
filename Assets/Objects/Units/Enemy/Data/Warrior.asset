@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a057b191fb73f114180dfc1e82a21a5d, type: 3}
   m_Name: Warrior
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  UnitID: EnemyMage
-  UnitName: EnemyMage
+  UnitID: Warrior
+  UnitName: Warrior
   Description: 'A deadly magic user from the evil plane. '
   UnitIcon: {fileID: 0}
   UseRenderedPortrait: 1
@@ -39,6 +39,7 @@ MonoBehaviour:
   MaxMovementPoints: 2
   VisibilityRange: 3
   defensePower: 5
+  FlankingBonus: 0
   Faction: 1
   AnimationStyle: 4
   ProjectilePrefab: {fileID: 0}

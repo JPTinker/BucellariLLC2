@@ -40,6 +40,7 @@ MonoBehaviour:
   MaxMovementPoints: 2
   VisibilityRange: 3
   defensePower: 4
+  FlankingBonus: 0.2
   Faction: 0
   AnimationStyle: 5
   ProjectilePrefab: {fileID: 3190329664725571242, guid: 1e1debf03d654e54e945e23a77621196, type: 3}

@@ -18,6 +18,8 @@ public class ItemData : MonoBehaviour
     public int range = 0;       // 1 = Melee, 2+ = Ranged
     public int healing = 0;
     public int defense = 0;     // Damage reduction
+    [Tooltip("Extra flanking damage while the wielder attacks a flanked target, as a fraction (0.05 = +5%). Stacks with the unit's own bonus and may exceed the normal flanking cap.")]
+    [Min(0f)] public float flankingBonus = 0f;
 
     [Header("Weapon VFX")]
     [Tooltip("Played on the target when this weapon hits. Empty = fall back to CombatVfxConfig.hit.")]

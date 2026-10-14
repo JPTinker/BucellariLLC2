@@ -278,6 +278,7 @@ public class UnitInstance : MonoBehaviour
         ReportEntry()?.LevelSteps.Add(step);
         SyncProgressionStats();
         vfx?.Spawn(vfx.levelUp, transform, true);
+        Say(UnitSpeechTrigger.LevelUp);
 
         GameStateManager gsm = GameStateManager.Instance;
         if (gsm != null && Faction == UnitFaction.Player)
@@ -443,6 +444,7 @@ public class UnitInstance : MonoBehaviour
 
         // Start the smooth movement coroutine
         movementCoroutine = StartCoroutine(MoveAlongPathRoutine(path));
+        Say(UnitSpeechTrigger.Move);
         return true;
     }
 
@@ -471,8 +473,13 @@ public class UnitInstance : MonoBehaviour
         float hitDelay = FireProjectile(target);
 
         int damage = CalculateAttackDamage(target, currentTile);
-        Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage!");
+        float flank = FlankingBonus(target);
+        Debug.Log($"{unitName} attacks {target.unitName} for {damage} damage!" +
+                  (flank > 0f ? $" (flanking +{flank:P0})" : ""));
+        if (target.Faction != UnitFaction.Structure) target.attackersThisRound.Add(this);
+        if (flank > 0f) target.Say(UnitSpeechTrigger.Flanked, hitDelay);
         target.TakeDamage(damage, hitDelay, weaponItem);
+        Say(target.IsDead ? UnitSpeechTrigger.Kill : UnitSpeechTrigger.Attack, hitDelay);
         if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
         {
             AddExperience(AttackExperience);
@@ -527,12 +534,53 @@ public class UnitInstance : MonoBehaviour
         int attackBonus = attackFrom != null ? attackFrom.attackBonus : 0;
         int defenseBonus = target.currentTile != null ? target.currentTile.defenseBonus : 0;
         float terrainBonus = 1f + (Mathf.Max(attackBonus - defenseBonus, 1f) / 5f);
-        int flatAttack = Mathf.Max(attackPower - target.defensePower, 1);
+        PersonalityModifiers(attackFrom, out int personalityAttack, out _);
+        target.PersonalityModifiers(target.currentTile, out _, out int personalityDefense);
+        int flatAttack = Mathf.Max(attackPower + personalityAttack - (target.defensePower + personalityDefense), 1);
 
         flatAttack += FortifyAttackBonus;
 
-        return flatAttack * Mathf.RoundToInt(terrainBonus * (attackRoll / (float)defRoll));
+        int damage = flatAttack * Mathf.RoundToInt(terrainBonus * (attackRoll / (float)defRoll));
+        float flank = FlankingBonus(target);
+        return flank > 0f ? Mathf.CeilToInt(damage * (1f + flank)) : damage;
         //Mathf.RoundToInt(attackRoll + Mathf.Max((attackPower * (1.1f * attackRoll) * (1 + currentTile.attackBonus/5)) - (target.defensePower * (1.05f * defRoll) * (1 + target.currentTile.defenseBonus/5)), 0f));
+    }
+
+    // Distinct units that have hit this unit since the round began (not tracked for walls).
+    private readonly HashSet<UnitInstance> attackersThisRound = new HashSet<UnitInstance>();
+    private const float MaxFlankingBonus = 2f;
+
+    public void ClearRoundAttackers() => attackersThisRound.Clear();
+
+    /// Extra damage for ganging up on one target in a round, counting this attacker:
+    /// 2 attackers +10%, 3 +50%, then +50% per extra attacker up to +200%. Walls are exempt.
+    private float FlankingBonus(UnitInstance target)
+    {
+        if (target.Faction == UnitFaction.Structure) return 0f;
+
+        int attackers = target.attackersThisRound.Count + (target.attackersThisRound.Contains(this) ? 0 : 1);
+        if (attackers < 2) return 0f;
+
+        float bonus = attackers == 2 ? 0.1f : Mathf.Min(MaxFlankingBonus, 0.5f * (attackers - 2));
+        // This attacker's own bonus (unit + weapon + equipment) is added after the cap, so it can exceed it.
+        return bonus + (PersistentUnit != null ? PersistentUnit.FlankingBonus : 0f);
+    }
+
+    /// Flat attack / defense from this unit's personality, given the tile it stands (or would stand) on.
+    private void PersonalityModifiers(HexTile at, out int attack, out int defense)
+    {
+        attack = 0;
+        defense = 0;
+        UnitPersonality personality = PersistentUnit != null ? PersistentUnit.Personality : UnitPersonality.Steady;
+        if (personality == UnitPersonality.Steady || at == null) return;
+
+        int allies = 0;
+        foreach (HexTile neighbor in at.neighbors)
+        {
+            UnitInstance other = neighbor != null ? neighbor.occupyingUnit : null;
+            if (other != null && other != this && !other.IsDead && other.Faction == Faction) allies++;
+        }
+        UnitPersonalityTable.GetModifiers(personality, allies, out attack, out defense);
     }
 
     /// Health target would actually lose if attacked from attackFrom (null = current tile).
@@ -552,7 +600,13 @@ public class UnitInstance : MonoBehaviour
     public void playSpawnAnimation()
     {
         PlayAnimatorAction(Spawn, "Spawn");
+        Say(UnitSpeechTrigger.Spawn);
     }
+
+    private const float LowHealthFraction = 0.3f;
+
+    /// Fires a speech trigger for this unit; the bubble controller decides whether anything is said.
+    public void Say(UnitSpeechTrigger trigger, float delay = 0f) => UnitSpeech.Raise(this, trigger, delay);
     /// hitDelay postpones the visible reaction (flash, damage anim, removal on
     /// death) so it lines up with a projectile landing; the damage itself is immediate.
     public void TakeDamage(int amount, float hitDelay = 0f, ItemData weapon = null)
@@ -580,6 +634,9 @@ public class UnitInstance : MonoBehaviour
             Die(hitDelay);
             return;
         }
+
+        if (damageTaken > 0)
+            Say(currentHealth <= maxHealth * LowHealthFraction ? UnitSpeechTrigger.LowHealth : UnitSpeechTrigger.Hit, hitDelay);
 
         RecordWounds(damageTaken);
     }
@@ -723,6 +780,7 @@ public class UnitInstance : MonoBehaviour
             currentTile = null;
         }
 
+        Say(UnitSpeechTrigger.Death);
         OnDeath?.Invoke(this);
         if (vfx != null)
         {
@@ -759,6 +817,7 @@ public class UnitInstance : MonoBehaviour
             {
                 rescuedUnitData[i] = rescuedUnit;
                 Debug.Log($"{unitName} has rescued {rescuedUnit.UnitName}!");
+                Say(UnitSpeechTrigger.Rescue);
                 return;
             }
         }
@@ -803,9 +862,16 @@ public class UnitInstance : MonoBehaviour
         villager.currentTile = null;
         rescuedUnitData[rescueSlot] = villagerData;
 
+        // Parenting inherits this unit's scale, which shrinks the villager. Keep the size it had in the world.
+        Vector3 villagerWorldScale = villager.transform.lossyScale;
         villager.transform.SetParent(transform, false);
         villager.transform.localPosition = Vector3.right * (rescueSlot + 1) * 0.6f;
         villager.transform.localRotation = Quaternion.identity;
+        Vector3 carrierScale = transform.lossyScale;
+        villager.transform.localScale = new Vector3(
+            villagerWorldScale.x / Mathf.Max(0.0001f, carrierScale.x),
+            villagerWorldScale.y / Mathf.Max(0.0001f, carrierScale.y),
+            villagerWorldScale.z / Mathf.Max(0.0001f, carrierScale.z));
 
         foreach (Collider collider in villager.GetComponentsInChildren<Collider>())
             collider.enabled = false;
@@ -831,6 +897,7 @@ public class UnitInstance : MonoBehaviour
             RefreshFortifyBonuses();
         }
         vfx?.Spawn(vfx.fortify, transform, true);
+        Say(UnitSpeechTrigger.Fortify);
         NotifyStatsChanged();
         CombatManager.Instance?.TakeAction(this);
     }
@@ -869,6 +936,7 @@ public class UnitInstance : MonoBehaviour
         visibilityRange = visibilityRange + 2;
         MapManager.Instance?.RevealAroundUnit(this);
         visibilityRange = temp;
+        Say(UnitSpeechTrigger.Scout);
         CombatManager.Instance?.TakeAction(this);
     }
 }

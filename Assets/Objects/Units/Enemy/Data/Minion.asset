@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a057b191fb73f114180dfc1e82a21a5d, type: 3}
   m_Name: Minion
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  UnitID: EnemyMage
-  UnitName: EnemyMage
+  UnitID: Minon
+  UnitName: Minon
   Description: 'A deadly magic user from the evil plane. '
   UnitIcon: {fileID: 0}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 2781382901639996558, guid: dc1ea72b11523304da172e96f25e5279, type: 3}
   weaponPrefabs:
   - {fileID: 919132149155446097, guid: 5395e1dfb79056f4fa62bd65c7eb6b98, type: 3}
@@ -29,13 +30,16 @@ MonoBehaviour:
   ColorScheme1: {fileID: 0}
   ColorScheme2: {fileID: 0}
   ColorScheme3: {fileID: 0}
+  ColorScheme4: {fileID: 0}
+  RandomizeColorScheme: 1
   MaxHP: 10
   BaseAttack: 1
   AttackRange: 1
-  MoveSpeed: 2
+  MoveSpeed: 1
   MaxMovementPoints: 3
   VisibilityRange: 3
   defensePower: 1
+  FlankingBonus: 0
   Faction: 1
   AnimationStyle: 3
   ProjectilePrefab: {fileID: 0}

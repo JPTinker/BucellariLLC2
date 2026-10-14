@@ -31,25 +31,30 @@ public class WorkerVillagerAIController : MonoBehaviour
     private IEnumerator ExecuteTurnRoutine(Action onComplete)
     {
         turnInProgress = true;
-
-        HexTile exfil = FindExfilTile();
-        List<UnitInstance> workers = new List<UnitInstance>();
-        foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
+        try
         {
-            if (IsActiveWorker(unit)) workers.Add(unit);
-        }
-
-        if (exfil != null)
-        {
-            foreach (UnitInstance unit in workers)
+            HexTile exfil = FindExfilTile();
+            List<UnitInstance> workers = new List<UnitInstance>();
+            foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
             {
-                if (IsActiveWorker(unit))
-                    yield return StartCoroutine(RunWorkerTurn(unit, exfil));
+                if (IsActiveWorker(unit)) workers.Add(unit);
+            }
+
+            if (exfil != null)
+            {
+                foreach (UnitInstance unit in workers)
+                {
+                    if (IsActiveWorker(unit))
+                        yield return StartCoroutine(RunWorkerTurn(unit, exfil));
+                }
             }
         }
-
-        turnInProgress = false;
-        onComplete?.Invoke();
+        finally
+        {
+            // Always hand control back, or one exception freezes the whole non-player phase.
+            turnInProgress = false;
+            onComplete?.Invoke();
+        }
     }
 
     private IEnumerator RunWorkerTurn(UnitInstance unit, HexTile exfil)
@@ -132,13 +137,14 @@ public class WorkerVillagerAIController : MonoBehaviour
 
     private IEnumerator DoDepositing(UnitInstance unit, WorkerVillager worker, HexTile exfil, CombatManager combat)
     {
-        if (!IsAdjacentTo(unit, exfil))
+        if (!IsAdjacentToBoat(unit))
         {
-            HexTile approach = FindBestApproachTile(unit, exfil);
+            HexTile approach = MapManager.Instance.FindBestBoatApproach(unit);
             if (approach != null) yield return StartCoroutine(MoveToward(unit, approach));
+            else Debug.LogWarning($"WorkerAI: {unit.unitName} has no reachable boat approach tile.");
         }
 
-        if (!IsAlive(unit) || !IsAdjacentTo(unit, exfil)) yield break;
+        if (!IsAlive(unit) || !IsAdjacentToBoat(unit)) yield break;
 
         GameStateManager.Instance?.ProcessWorkerDeposit(worker.IsFood, worker.Carried);
         worker.Carried = 0;
@@ -157,7 +163,17 @@ public class WorkerVillagerAIController : MonoBehaviour
         if (worker.Site == null) { worker.State = WorkerState.Seeking; yield break; }
 
         if (unit.currentTile != worker.Site)
+        {
+            // Someone else is standing on the site (or it is cut off): give it up and pick a new one.
+            if (!worker.Site.isWalkable || HexPathfinder.FindPath(unit.currentTile, worker.Site, -1) == null)
+            {
+                worker.Site.workerSiteClaimed = false;
+                worker.Site = null;
+                worker.State = WorkerState.Seeking;
+                yield break;
+            }
             yield return StartCoroutine(MoveToward(unit, worker.Site));
+        }
 
         if (IsAlive(unit) && unit.currentTile == worker.Site)
             worker.State = WorkerState.Gathering;
@@ -175,7 +191,8 @@ public class WorkerVillagerAIController : MonoBehaviour
         {
             if (tile == null) continue;
             // Never build on the exfil or the tiles around it: heroes extract from those.
-            if (HexCoordinates.GetDistance(tile.gridPosition, exfil.gridPosition) <= 1) continue;
+            if (tile.IsExtractionPoint || tile.IsExtractable ||
+                HexCoordinates.GetDistance(tile.gridPosition, exfil.gridPosition) <= 1) continue;
             bool ok = worker.IsFood ? tile.IsFarmable : tile.IsLumberable;
             // The worker's own tile is unwalkable (it is standing on it) but still a fine site.
             if (!ok && tile == unit.currentTile)
@@ -191,7 +208,7 @@ public class WorkerVillagerAIController : MonoBehaviour
         int tested = 0;
         foreach (HexTile tile in candidates)
         {
-            if (tested++ >= 8) break;
+            if (tested++ >= 30) break;
             if (tile != unit.currentTile)
             {
                 var path = HexPathfinder.FindPath(unit.currentTile, tile, -1);
@@ -231,27 +248,6 @@ public class WorkerVillagerAIController : MonoBehaviour
         }
     }
 
-    private static HexTile FindBestApproachTile(UnitInstance unit, HexTile exfil)
-    {
-        HexTile best = null;
-        int bestLength = int.MaxValue;
-
-        foreach (HexTile neighbor in exfil.neighbors)
-        {
-            if (neighbor == null || !neighbor.isWalkable) continue;
-
-            List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, neighbor, -1);
-            if (path == null) continue;
-
-            if (path.Count < bestLength)
-            {
-                bestLength = path.Count;
-                best = neighbor;
-            }
-        }
-        return best;
-    }
-
     private static HexTile FarthestReachablePoint(List<HexTile> path, int movementRange)
     {
         HexTile result = path[0];
@@ -287,10 +283,10 @@ public class WorkerVillagerAIController : MonoBehaviour
         return null;
     }
 
-    private static bool IsAdjacentTo(UnitInstance unit, HexTile exfil)
+    private static bool IsAdjacentToBoat(UnitInstance unit)
     {
-        return unit.currentTile != null &&
-               HexCoordinates.GetDistance(unit.currentTile.gridPosition, exfil.gridPosition) <= 1;
+        return unit.currentTile != null && MapManager.Instance != null &&
+               MapManager.Instance.IsAdjacentToBoat(unit.currentTile.gridPosition);
     }
 
     private static bool IsAlive(UnitInstance unit) => EnemyBattlefieldState.IsOnField(unit);

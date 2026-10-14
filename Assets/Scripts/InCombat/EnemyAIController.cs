@@ -129,7 +129,20 @@ public class EnemyAIController : MonoBehaviour
     private IEnumerator ExecuteTurnRoutine(Action onComplete)
     {
         turnInProgress = true;
+        try
+        {
+            yield return StartCoroutine(RunTurn());
+        }
+        finally
+        {
+            // Always hand control back, or one exception freezes the whole non-player phase.
+            turnInProgress = false;
+            onComplete?.Invoke();
+        }
+    }
 
+    private IEnumerator RunTurn()
+    {
         List<UnitInstance> pending = new List<UnitInstance>();
         foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
         {
@@ -174,9 +187,6 @@ public class EnemyAIController : MonoBehaviour
             if (!completed && IsActiveEnemy(chosen.Unit) && chosen.Unit.actionsRemaining > 0 && retried.Add(chosen.Unit))
                 pending.Add(chosen.Unit);
         }
-
-        turnInProgress = false;
-        onComplete?.Invoke();
     }
 
     //---------------------------------------
@@ -371,6 +381,7 @@ public class EnemyAIController : MonoBehaviour
 
         float bestThreat = 0f;
         int nearestCost = EnemyBattlefieldState.Unreachable;
+        int nearestDistance = int.MaxValue;
         bool adjacentToTarget = false;
 
         foreach (UnitInstance target in battlefield.Targets)
@@ -378,7 +389,9 @@ public class EnemyAIController : MonoBehaviour
             int remaining = search.RemainingHealth(target);
             if (remaining <= 0) continue;
 
-            if (HexCoordinates.GetDistance(tile.gridPosition, target.currentTile.gridPosition) <= 1)
+            int distance = HexCoordinates.GetDistance(tile.gridPosition, target.currentTile.gridPosition);
+            nearestDistance = Mathf.Min(nearestDistance, distance);
+            if (distance <= 1)
                 adjacentToTarget = true;
 
             int approachCost = battlefield.GetApproachCost(target, unit.attackRange, tile);
@@ -391,8 +404,14 @@ public class EnemyAIController : MonoBehaviour
         float value = bestThreat;
         if (nearestCost != EnemyBattlefieldState.Unreachable)
             value -= approachWeight * nearestCost;
+        else if (nearestDistance != int.MaxValue)
+            value -= approachWeight * nearestDistance; // no walkable route known: still drift toward the nearest target
 
-        value += defenseTerrainWeight * tile.defenseBonus;
+        // Good ground only matters once a fight is close; far away it must not outweigh marching in,
+        // or distant enemies sit on hills and "hold" until the player arrives.
+        int engageCost = unit.movementRange * Mathf.Max(1, unit.maxActionsPerTurn);
+        if (nearestCost <= engageCost)
+            value += defenseTerrainWeight * tile.defenseBonus;
         if (unit.attackRange > 1 && adjacentToTarget)
             value -= rangedAdjacentPenalty;
 

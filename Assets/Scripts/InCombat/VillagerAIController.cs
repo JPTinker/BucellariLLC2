@@ -26,44 +26,53 @@ public class VillagerAIController : MonoBehaviour
     private IEnumerator ExecuteTurnRoutine(Action onComplete)
     {
         turnInProgress = true;
-
-        HexTile exfilTile = FindExfilTile();
-        List<UnitInstance> villagers = new List<UnitInstance>();
-        foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
+        try
         {
-            if (IsActiveVillager(unit))
+            List<UnitInstance> villagers = new List<UnitInstance>();
+            foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
             {
-                unit.actionsRemaining = unit.maxActionsPerTurn;
-                unit.NotifyStatsChanged();
-                villagers.Add(unit);
+                if (IsActiveVillager(unit))
+                {
+                    unit.actionsRemaining = unit.maxActionsPerTurn;
+                    unit.NotifyStatsChanged();
+                    villagers.Add(unit);
+                }
+            }
+
+            if (MapManager.Instance != null)
+            {
+                foreach (UnitInstance villager in villagers)
+                {
+                    if (IsActiveVillager(villager))
+                        yield return StartCoroutine(RunVillagerTurn(villager));
+                }
             }
         }
-
-        if (exfilTile != null)
+        finally
         {
-            foreach (UnitInstance villager in villagers)
-            {
-                if (IsActiveVillager(villager))
-                    yield return StartCoroutine(RunVillagerTurn(villager, exfilTile));
-            }
+            // Always hand control back, or one exception freezes the whole non-player phase.
+            turnInProgress = false;
+            onComplete?.Invoke();
         }
-
-        turnInProgress = false;
-        onComplete?.Invoke();
     }
 
-    private IEnumerator RunVillagerTurn(UnitInstance villager, HexTile exfilTile)
+    private IEnumerator RunVillagerTurn(UnitInstance villager)
     {
+        MapManager map = MapManager.Instance;
         while (IsActiveVillager(villager) && villager.actionsRemaining > 0)
         {
-            if (IsAdjacentToExfil(villager, exfilTile))
+            if (IsAdjacentToBoat(villager))
             {
                 EvacuateVillager(villager);
                 yield break;
             }
 
-            HexTile approachTile = FindBestApproachTile(villager, exfilTile);
-            if (approachTile == null) yield break;
+            HexTile approachTile = map.FindBestBoatApproach(villager);
+            if (approachTile == null)
+            {
+                Debug.LogWarning($"VillagerAI: {villager.unitName} has no reachable boat approach tile.");
+                yield break;
+            }
 
             List<HexTile> path = HexPathfinder.FindPath(villager.currentTile, approachTile, -1);
             if (path == null || path.Count < 2) yield break;
@@ -85,32 +94,8 @@ public class VillagerAIController : MonoBehaviour
             }
         }
 
-        if (IsActiveVillager(villager) && IsAdjacentToExfil(villager, exfilTile))
+        if (IsActiveVillager(villager) && IsAdjacentToBoat(villager))
             EvacuateVillager(villager);
-    }
-
-    /// Picks the closest (by path length) walkable, unoccupied tile next to the
-    /// exfil tile for the villager to head toward.
-    private static HexTile FindBestApproachTile(UnitInstance villager, HexTile exfilTile)
-    {
-        HexTile best = null;
-        int bestLength = int.MaxValue;
-
-        foreach (HexTile neighbor in exfilTile.neighbors)
-        {
-            if (neighbor == null || !neighbor.isWalkable) continue;
-
-            List<HexTile> path = HexPathfinder.FindPath(villager.currentTile, neighbor, -1);
-            if (path == null) continue;
-
-            if (path.Count < bestLength)
-            {
-                bestLength = path.Count;
-                best = neighbor;
-            }
-        }
-
-        return best;
     }
 
     /// The furthest tile along path the villager can afford to walk to in one action.
@@ -127,20 +112,10 @@ public class VillagerAIController : MonoBehaviour
         return result;
     }
 
-    private static HexTile FindExfilTile()
+    private static bool IsAdjacentToBoat(UnitInstance villager)
     {
-        if (MapManager.Instance == null) return null;
-        foreach (HexTile tile in MapManager.Instance.Tiles.Values)
-        {
-            if (tile != null && tile.IsExtractionPoint) return tile;
-        }
-        return null;
-    }
-
-    private static bool IsAdjacentToExfil(UnitInstance villager, HexTile exfilTile)
-    {
-        return villager.currentTile != null &&
-               HexCoordinates.GetDistance(villager.currentTile.gridPosition, exfilTile.gridPosition) <= 1;
+        return villager.currentTile != null && MapManager.Instance != null &&
+               MapManager.Instance.IsAdjacentToBoat(villager.currentTile.gridPosition);
     }
 
     private static void EvacuateVillager(UnitInstance villager)

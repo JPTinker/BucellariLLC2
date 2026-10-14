@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 6;
+    public const int CurrentVersion = 7;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 
@@ -129,6 +129,7 @@ public class UnitSaveData
     public int Experience;
     public UnitRarity Rarity;
     public UnitMastery Mastery; // version 6
+    public UnitPersonality Personality; // version 7 (older saves load as Steady)
     public int Wounds;
     public int DamageTowardNextWound;
     public int MaxHP;
@@ -155,6 +156,7 @@ public class UnitSaveData
         Experience = unit.Experience,
         Rarity = unit.Rarity,
         Mastery = unit.Mastery,
+        Personality = unit.Personality,
         Wounds = unit.Wounds,
         DamageTowardNextWound = unit.DamageTowardNextWound,
         MaxHP = unit.MaxHP,
@@ -179,6 +181,7 @@ public class UnitSaveData
             Level = Level,
             Experience = Experience,
             Mastery = Mastery,
+            Personality = Personality,
             Wounds = Wounds,
             DamageTowardNextWound = DamageTowardNextWound,
             MaxHP = MaxHP,

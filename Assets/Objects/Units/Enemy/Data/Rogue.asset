@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a057b191fb73f114180dfc1e82a21a5d, type: 3}
   m_Name: Rogue
   m_EditorClassIdentifier: Assembly-CSharp::UnitData
-  UnitID: EnemyMage
-  UnitName: EnemyMage
+  UnitID: Rogue
+  UnitName: Rogue
   Description: 'A deadly magic user from the evil plane. '
   UnitIcon: {fileID: 0}
   UseRenderedPortrait: 1
@@ -35,6 +35,7 @@ MonoBehaviour:
   MaxMovementPoints: 2
   VisibilityRange: 3
   defensePower: 1
+  FlankingBonus: 0
   Faction: 1
   AnimationStyle: 2
   ProjectilePrefab: {fileID: 3190329664725571242, guid: f3cb310e80d5a9746b0366032f597c66, type: 3}

@@ -51,6 +51,10 @@ public class UnitStatusOverlayController : MonoBehaviour
         overlayLayer.style.right = 0;
         overlayLayer.style.bottom = 0;
         uiDocument.rootVisualElement.Add(overlayLayer);
+
+        // Speech bubbles share this document; add the controller so no scene setup is needed.
+        if (GetComponent<UnitSpeechBubbleController>() == null)
+            gameObject.AddComponent<UnitSpeechBubbleController>();
     }
 
     private void Update()

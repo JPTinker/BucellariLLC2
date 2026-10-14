@@ -57,6 +57,8 @@ public class UnitData : ScriptableObject
     public int MaxMovementPoints = 2;
     public int VisibilityRange = 3;
     public int defensePower = 1;
+    [Tooltip("Extra flanking damage this unit's attacks deal on a flanked target, as a fraction (0.2 = +20%). Stacks with weapon/equipment bonuses and may exceed the normal flanking cap.")]
+    [Min(0f)] public float FlankingBonus = 0f;
     [Header("Faction & Classification")]
     public UnitFaction Faction;
     [Header("Animation")]
@@ -168,6 +170,51 @@ public static class UnitRarityTable
     }
 }
 
+/// <summary>How a unit feels about fighting beside its allies. Steady is 0 so older saves load as Steady.</summary>
+public enum UnitPersonality { Steady = 0, TeamPlayer = 1, Loner = 2 }
+
+/// <summary>
+/// Combat effect of each personality, driven by how many allies stand adjacent to the unit.
+/// Modifiers are flat attack / defense points, applied in UnitInstance.CalculateAttackDamage.
+/// Tune the numbers in <see cref="GetModifiers"/>.
+/// </summary>
+public static class UnitPersonalityTable
+{
+    public static UnitPersonality Roll() => (UnitPersonality)UnityEngine.Random.Range(0, 3);
+
+    public static string GetDisplayName(UnitPersonality personality) => personality switch
+    {
+        UnitPersonality.TeamPlayer => "Team Player",
+        UnitPersonality.Loner => "Loner",
+        _ => "Steady"
+    };
+
+    public static string GetDescription(UnitPersonality personality) => personality switch
+    {
+        UnitPersonality.TeamPlayer => "+1 attack per adjacent ally (max 3), +1 defense with 2+ allies adjacent, -1 attack when alone.",
+        UnitPersonality.Loner => "+2 attack and +1 defense with no ally adjacent, -1 attack per adjacent ally (max -2).",
+        _ => "Fights the same alone or in a crowd."
+    };
+
+    public static void GetModifiers(UnitPersonality personality, int adjacentAllies, out int attack, out int defense)
+    {
+        attack = 0;
+        defense = 0;
+        switch (personality)
+        {
+            case UnitPersonality.TeamPlayer:
+                attack = adjacentAllies == 0 ? -1 : Mathf.Min(adjacentAllies, 3);
+                defense = adjacentAllies >= 2 ? 1 : 0;
+                break;
+
+            case UnitPersonality.Loner:
+                if (adjacentAllies == 0) { attack = 2; defense = 1; }
+                else attack = -Mathf.Min(adjacentAllies, 2);
+                break;
+        }
+    }
+}
+
 /// <summary>Special bonus a unit earns at level 10, chosen at random.</summary>
 public enum UnitMastery { None = 0, Actions = 1, Speed = 2, Reach = 3 }
 
@@ -188,6 +235,8 @@ public class Unit
     public UnitRarity Rarity;
     [Tooltip("Most recent bonus earned at a multiple of MasteryLevel. Already baked into the stats below.")]
     public UnitMastery Mastery;
+    [Tooltip("Rolled once on recruitment for player units. Decides how the unit fights beside (or away from) allies.")]
+    public UnitPersonality Personality;
 
     [Header("Scars of Battle")]
     [Tooltip("Permanent negative levels - one is gained each time this unit takes WoundDamageFraction of its max HP in damage.")]
@@ -250,6 +299,7 @@ public class Unit
         DefensePower = archetype.defensePower;
         ColorScheme = archetype.RollColorScheme();
         Faction = archetype.Faction;
+        Personality = Faction == UnitFaction.Player ? UnitPersonalityTable.Roll() : UnitPersonality.Steady;
         WeaponPrefab = RollPrefab(archetype.weaponPrefabs);
         EquipmentPrefab = RollPrefab(archetype.equipmentPrefabs);
     }
@@ -275,6 +325,11 @@ public class Unit
     /// <summary>Weapon/equipment base stats are a bonus on top of the unit's own stats.</summary>
     public int GearAttackBonus => (ItemOf(WeaponPrefab)?.damage ?? 0) + (ItemOf(EquipmentPrefab)?.damage ?? 0);
     public int GearDefenseBonus => (ItemOf(WeaponPrefab)?.defense ?? 0) + (ItemOf(EquipmentPrefab)?.defense ?? 0);
+
+    /// <summary>Own flanking bonus: archetype + weapon + equipment (fractions, 0.2 = +20%). Applies on top of the flanking cap.</summary>
+    public float FlankingBonus =>
+        (Archetype != null ? Archetype.FlankingBonus : 0f) +
+        (ItemOf(WeaponPrefab)?.flankingBonus ?? 0f) + (ItemOf(EquipmentPrefab)?.flankingBonus ?? 0f);
 
     /// <summary>Share of max HP a unit must lose (cumulatively) to gain one wound.</summary>
     public const float WoundDamageFraction = 0.10f;

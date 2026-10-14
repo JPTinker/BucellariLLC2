@@ -16,6 +16,7 @@ MonoBehaviour:
   UnitName: Crossbow Men
   Description: 
   UnitIcon: {fileID: 21300000, guid: a0fd38703c111ed458dd7bdc87f7598e, type: 3}
+  UseRenderedPortrait: 1
   ModelPrefab: {fileID: 6163759254571570966, guid: a1e8404917e7e64439141499ff75b0c4, type: 3}
   weaponPrefabs:
   - {fileID: 5835892989144266217, guid: 33e5229d8a79e21439d4dfbd927de613, type: 3}
@@ -34,6 +35,7 @@ MonoBehaviour:
   MaxMovementPoints: 2
   VisibilityRange: 3
   defensePower: 2
+  FlankingBonus: 0.05
   Faction: 0
   AnimationStyle: 2
   ProjectilePrefab: {fileID: 3190329664725571242, guid: f3cb310e80d5a9746b0366032f597c66, type: 3}

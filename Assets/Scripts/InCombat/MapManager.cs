@@ -81,6 +81,8 @@ public class MapManager : MonoBehaviour
     [Header("Spawn Settings")]
     [SerializeField] private GameObject spawnVfxPrefab;
     public List<UnitData> AvailableEnemyArchetypes;
+    [Tooltip("Asset names of the enemy archetypes in the order they unlock. The opening wave is the first type only; each reinforcement wave unlocks the next. Archetypes not listed unlock with the last one.")]
+    [SerializeField] private List<string> enemyUnlockOrder = new List<string> { "Minion", "Mage", "Rogue", "Warrior" };
 
     [Header("Enemy Groups")]
     [Tooltip("How many enemies land together per cluster. Each enemy still gets its own tile - no stacking.")]
@@ -215,6 +217,24 @@ public class MapManager : MonoBehaviour
 
     }
 
+    /// Archetypes enemies may spawn as at this wave level: one type at wave 0, one more per wave, all by wave 3.
+    private List<UnitData> UnlockedEnemyArchetypes(int waveLevel)
+    {
+        var ordered = new List<UnitData>();
+        foreach (string archetypeName in enemyUnlockOrder)
+        {
+            UnitData match = AvailableEnemyArchetypes.Find(a => a != null && a.name == archetypeName);
+            if (match != null && !ordered.Contains(match)) ordered.Add(match);
+        }
+        foreach (UnitData archetype in AvailableEnemyArchetypes)
+            if (archetype != null && !ordered.Contains(archetype)) ordered.Add(archetype);
+
+        if (ordered.Count == 0) return AvailableEnemyArchetypes;
+
+        int unlocked = Mathf.Clamp(1 + waveLevel, 1, ordered.Count);
+        return ordered.GetRange(0, unlocked);
+    }
+
     public UnitInstance SpawnEnemyUnit(HexTile tile, bool isEnemy, UnitData data = null, int waveLevel = 0)
     {
         // 1. Guard Clause: Tile Check
@@ -238,7 +258,12 @@ public class MapManager : MonoBehaviour
             return null;
         }
 
-        UnitData enemyData = data != null ? data : AvailableEnemyArchetypes[UnityEngine.Random.Range(0, AvailableEnemyArchetypes.Count)];
+        UnitData enemyData = data;
+        if (enemyData == null)
+        {
+            List<UnitData> pool = isEnemy ? UnlockedEnemyArchetypes(waveLevel) : AvailableEnemyArchetypes;
+            enemyData = pool[UnityEngine.Random.Range(0, pool.Count)];
+        }
         GameObject targetPrefab = enemyData.ModelPrefab;
         if (targetPrefab == null)
         {
@@ -836,19 +861,22 @@ public class MapManager : MonoBehaviour
         }
     }
 
-    // Extra boats dock along the map's outer edge beside the original (0,0):
-    // (0,1) then (1,0), then further out. (1,1) is deliberately skipped - it would sit inward.
-    private static readonly Vector2Int[] ExtraBoatSlots =
-    {
-        new Vector2Int(0, 1), new Vector2Int(1, 0), new Vector2Int(0, 2), new Vector2Int(2, 0),
-    };
+    // Every boat the player owns docks as two in battle. Extra boats line the map's outer edges
+    // beside the original (0,0), alternating (0,1), (1,0), (0,2), (2,0), ...
+    private const int BoatsDockedPerOwnedBoat = 2;
 
     private static List<Vector2Int> ExtraBoatPositions()
     {
         var positions = new List<Vector2Int>();
         GameStateManager gsm = GameStateManager.Instance;
-        int count = gsm != null ? Mathf.Min(gsm.Settlement.ExtraBoats, ExtraBoatSlots.Length) : 0;
-        for (int i = 0; i < count; i++) positions.Add(ExtraBoatSlots[i]);
+        int extraBoats = gsm != null ? gsm.Settlement.ExtraBoats : 0;
+        int ownedBoats = 1 + Mathf.Max(0, extraBoats);
+        int count = ownedBoats * BoatsDockedPerOwnedBoat - 1; // the original (0,0) is one of them
+        for (int i = 0; i < count; i++)
+        {
+            int step = i / 2 + 1;
+            positions.Add(i % 2 == 0 ? new Vector2Int(0, step) : new Vector2Int(step, 0));
+        }
         return positions;
     }
 
@@ -858,6 +886,30 @@ public class MapManager : MonoBehaviour
         foreach (Vector2Int boat in ExtraBoatPositions())
             if (HexCoordinates.GetDistance(position, boat) == 1) return true;
         return false;
+    }
+
+    /// The reachable walkable tile beside any boat with the shortest route from the unit, or null.
+    /// Villagers and workers can drop off at any boat, so a boxed-in boat is never a dead end.
+    public HexTile FindBestBoatApproach(UnitInstance unit)
+    {
+        if (unit == null || unit.currentTile == null) return null;
+
+        HexTile best = null;
+        int bestLength = int.MaxValue;
+        foreach (HexTile boat in tileMap.Values)
+        {
+            if (boat == null || !boat.IsExtractionPoint) continue;
+            foreach (HexTile neighbor in boat.neighbors)
+            {
+                if (neighbor == null || !neighbor.isWalkable) continue;
+
+                List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, neighbor, -1);
+                if (path == null || path.Count >= bestLength) continue;
+                bestLength = path.Count;
+                best = neighbor;
+            }
+        }
+        return best;
     }
 
     public const int MaxFortificationLevel = 3;

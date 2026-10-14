@@ -1,0 +1,50 @@
+# What units say. Row format: Trigger,Faction,Unit,Chance,Text
+#
+# Trigger : Spawn | Move | Attack | Kill | Hit | LowHealth | Flanked | Death | LevelUp | Fortify | Scout | Rescue | Extract
+#   Spawn     - unit appears on the battlefield
+#   Move      - unit starts walking
+#   Attack    - unit attacks (and the target survives)
+#   Kill      - unit's attack kills its target
+#   Hit       - unit takes damage and is still above 30% HP
+#   LowHealth - unit takes damage that leaves it at or below 30% HP
+#   Flanked   - unit is attacked by 2+ different attackers in one round (flanking bonus applies)
+#   Death     - unit's last words
+#   LevelUp   - player unit levels up
+#   Fortify   - player unit fortifies its tile
+#   Scout     - player unit scouts
+#   Rescue    - player unit picks up a villager
+#   Extract   - player unit leaves via the boat
+# Faction : Any | Player | Villager  (Enemy rows are ignored: enemies are monsters and never speak)
+# Unit    : Any (or *), or an archetype asset name (Minion, Mage, Rogue, Warrior, ...). Specific rows are picked more often than Any rows.
+# Chance  : 0 to 1 - odds the line is actually spoken once picked. Keep Move/Attack/Hit low so units don't chatter constantly.
+# Text    : rest of the line (commas are fine). {name} = the unit's name.
+# Bubbles also have a per-unit cooldown (see UnitSpeechBubbleController); Kill, Death, LevelUp and Flanked ignore it.
+Trigger,Faction,Unit,Chance,Text
+Spawn,Player,Any,0.5,Ready when you are.
+Spawn,Player,Any,0.5,Let's get this done.
+Move,Player,Any,0.08,On my way.
+Move,Player,Any,0.08,Moving up.
+Attack,Player,Any,0.25,Take this!
+Attack,Player,Any,0.25,Hyah!
+Kill,Player,Any,0.8,That's another one.
+Kill,Player,Any,0.8,Next!
+Kill,Player,Any,0.6,One less to worry about.
+Hit,Player,Any,0.35,Ouch!
+Hit,Player,Any,0.35,Is that all you've got?
+Hit,Player,Any,0.25,Tickles.
+LowHealth,Player,Any,0.7,I can't take much more!
+LowHealth,Player,Any,0.7,Cover me!
+Flanked,Player,Any,0.6,I'm surrounded!
+Flanked,Player,Any,0.6,They're everywhere!
+Death,Player,Any,0.7,Tell them... I tried.
+Death,Player,Any,0.7,Not like this...
+LevelUp,Player,Any,1,I feel stronger!
+LevelUp,Player,Any,1,Now we're getting somewhere.
+Fortify,Player,Any,0.6,Digging in.
+Fortify,Player,Any,0.6,They shall not pass.
+Scout,Player,Any,0.5,Let me take a look.
+Scout,Player,Any,0.5,Eyes up.
+Rescue,Player,Any,0.9,You're safe now.
+Rescue,Player,Any,0.9,Stay close to me!
+Extract,Player,Any,0.7,To the boats!
+Extract,Player,Any,0.7,Heading home.
