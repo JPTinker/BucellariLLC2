@@ -1,10 +1,95 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <!-- Memorial tab: every unit lost for good. MemorialController fills memorial-list. -->
+    <!-- Memorial tab: every unit lost for good, shown as greyed-out unit cards.
+         MemorialController fills memorial-list (it clears it first, so the sample cards below are design-time
+         placeholders). Element names memorial-list / memorial-empty are what the controller looks up. -->
     <Style src="../USS/MemorialStyle.uss" />
+    <ui:Template name="MemorialCard" src="MemorialCard.uxml" />
+
     <ui:VisualElement name="memorial-content" class="screen-content memorial-content">
-        <ui:Label text="MEMORIAL" class="memorial-title" />
-        <ui:Label name="memorial-subtitle" text="They will be remembered." class="memorial-subtitle" />
+
+        <ui:VisualElement name="memorial-header-block" class="memorial-header-block">
+            <ui:Label text="MEMORIAL" class="memorial-title" />
+            <ui:Label name="memorial-subtitle" text="They will be remembered." class="memorial-subtitle" />
+        </ui:VisualElement>
+
+        <!-- Totals -->
+        <ui:VisualElement name="memorial-summary" class="memorial-summary">
+            <ui:VisualElement class="memorial-summary-cell">
+                <ui:Label name="memorial-total" text="4" class="memorial-summary-value" />
+                <ui:Label text="FALLEN" class="memorial-summary-label" />
+            </ui:VisualElement>
+            <ui:VisualElement class="memorial-summary-cell">
+                <ui:Label name="memorial-total-battle" text="3" class="memorial-summary-value" />
+                <ui:Label text="IN BATTLE" class="memorial-summary-label" />
+            </ui:VisualElement>
+            <ui:VisualElement class="memorial-summary-cell">
+                <ui:Label name="memorial-total-events" text="1" class="memorial-summary-value" />
+                <ui:Label text="TO EVENTS" class="memorial-summary-label" />
+            </ui:VisualElement>
+            <ui:VisualElement class="memorial-summary-cell">
+                <ui:Label name="memorial-highest-level" text="LVL 9" class="memorial-summary-value" />
+                <ui:Label text="HIGHEST LEVEL LOST" class="memorial-summary-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Filter (static for now) -->
+        <ui:VisualElement name="memorial-filters" class="memorial-filters">
+            <ui:Button name="memorial-filter-all" text="ALL" class="memorial-filter memorial-filter--active" />
+            <ui:Button name="memorial-filter-battle" text="BATTLE" class="memorial-filter" />
+            <ui:Button name="memorial-filter-events" text="EVENTS" class="memorial-filter" />
+        </ui:VisualElement>
+
         <ui:Label name="memorial-empty" text="No one has fallen. Yet." class="memorial-empty" />
-        <ui:ScrollView name="memorial-list" class="memorial-list" />
+
+        <ui:ScrollView name="memorial-list" class="memorial-list">
+            <ui:VisualElement name="memorial-grid" class="memorial-grid">
+                <ui:VisualElement class="memorial-slot memorial-rarity-legendary">
+                    <ui:Instance template="MemorialCard">
+                        <ui:AttributeOverrides element-name="memorial-name" text="ILSA FROSTBLADE" />
+                        <ui:AttributeOverrides element-name="memorial-class" text="VANGUARD" />
+                        <ui:AttributeOverrides element-name="memorial-level" text="LVL 9" />
+                        <ui:AttributeOverrides element-name="memorial-rarity" text="LEGENDARY" />
+                        <ui:AttributeOverrides element-name="memorial-cause" text="FELL IN BATTLE" />
+                        <ui:AttributeOverrides element-name="memorial-cycle" text="CYCLE 8" />
+                        <ui:AttributeOverrides element-name="memorial-hp-value" text="0 / 52" />
+                    </ui:Instance>
+                </ui:VisualElement>
+                <ui:VisualElement class="memorial-slot memorial-rarity-rare">
+                    <ui:Instance template="MemorialCard">
+                        <ui:AttributeOverrides element-name="memorial-name" text="BRYN OAKHEART" />
+                        <ui:AttributeOverrides element-name="memorial-class" text="ARCHER" />
+                        <ui:AttributeOverrides element-name="memorial-level" text="LVL 6" />
+                        <ui:AttributeOverrides element-name="memorial-rarity" text="RARE" />
+                        <ui:AttributeOverrides element-name="memorial-cause" text="FELL IN BATTLE" />
+                        <ui:AttributeOverrides element-name="memorial-cycle" text="CYCLE 5" />
+                        <ui:AttributeOverrides element-name="memorial-hp-value" text="0 / 31" />
+                    </ui:Instance>
+                </ui:VisualElement>
+                <ui:VisualElement class="memorial-slot memorial-rarity-uncommon">
+                    <ui:Instance template="MemorialCard">
+                        <ui:AttributeOverrides element-name="memorial-name" text="TOMAS REEVE" />
+                        <ui:AttributeOverrides element-name="memorial-class" text="WARRIOR" />
+                        <ui:AttributeOverrides element-name="memorial-level" text="LVL 3" />
+                        <ui:AttributeOverrides element-name="memorial-rarity" text="UNCOMMON" />
+                        <ui:AttributeOverrides element-name="memorial-cause" text="LOST TO AN EVENT" />
+                        <ui:AttributeOverrides element-name="memorial-cycle" text="CYCLE 3" />
+                        <ui:AttributeOverrides element-name="memorial-detail" text="Lost to the cold crossing" />
+                        <ui:AttributeOverrides element-name="memorial-hp-value" text="0 / 22" />
+                    </ui:Instance>
+                </ui:VisualElement>
+                <ui:VisualElement class="memorial-slot memorial-rarity-common">
+                    <ui:Instance template="MemorialCard">
+                        <ui:AttributeOverrides element-name="memorial-name" text="MARA QUILL" />
+                        <ui:AttributeOverrides element-name="memorial-class" text="KNIGHT" />
+                        <ui:AttributeOverrides element-name="memorial-level" text="LVL 1" />
+                        <ui:AttributeOverrides element-name="memorial-rarity" text="COMMON" />
+                        <ui:AttributeOverrides element-name="memorial-cause" text="FELL IN BATTLE" />
+                        <ui:AttributeOverrides element-name="memorial-cycle" text="CYCLE 1" />
+                        <ui:AttributeOverrides element-name="memorial-hp-value" text="0 / 14" />
+                    </ui:Instance>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:ScrollView>
+
     </ui:VisualElement>
 </ui:UXML>

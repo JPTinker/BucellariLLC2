@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e4d42d570b9c2a41b90da9fa6743fc6, type: 3}
+  m_Name: Research_Church_2
+  m_EditorClassIdentifier: Assembly-CSharp::ResearchData
+  DisplayName: Chapel II
+  Description: 
+  Icon: {fileID: 0}
+  Track: 6
+  Tier: 2
+  Prerequisite: {fileID: 11400000, guid: 45f416844b3ea7343a445997bf66395f, type: 2}
+  FoodCost: 100
+  MaterialsCost: 200
+  CyclesToComplete: 3
+  Value: 1
+  SecondaryValue: 0.025

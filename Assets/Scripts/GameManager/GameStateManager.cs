@@ -114,8 +114,7 @@ public class GameStateManager : MonoBehaviour
         public float WorkerHpBonusPerLevel = 0.10f;    // +HP fraction per enemy wave level
         public float WorkerYieldBonusPerLevel = 0.10f; // +gather yield fraction per enemy wave level
 
-        [Header("Build a Ship - discrete directive (Materials only)")]
-        public int ShipMaterialsCost = 150;
+        [Header("Shipwright research (what each ship node grants; costs live on the ResearchData)")]
         public int ShipUnitCapacityGain = 5;
         public int ShipVillagerCapacityGain = 3;
 
@@ -153,8 +152,6 @@ public class GameStateManager : MonoBehaviour
         public int FoodDelta;
         public int MaterialsDelta;
         public int MoraleDelta;
-        public bool WillBuildShip;
-        public bool IsOverBudget; // a ship is queued but Settlement.Materials can't cover its cost
     }
 
     /// <summary>
@@ -197,6 +194,13 @@ public class GameStateManager : MonoBehaviour
 
     private EventManager _events;
     public EventManager Events => _events ??= new EventManager(this);
+
+    [Header("Research")]
+    public List<ResearchData> AvailableResearch; // Drag ResearchData assets here (asset name is the save ID)
+    public ResearchBaseConfig ResearchBase = new ResearchBaseConfig();
+
+    private ResearchManager _research;
+    public ResearchManager Research => _research ??= new ResearchManager(this);
 
     /// <summary>Cycles executed so far this campaign (used for event cooldowns).</summary>
     public int CycleNumber { get; private set; }
@@ -606,6 +610,16 @@ public class GameStateManager : MonoBehaviour
         return cached;
     }
 
+    /// <summary>The player declined every draft option: the saved person is spent and nothing is recruited.</summary>
+    public void ResolveDraftSkip()
+    {
+        PendingDraftOptions.Clear();
+        PendingDraftRarities.Clear();
+        _draftPreviewUnits.Clear();
+        CanDraftSavedVillager = false;
+        SpendSavedPerson();
+    }
+
     public void ResolveVillagerDraft()
     {
         if (!CanDraftSavedVillager)
@@ -834,8 +848,8 @@ public class GameStateManager : MonoBehaviour
     public void ProcessWorkerDeposit(bool isFood, int amount)
     {
         if (amount <= 0) return;
-        if (isFood) Settlement.Food += amount;
-        else Settlement.Materials += amount;
+        if (isFood) AddFood(amount);
+        else AddMaterials(amount);
 
         if (LastBattleReport != null)
         {
@@ -907,8 +921,8 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public bool TryAdjustAllocation(Directive directive, int delta)
     {
-        if (directive == Directive.Vanguard) return false;
-        if (directive == Directive.Expansion) return TryToggleShipBuild(delta);
+        // Vanguard is derived from ActiveTeam; Expansion (ships) moved to the Shipwright research track.
+        if (directive == Directive.Vanguard || directive == Directive.Expansion) return false;
 
         int idle = IdleVillagers;
         if (delta > 0 && idle < delta) return false;
@@ -920,26 +934,6 @@ public class GameStateManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Build a Ship is an all-or-nothing Materials-only directive. A positive
-    /// delta queues it (if not already queued); a non-positive delta cancels it.
-    /// </summary>
-    private bool TryToggleShipBuild(int delta)
-    {
-        int current = CurrentAllocation.ExpansionUnits;
-
-        if (delta > 0)
-        {
-            if (current != 0) return false;
-            CurrentAllocation.ExpansionUnits = 1;
-            return true;
-        }
-
-        if (current == 0) return false;
-        CurrentAllocation.ExpansionUnits = 0;
-        return true;
-    }
-
     public void ResetAllocation() => CurrentAllocation.Reset();
 
     /// <summary>
@@ -948,14 +942,12 @@ public class GameStateManager : MonoBehaviour
     /// </summary>
     public CycleForecast ComputeForecast()
     {
-        var a = CurrentAllocation;
         var b = Balance;
 
         // Vanguard headcount is derived from ActiveTeam (units picked on the
         // Roster tab), not a manually steppable allocation field.
         int vanguardUnits = ActiveTeam.Count;
         int villagersSent = VillagersSent;
-        bool willBuildShip = a.ExpansionUnits > 0;
 
         // Worker income is no longer projected here: villagers gather in the
         // battle and credit Settlement via ProcessWorkerDeposit().
@@ -963,13 +955,9 @@ public class GameStateManager : MonoBehaviour
             -vanguardUnits * b.FoodCostPerVanguardUnit
             - villagersSent * b.FoodCostPerVillagerSent);
 
-        int materialsDelta = willBuildShip ? -b.ShipMaterialsCost : 0;
-
         float moraleDelta =
             -vanguardUnits * b.MoralePenaltyPerVanguardUnit
             - villagersSent * b.MoralePenaltyPerVillagerSent;
-
-        bool isOverBudget = willBuildShip && Settlement.Materials < b.ShipMaterialsCost;
 
         return new CycleForecast
         {
@@ -977,43 +965,27 @@ public class GameStateManager : MonoBehaviour
             VillagersSent = villagersSent,
             IdleVillagers = IdleVillagers,
             FoodDelta = foodDelta,
-            MaterialsDelta = materialsDelta,
-            MoraleDelta = Mathf.RoundToInt(moraleDelta),
-            WillBuildShip = willBuildShip,
-            IsOverBudget = isOverBudget
+            MaterialsDelta = 0,
+            MoraleDelta = Mathf.RoundToInt(moraleDelta)
         };
     }
 
     /// <summary>
-    /// Commits the current allocation: applies the forecasted Food/Materials/
-    /// Morale deltas to Settlement, completes a queued ship (spending its
-    /// Villagers/Materials and growing UnitCapacity/VillagerCapacity), sends the
-    /// Vanguard block into ActiveTeam, and hands off to combat. Returns false
-    /// (and applies nothing) if a queued ship can't be paid for, so the UI
-    /// should disable the "Execute Cycle" button whenever forecast.IsOverBudget
-    /// is true rather than relying on this.
+    /// Commits the current allocation: applies the forecasted Food/Morale
+    /// deltas to Settlement, advances research (which may finish a ship or any
+    /// other node), sends the Vanguard block into ActiveTeam, and hands off to
+    /// combat.
     /// </summary>
     public bool ExecuteCycle(string battleSceneName = "BattlePhase")
     {
         var forecast = ComputeForecast();
-        if (forecast.IsOverBudget)
-        {
-            Debug.LogWarning("ExecuteCycle: not enough Materials to complete the queued ship, allocation not applied.");
-            return false;
-        }
 
         CycleNumber++;
-        Settlement.Food = Mathf.Max(0, Settlement.Food + forecast.FoodDelta);
-        Settlement.Materials = Mathf.Max(0, Settlement.Materials + forecast.MaterialsDelta);
+        AddFood(forecast.FoodDelta);
+        AddMaterials(forecast.MaterialsDelta);
         Settlement.Morale = Mathf.Clamp(Settlement.Morale + forecast.MoraleDelta, 0, 100);
 
-        if (forecast.WillBuildShip)
-        {
-            Settlement.UnitCapacity += Balance.ShipUnitCapacityGain;
-            Settlement.VillagerCapacity += Balance.ShipVillagerCapacityGain;
-            Settlement.ExtraBoats++;
-        }
-
+        Research.Tick();
         HealBenchedUnits();
 
         // Apply this cycle's Campaign Map course. Stay Put's yield doubling
@@ -1060,6 +1032,30 @@ public class GameStateManager : MonoBehaviour
         return true;
     }
 
+    /// <summary>Adds (or removes) Food, never below 0. Gains stop at the Storehouses cap; stock already above it is left alone.</summary>
+    public void AddFood(int amount)
+    {
+        Settlement.Food = ApplyCap(Settlement.Food, amount, Research.MaxFood);
+        OnSettlementChanged?.Invoke();
+    }
+
+    /// <summary>Adds (or removes) Materials with the same floor / cap rules as <see cref="AddFood"/>.</summary>
+    public void AddMaterials(int amount)
+    {
+        Settlement.Materials = ApplyCap(Settlement.Materials, amount, Research.MaxMaterials);
+        OnSettlementChanged?.Invoke();
+    }
+
+    private static int ApplyCap(int current, int amount, int cap)
+    {
+        int result = current + amount;
+        if (amount > 0) result = Mathf.Min(result, Mathf.Max(cap, current));
+        return Mathf.Max(0, result);
+    }
+
+    /// <summary>Lets ResearchManager refresh settlement readouts after it spends resources.</summary>
+    public void NotifySettlementChanged() => OnSettlementChanged?.Invoke();
+
     /// <summary>Spends settlement Materials (e.g. to build a wall mid-battle). Returns false, spending nothing, if short.</summary>
     public bool TrySpendMaterials(int amount)
     {
@@ -1069,15 +1065,26 @@ public class GameStateManager : MonoBehaviour
         return true;
     }
 
-    private const float BenchedHealFraction = 0.05f;
-
-    /// <summary>Roster units not picked for the battle recover 5% of their max HP each cycle.</summary>
+    /// <summary>
+    /// Injured roster units not picked for the battle recover a share of max HP
+    /// each cycle. The Church research track sets how many units get healed
+    /// (most wounded first) and how much.
+    /// </summary>
     private void HealBenchedUnits()
     {
+        var injured = new List<Unit>();
         foreach (Unit unit in FullRoster)
         {
-            if (ActiveTeam.Contains(unit) || unit.CurrentHP >= unit.MaxHP) continue;
-            int heal = Mathf.Max(1, Mathf.RoundToInt(unit.MaxHP * BenchedHealFraction));
+            if (!ActiveTeam.Contains(unit) && unit.CurrentHP < unit.MaxHP) injured.Add(unit);
+        }
+        injured.Sort((a, b) => ((float)a.CurrentHP / a.MaxHP).CompareTo((float)b.CurrentHP / b.MaxHP));
+
+        int count = Mathf.Min(injured.Count, Research.ChurchHealCount);
+        float fraction = Research.ChurchHealFraction;
+        for (int i = 0; i < count; i++)
+        {
+            Unit unit = injured[i];
+            int heal = Mathf.Max(1, Mathf.RoundToInt(unit.MaxHP * fraction));
             unit.CurrentHP = Mathf.Min(unit.MaxHP, unit.CurrentHP + heal);
         }
     }
@@ -1161,6 +1168,7 @@ public class GameStateManager : MonoBehaviour
             Memorial = new List<FallenRecord>(Memorial)
         };
         Events.WriteTo(data);
+        Research.WriteTo(data);
 
         foreach (Unit unit in FullRoster)
         {
@@ -1239,6 +1247,7 @@ public class GameStateManager : MonoBehaviour
         CycleNumber = d.CycleNumber;
         Memorial = d.Memorial != null ? new List<FallenRecord>(d.Memorial) : new List<FallenRecord>();
         Events.ReadFrom(d);
+        Research.ReadFrom(d);
 
         // A save with an empty roster (e.g. every unit fell) still needs a squad to play.
         if (FullRoster.Count == 0) GrantStarterUnits(2);

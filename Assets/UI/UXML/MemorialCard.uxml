@@ -1,0 +1,37 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <!-- A fallen unit's card: the roster card's layout (portrait left, identity right) drained of colour.
+         Wrap an instance in a parent with memorial-rarity-<tier> to keep a faint rarity accent. -->
+    <Style src="../USS/MemorialStyle.uss" />
+    <ui:VisualElement name="memorial-card" class="memorial-card">
+        <ui:VisualElement name="memorial-portrait-column" class="memorial-portrait-column">
+            <ui:VisualElement name="memorial-portrait-frame" class="memorial-portrait-frame">
+                <ui:VisualElement name="memorial-portrait" class="memorial-portrait"/>
+                <ui:VisualElement name="memorial-portrait-shade" picking-mode="Ignore" class="memorial-portrait-shade"/>
+                <ui:Label name="memorial-cross" text="†" picking-mode="Ignore" class="memorial-cross"/>
+                <ui:Label name="memorial-level" text="LVL 4" class="memorial-level"/>
+            </ui:VisualElement>
+            <ui:Label name="memorial-rarity" text="COMMON" class="memorial-rarity"/>
+        </ui:VisualElement>
+
+        <ui:VisualElement name="memorial-info" class="memorial-info">
+            <ui:VisualElement name="memorial-header" class="memorial-header">
+                <ui:Label name="memorial-name" text="UNIT NAME" class="memorial-name"/>
+                <ui:Label name="memorial-class" text="CLASS" class="memorial-class"/>
+            </ui:VisualElement>
+
+            <ui:VisualElement name="memorial-cause-row" class="memorial-cause-row">
+                <ui:Label name="memorial-cause" text="FELL IN BATTLE" class="memorial-cause"/>
+                <ui:Label name="memorial-cycle" text="CYCLE 7" class="memorial-cycle"/>
+            </ui:VisualElement>
+            <ui:Label name="memorial-detail" text="" class="memorial-detail"/>
+
+            <ui:VisualElement name="memorial-hp" class="memorial-hp">
+                <ui:Label text="HEALTH" class="memorial-hp-title"/>
+                <ui:VisualElement class="memorial-hp-bar">
+                    <ui:VisualElement class="memorial-hp-fill"/>
+                </ui:VisualElement>
+                <ui:Label name="memorial-hp-value" text="0 / 24" class="memorial-hp-value"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

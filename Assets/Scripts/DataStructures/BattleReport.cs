@@ -53,6 +53,9 @@ public class BattleReport
     public int MaterialsGathered;
     public int WorkersLost;
     public bool Won;
+    /// <summary>The round limit was hit and every unit still on the map was auto-retreated.</summary>
+    public bool ForcedFlee;
+    public int UnitsFled;
 
     public bool IsEmpty => Entries.Count == 0;
 

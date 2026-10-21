@@ -129,8 +129,10 @@ public class WorkerVillagerAIController : MonoBehaviour
         if (gsm != null)
         {
             var b = gsm.Balance;
-            worker.Gather(worker.IsFood ? b.WorkerFoodPerGather : b.WorkerMaterialsPerGather,
-                          level, b.WorkerYieldBonusPerLevel, b.WorkerCarryCap);
+            // Gathering research scales both the haul per turn and how much a worker can carry.
+            float rate = ResearchManager.Current.GatherMultiplier;
+            int perGather = Mathf.RoundToInt((worker.IsFood ? b.WorkerFoodPerGather : b.WorkerMaterialsPerGather) * rate);
+            worker.Gather(perGather, level, b.WorkerYieldBonusPerLevel, Mathf.RoundToInt(b.WorkerCarryCap * rate));
         }
         worker.State = WorkerState.Depositing;
     }

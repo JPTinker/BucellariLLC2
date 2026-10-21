@@ -55,6 +55,7 @@ public class PlanningPhaseController : MonoBehaviour
     private UnitData _draftSelectedUnit;
     private UnitRarity _draftSelectedRarity;
     private bool _draftSelectedVillager;
+    private bool _draftSkipped;
     private bool _draftSelectionMade;
 
     // Selection state
@@ -710,6 +711,7 @@ public class PlanningPhaseController : MonoBehaviour
         _draftSelectionMade = false;
         _draftSelectedUnit = null;
         _draftSelectedVillager = false;
+        _draftSkipped = false;
 
         // Stagger each card's punch-in slightly so they don't all pop at once.
         for (int i = 0; i < draftCards.Count; i++)
@@ -724,7 +726,9 @@ public class PlanningPhaseController : MonoBehaviour
         _draftOptionsContainer.Clear();
 
         var gsm = GameStateManager.Instance;
-        if (_draftSelectedVillager)
+        if (_draftSkipped)
+            gsm.ResolveDraftSkip();
+        else if (_draftSelectedVillager)
             gsm.ResolveVillagerDraft();
         else
             gsm.ResolveUnitDraft(_draftSelectedUnit, _draftSelectedRarity);
@@ -771,7 +775,46 @@ public class PlanningPhaseController : MonoBehaviour
             built.Add(villagerCard);
         }
 
+        if (built.Count > 0)
+        {
+            var skipCard = BuildSkipDraftCard();
+            _draftOptionsContainer.Add(skipCard);
+            built.Add(skipCard);
+        }
+
         return built;
+    }
+
+    private VisualElement BuildSkipDraftCard()
+    {
+        var card = unitCardTemplate.Instantiate();
+        var cardRoot = card.Q<VisualElement>("player-card");
+        cardRoot.AddToClassList("draft-card");
+
+        var nameLabel = card.Q<Label>("unit-name");
+        if (nameLabel != null) nameLabel.text = "SKIP";
+
+        var designationLabel = card.Q<Label>("unit-designation");
+        if (designationLabel != null) designationLabel.text = "TURN THEM AWAY";
+
+        foreach (string hidden in new[] { "level-label", "rarity-label", "health-panel", "combat-stats",
+                     "unit-class-emblem", "portrait-status-row", "action-pips" })
+        {
+            var element = card.Q<VisualElement>(hidden);
+            if (element != null) element.style.display = DisplayStyle.None;
+        }
+
+        SetCardTag(card, "[ SKIP ]");
+
+        cardRoot.RegisterCallback<ClickEvent>(_ =>
+        {
+            _draftSelectedUnit = null;
+            _draftSelectedVillager = false;
+            _draftSkipped = true;
+            _draftSelectionMade = true;
+        });
+
+        return card;
     }
 
     private VisualElement BuildVillagerDraftCard()

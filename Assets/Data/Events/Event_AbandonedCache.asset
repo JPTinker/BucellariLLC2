@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d152108f59151f6498fc795cfaccdbe3, type: 3}
+  m_Name: Event_AbandonedCache
+  m_EditorClassIdentifier: Assembly-CSharp::EventData
+  Title: Abandoned Cache
+  Body: Scouts spot a half-buried supply cache on the road.
+  Image: {fileID: 0}
+  Choices:
+  - Label: Dig it out
+    ResultText: The crew hauls out crates of salvage.
+    Effects:
+    - Type: 1
+      Amount: 40
+      Archetype: {fileID: 0}
+    - Type: 3
+      Amount: 3
+      Archetype: {fileID: 0}
+    RequiresFood: 0
+    RequiresMaterials: 0
+    RequiresGold: 0
+  - Label: Leave it - could be a trap
+    ResultText: You move on, a little wiser and a little poorer.
+    Effects: []
+    RequiresFood: 0
+    RequiresMaterials: 0
+    RequiresGold: 0
+  Mode: 0
+  Weight: 10
+  ScriptedCyclesRemaining: 5
+  MinCyclesRemaining: 0
+  MaxCyclesRemaining: 10
+  MinStage: 0
+  MaxStage: 0
+  OneShot: 0
+  CooldownCycles: 0

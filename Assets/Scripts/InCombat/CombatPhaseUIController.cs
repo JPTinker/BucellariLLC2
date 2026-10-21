@@ -299,7 +299,17 @@ public class CombatPhaseUIController : MonoBehaviour
 
             playerUnits.Add(unit);
             UnitCardView cardView = new UnitCardView(unit, unitCardAsset);
-            cardView.Root.RegisterCallback<ClickEvent>(_ => SelectUnit(unit));
+            cardView.Root.RegisterCallback<ClickEvent>(_ =>
+            {
+                // Clicking the selected card again deselects it.
+                if (selectedUnit == unit)
+                {
+                    if (combatManager != null) combatManager.DeselectUnit();
+                    else SelectUnit(null);
+                    return;
+                }
+                SelectUnit(unit);
+            });
             cardViews.Add(unit, cardView);
             unitList.Add(cardView.Root);
         }

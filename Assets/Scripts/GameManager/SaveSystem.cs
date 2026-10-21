@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 7;
+    public const int CurrentVersion = 8;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 
@@ -112,6 +112,10 @@ public class SaveData
 
     // Memorial (version 3). Missing in older saves -> empty.
     public List<FallenRecord> Memorial = new List<FallenRecord>();
+
+    // Research tree (version 8). Missing in older saves -> empty.
+    public List<string> CompletedResearch = new List<string>();
+    public List<ResearchProgress> ActiveResearch = new List<ResearchProgress>();
 }
 
 /// <summary>

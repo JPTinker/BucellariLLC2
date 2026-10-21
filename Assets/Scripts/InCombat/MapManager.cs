@@ -21,7 +21,6 @@ public class MapManager : MonoBehaviour
     private const int StartZoneSize = 3;
     private const int VillagerEdgeMargin = 2;
     private const int InitialVillagerSpawnCount = 1;
-    private const int VillagerSpawnInterval = 4;
     private const int VillagersPerPlayerUnit = 2;
 
     [Serializable]
@@ -135,7 +134,6 @@ public class MapManager : MonoBehaviour
     [SerializeField] private GameObject[] fortificationPrefabs = new GameObject[3];
     [Tooltip("Offset from the tile's top surface where the fortification object is placed.")]
     [SerializeField] private Vector3 fortificationOffset = Vector3.zero;
-    public int wallMaxHealth = 12;
     public int wallDefense = 1;
     [SerializeField] private Color fallbackWallColor = new Color(0.45f, 0.33f, 0.22f);
 
@@ -206,7 +204,8 @@ public class MapManager : MonoBehaviour
 
     private void HandleRoundAdvanced(int round)
     {
-        if (round <= 1 || (round - 1) % VillagerSpawnInterval != 0)
+        // Rounds between stray villagers comes from the Recruiting research track.
+        if (round <= 1 || (round - 1) % ResearchManager.Current.VillagerSpawnInterval != 0)
             return;
 
         var newVillagers = SpawnVillagers(1);
@@ -401,7 +400,7 @@ public class MapManager : MonoBehaviour
         wall.Faction = UnitFaction.Structure;
         wall.unitName = $"Wall_{GenerateUnique4DigitString()}";
         wallObject.name = wall.unitName;
-        wall.maxHealth = Mathf.Max(1, wallMaxHealth);
+        wall.maxHealth = Mathf.Max(1, ResearchManager.Current.WallMaxHealth);
         wall.currentHealth = wall.maxHealth;
         wall.defensePower = wallDefense;
         wall.attackPower = 0;
@@ -888,6 +887,22 @@ public class MapManager : MonoBehaviour
         return false;
     }
 
+    /// Straight hex distance from the unit to the nearest tile it could extract from (-1 if there is none).
+    /// Used to auto-resolve a forced retreat without animating the run.
+    public int DistanceToExtraction(UnitInstance unit)
+    {
+        if (unit == null || unit.currentTile == null) return -1;
+
+        int best = -1;
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile == null || !tile.IsExtractable) continue;
+            int distance = HexCoordinates.GetDistance(unit.currentTile.gridPosition, tile.gridPosition);
+            if (best < 0 || distance < best) best = distance;
+        }
+        return best;
+    }
+
     /// The reachable walkable tile beside any boat with the shortest route from the unit, or null.
     /// Villagers and workers can drop off at any boat, so a boxed-in boat is never a dead end.
     public HexTile FindBestBoatApproach(UnitInstance unit)
@@ -912,7 +927,8 @@ public class MapManager : MonoBehaviour
         return best;
     }
 
-    public const int MaxFortificationLevel = 3;
+    /// <summary>Highest fortification level the player may build; raised by the Engineering research track.</summary>
+    public static int MaxFortificationLevel => ResearchManager.Current.MaxFortificationLevel;
 
     /// <summary>Builds the next fortification level on a tile (permanent for the battle). Returns false at max level.</summary>
     public bool BuildFortification(HexTile tile)

@@ -31,7 +31,7 @@ public class DecisionPhaseController : MonoBehaviour
     private Label _debriefMoraleTotal, _debriefKills, _debriefSaved, _debriefLosses, _peopleSaved;
 
     // Directive counters
-    private Label _countVanguard, _countScavenge, _countHarvest, _countExpansion;
+    private Label _countVanguard, _countScavenge, _countHarvest;
 
     // Combat Vanguard: mirrors the Roster tab's live selection rather than a stepper
     private VisualElement _vanguardRoster;
@@ -87,7 +87,6 @@ public class DecisionPhaseController : MonoBehaviour
         _countVanguard = _root.Q<Label>("count-vanguard");
         _countScavenge = _root.Q<Label>("count-scavenge");
         _countHarvest = _root.Q<Label>("count-harvest");
-        _countExpansion = _root.Q<Label>("count-expansion");
 
         _vanguardRoster = _root.Q<VisualElement>("vanguard-roster");
         _vanguardEmptyHint = _root.Q<Label>("vanguard-empty-hint");
@@ -103,8 +102,6 @@ public class DecisionPhaseController : MonoBehaviour
         RegisterStepper("btn-scavenge-inc", GameStateManager.Directive.Scavenge, 1);
         RegisterStepper("btn-harvest-dec", GameStateManager.Directive.Harvest, -1);
         RegisterStepper("btn-harvest-inc", GameStateManager.Directive.Harvest, 1);
-        RegisterStepper("btn-expansion-dec", GameStateManager.Directive.Expansion, -1);
-        RegisterStepper("btn-expansion-inc", GameStateManager.Directive.Expansion, 1);
 
         _btnReset.clicked += () =>
         {
@@ -157,7 +154,6 @@ public class DecisionPhaseController : MonoBehaviour
     public void Refresh()
     {
         var a = _gsm.CurrentAllocation;
-        var forecast = _gsm.ComputeForecast();
 
         PhaseShellController.Instance?.RefreshHeader();
 
@@ -167,13 +163,11 @@ public class DecisionPhaseController : MonoBehaviour
         RefreshVanguardRoster();
         _countScavenge.text = a.ScavengeUnits.ToString();
         _countHarvest.text = a.HarvestUnits.ToString();
-        _countExpansion.text = a.ExpansionUnits.ToString();
 
         if (_planWarning != null)
         {
-            _planWarning.text = forecast.IsOverBudget ? "Not enough Scrap to build the queued ship." : "";
-            if (forecast.IsOverBudget) _planWarning.AddToClassList("plan-warning--visible");
-            else _planWarning.RemoveFromClassList("plan-warning--visible");
+            _planWarning.text = "";
+            _planWarning.RemoveFromClassList("plan-warning--visible");
         }
     }
 

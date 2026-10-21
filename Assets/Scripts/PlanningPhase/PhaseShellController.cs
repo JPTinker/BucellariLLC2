@@ -44,6 +44,8 @@ public class PhaseShellController : MonoBehaviour
     [SerializeField] private MemorialController memorialController;
     [Tooltip("Optional: shows narrative events. Auto-added if left empty.")]
     [SerializeField] private EventPhaseController eventController;
+    [Tooltip("Optional: Research tab (takes the old Store slot). Auto-added if left empty.")]
+    [SerializeField] private ResearchController researchController;
 
     private UIDocument _document;
     private VisualElement _root;
@@ -187,16 +189,17 @@ public class PhaseShellController : MonoBehaviour
     /// </summary>
     private void BuildContent()
     {
-        if (decisionContentTemplate == null || placeholderContentTemplate == null)
+        if (decisionContentTemplate == null)
         {
-            Debug.LogError("PhaseShellController: one or more content templates aren't assigned in the Inspector.");
+            Debug.LogError("PhaseShellController: the Decision content template isn't assigned in the Inspector.");
             return;
         }
 
         _planRoot = decisionContentTemplate.Instantiate();
-        _storePlaceholderRoot = placeholderContentTemplate.Instantiate();
-
-        SetPlaceholderText(_storePlaceholderRoot, "STORE", "Not built yet.");
+        // The old Store slot now hosts the Research tree (nav-store button, Tab.Store).
+        if (researchController == null) researchController = GetComponent<ResearchController>() ?? gameObject.AddComponent<ResearchController>();
+        _storePlaceholderRoot = researchController.Build();
+        if (_navStore != null) _navStore.text = "RESEARCH";
 
         _contentSlot.Add(_planRoot);
         _contentSlot.Add(_storePlaceholderRoot);
@@ -294,6 +297,7 @@ public class PhaseShellController : MonoBehaviour
 
         if (tab == Tab.Plan) decisionController?.Refresh();
         if (tab == Tab.Memorial) memorialController?.Refresh();
+        if (tab == Tab.Store && researchController != null) researchController.Refresh();
     }
 
     private static void SetVisible(VisualElement element, bool visible)
@@ -362,12 +366,8 @@ public class PhaseShellController : MonoBehaviour
         SetCheck(_checkSquad, squad > 0, $"Squad selected ({squad}/{GameStateManager.MaxTeamSize})", $"Select your squad (0/{GameStateManager.MaxTeamSize})");
         SetCheck(_checkVillagers, gsm.VillagersSent > 0, $"{gsm.VillagersSent} workers sent ({gsm.IdleVillagers} stay home)", $"No workers sent ({gsm.IdleVillagers} stay home)");
 
-        if (_checkBudget != null)
-        {
-            if (forecast.IsOverBudget) _checkBudget.AddToClassList("readiness-row--active");
-            else _checkBudget.RemoveFromClassList("readiness-row--active");
-            _checkBudget.text = "\u2717 Cannot afford queued ship";
-        }
+        // Ships are researched now, so there's no queued purchase to afford.
+        if (_checkBudget != null) _checkBudget.style.display = DisplayStyle.None;
     }
 
     private static void SetCheck(Label label, bool done, string doneText, string todoText)

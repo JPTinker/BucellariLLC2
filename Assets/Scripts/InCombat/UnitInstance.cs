@@ -240,7 +240,11 @@ public class UnitInstance : MonoBehaviour
         Experience += amount;
         PersistentUnit.Experience = Experience;
 
-        while (Experience >= ExperiencePerLevel)
+        // The Training research track sets the level cap: XP stops at a full bar instead of overflowing into more levels.
+        bool capped = Faction == UnitFaction.Player && PersistentUnit.Level >= ResearchManager.Current.MaxUnitLevel;
+        if (capped) Experience = Mathf.Min(Experience, ExperiencePerLevel);
+
+        while (!capped && Experience >= ExperiencePerLevel)
         {
             Experience -= ExperiencePerLevel;
             PersistentUnit.Experience = Experience;
@@ -865,7 +869,8 @@ public class UnitInstance : MonoBehaviour
         // Parenting inherits this unit's scale, which shrinks the villager. Keep the size it had in the world.
         Vector3 villagerWorldScale = villager.transform.lossyScale;
         villager.transform.SetParent(transform, false);
-        villager.transform.localPosition = Vector3.right * (rescueSlot + 1) * 0.6f;
+        // Trail behind and to the left of the carrier (local -Z is back, -X is left); each extra villager sits further out.
+        villager.transform.localPosition = new Vector3(-1f, 0f, -1f) * (rescueSlot + 1) * 0.9f;
         villager.transform.localRotation = Quaternion.identity;
         Vector3 carrierScale = transform.lossyScale;
         villager.transform.localScale = new Vector3(

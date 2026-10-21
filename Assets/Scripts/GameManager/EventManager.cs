@@ -138,10 +138,10 @@ public class EventManager
         switch (e.Type)
         {
             case EventEffectType.Food:
-                s.Food = Mathf.Max(0, s.Food + e.Amount);
+                _gsm.AddFood(e.Amount);
                 return Signed(e.Amount, "Food");
             case EventEffectType.Materials:
-                s.Materials = Mathf.Max(0, s.Materials + e.Amount);
+                _gsm.AddMaterials(e.Amount);
                 return Signed(e.Amount, "Scrap");
             case EventEffectType.Gold:
                 _gsm.Resources.Gold = Mathf.Max(0, _gsm.Resources.Gold + e.Amount);
