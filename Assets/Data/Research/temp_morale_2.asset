@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4e4d42d570b9c2a41b90da9fa6743fc6, type: 3}
-  m_Name: NewResearch
+  m_Name: temp_morale_2
   m_EditorClassIdentifier: Assembly-CSharp::ResearchData
-  DisplayName: 
+  DisplayName: Morale II
   Description: 
   Icon: {fileID: 0}
-  Track: 0
-  Tier: 1
-  Prerequisite: {fileID: 0}
-  FoodCost: 0
-  MaterialsCost: 0
-  CyclesToComplete: 2
+  Track: 8
+  Tier: 2
+  Prerequisite: {fileID: 11400000, guid: 448f2240b3e1d914284e0ce2ff6ad97f, type: 2}
+  FoodCost: 80
+  MaterialsCost: 100
+  KillsToComplete: 20
   Value: 1
   SecondaryValue: 0

@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 7801607055821855217}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.62487, y: -2.135, z: 6.87166}
+  m_LocalPosition: {x: 9.734, y: -5.73911, z: 10.06046}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -44,7 +44,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e325d27359d4354593a4ace437d4977, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameStateManager
-  testing: 1
   AvailablePlayerArchetypes:
   - {fileID: 11400000, guid: 2d2623f2569c24a46bbad5a4b9edb069, type: 2}
   - {fileID: 11400000, guid: 9706b9d60de9f6d4d9bd24f2ea03191f, type: 2}
@@ -53,12 +52,95 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bea55953af8a9cb409b8d432c9fe50a1, type: 2}
   - {fileID: 11400000, guid: 7af65160f0085e8429cba02cd52ac2af, type: 2}
   - {fileID: 11400000, guid: a819e4fd9b4abde49a0fd54816a40a2e, type: 2}
+  AvailableEvents:
+  - {fileID: 11400000, guid: de98e69e969276c41b5936844cd3da2f, type: 2}
+  - {fileID: 11400000, guid: fa23e9e1fd74cf74a97fd515bcc94ff1, type: 2}
+  - {fileID: 11400000, guid: 1de464a090aa3394f90f657105e4d2bc, type: 2}
+  - {fileID: 11400000, guid: 3d50178685cd658488646f02c6dfb7a8, type: 2}
+  - {fileID: 11400000, guid: a6c7e9cb9753e9648b5cdc3e3e3f00cc, type: 2}
+  AvailableResearch:
+  - {fileID: 11400000, guid: 8ebb8079e21e2df418f2bf80d48ded1b, type: 2}
+  - {fileID: 11400000, guid: bfa1efb9875cca845a655f46f17108b7, type: 2}
+  - {fileID: 11400000, guid: 2a995e651ce35e740b065b287c421cc2, type: 2}
+  - {fileID: 11400000, guid: cfcc1fdfe171a3147887763fcce8bff3, type: 2}
+  - {fileID: 11400000, guid: ed1f395865f6afb4188d2ce57cf89e46, type: 2}
+  - {fileID: 11400000, guid: ae3c8d95164dcfa40ba0fa87db47a930, type: 2}
+  - {fileID: 11400000, guid: 33be5b681e1475f40b2db42fa512a822, type: 2}
+  - {fileID: 11400000, guid: e4415f4fe2c8a38448d1bcc2a893d17c, type: 2}
+  - {fileID: 11400000, guid: 97f2d63af50b3e04ba9c08496cc40b38, type: 2}
+  - {fileID: 11400000, guid: de26e0f77a4dcaa498925b6edb49cafb, type: 2}
+  - {fileID: 11400000, guid: ba3b84630be1e32489550a2debc91149, type: 2}
+  - {fileID: 11400000, guid: b339b9c05dd658c44b6b9265084ae174, type: 2}
+  - {fileID: 11400000, guid: ae5b36413a27fca4089574faf54d2a6f, type: 2}
+  - {fileID: 11400000, guid: 2ab3f663f6c92ed43bc19423f089bbb3, type: 2}
+  - {fileID: 11400000, guid: ac69577c602c5d54b9add1da030969cd, type: 2}
+  - {fileID: 11400000, guid: c4d0a4da03ba5c24ba63dfef6f8efb73, type: 2}
+  - {fileID: 11400000, guid: 9501036bc051a544b954c4f680003d2c, type: 2}
+  - {fileID: 11400000, guid: 6cf50298b2792f8479af2b228c2186e2, type: 2}
+  - {fileID: 11400000, guid: 45f416844b3ea7343a445997bf66395f, type: 2}
+  - {fileID: 11400000, guid: acbf39e0e3fbf3d4889891e971475d85, type: 2}
+  - {fileID: 11400000, guid: 50ad3c789a72357478d0d324d828bb8d, type: 2}
+  - {fileID: 11400000, guid: 9f454ca49c12ad74ba676d0248e6c1b0, type: 2}
+  - {fileID: 11400000, guid: 65491d79f8b50684f9b925333102b40a, type: 2}
+  - {fileID: 11400000, guid: da41b5394871e2e4395552852bb28083, type: 2}
+  - {fileID: 11400000, guid: 448f2240b3e1d914284e0ce2ff6ad97f, type: 2}
+  - {fileID: 11400000, guid: a9452226171ab7e4d903bb5afa268962, type: 2}
+  - {fileID: 11400000, guid: 7b92f44aabbaa00428a505443f081c83, type: 2}
+  ResearchBase:
+    VillagerSpawnInterval: 6
+    GatherMultiplier: 1
+    MaxUnitLevel: 5
+    WallMaxHealth: 12
+    MaxFortificationLevel: 1
+    MaxFood: 300
+    MaxMaterials: 300
+    ChurchHealCount: 2
+    ChurchHealFraction: 0.05
+    MaxBattleRounds: 20
+    MinVillagerSpawnInterval: 2
+    AbsoluteMaxFortificationLevel: 3
   Resources:
     Gold: 100
     CurrentStageIndex: 1
+  Settlement:
+    Food: 200
+    Materials: 185
+    Morale: 84
+    Villagers: 2
+    VillagerCapacity: 3
+    UnitCapacity: 3
+    ExtraBoats: 0
+  CurrentAllocation:
+    ScavengeUnits: 0
+    HarvestUnits: 0
+    ExpansionUnits: 0
+  Balance:
+    FoodCostPerVanguardUnit: 20
+    FoodCostPerVillagerSent: 10
+    WorkerFoodPerGather: 10
+    WorkerMaterialsPerGather: 15
+    WorkerCarryCap: 60
+    WorkerHpBonusPerLevel: 0.1
+    WorkerYieldBonusPerLevel: 0.1
+    ShipUnitCapacityGain: 2
+    ShipVillagerCapacityGain: 2
+    FoodCostPerLevelUp: 7
+    MoralePenaltyPerVanguardUnit: 1
+    MoralePenaltyPerVillagerSent: 3
+    EnemyKilledMoraleBonus: 0.25
+    VillagerSavedMoraleBonus: 5
+    UnitLostMoralePenalty: 10
+    TravelsPerDraftLevel: 3
+    EventChance: 0.5
+  SelectedCampaignAction: 0
+  EvacuationCyclesRemaining: 10
   FullRoster: []
+  Memorial: []
   ActiveTeam: []
   PendingReveal: []
   PendingDraftOptions: []
+  PendingDraftRarities: 
   ExtractedUnitsThisBattle: []
   SavedVillagersThisBattle: 0
+  EnemiesKilledThisBattle: 0
+  CasualtiesThisBattle: 0

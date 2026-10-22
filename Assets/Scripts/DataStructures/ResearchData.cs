@@ -10,7 +10,8 @@ public enum ResearchTrack
     Engineering,   // more fortification levels
     Storehouses,   // higher Food / Materials cap
     Church,        // more benched units healed per cycle, and a higher heal %
-    Shipwright     // each node builds a ship (+unit / villager capacity, +1 docked boat)
+    Shipwright,    // each node builds a ship (+unit / villager capacity, +1 docked boat)
+    BattleLength   // longer battles (+rounds before everyone is forced to retreat)
 }
 
 /// <summary>
@@ -34,8 +35,8 @@ public class ResearchData : ScriptableObject
     [Header("Cost")]
     [Min(0)] public int FoodCost;
     [Min(0)] public int MaterialsCost;
-    [Tooltip("Decision cycles this takes to finish once started.")]
-    [Min(1)] public int CyclesToComplete = 2;
+    [Tooltip("Kills by player units in battle needed to finish once started. Every active project gets each kill.")]
+    [Min(1)] public int KillsToComplete = 10;
 
     [Header("Effect")]
     [Tooltip("Added to the track's value (see ResearchManager). Rounds, levels, HP, cap or heal count; for Gathering it is a yield multiplier bonus (0.25 = +25%).")]

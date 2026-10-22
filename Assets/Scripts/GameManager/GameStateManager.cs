@@ -972,8 +972,7 @@ public class GameStateManager : MonoBehaviour
 
     /// <summary>
     /// Commits the current allocation: applies the forecasted Food/Morale
-    /// deltas to Settlement, advances research (which may finish a ship or any
-    /// other node), sends the Vanguard block into ActiveTeam, and hands off to
+    /// deltas to Settlement, sends the Vanguard block into ActiveTeam, and hands off to
     /// combat.
     /// </summary>
     public bool ExecuteCycle(string battleSceneName = "BattlePhase")
@@ -985,7 +984,6 @@ public class GameStateManager : MonoBehaviour
         AddMaterials(forecast.MaterialsDelta);
         Settlement.Morale = Mathf.Clamp(Settlement.Morale + forecast.MoraleDelta, 0, 100);
 
-        Research.Tick();
         HealBenchedUnits();
 
         // Apply this cycle's Campaign Map course. Stay Put's yield doubling

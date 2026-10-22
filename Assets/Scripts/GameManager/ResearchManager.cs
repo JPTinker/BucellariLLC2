@@ -6,9 +6,6 @@ using UnityEngine;
 [Serializable]
 public class ResearchBaseConfig
 {
-    [Header("Slots")]
-    [Min(1)] public int ResearchSlots = 1;
-
     [Header("Base values (before any research)")]
     public int VillagerSpawnInterval = 6;      // rounds between stray villagers; Recruiting subtracts
     public float GatherMultiplier = 1f;        // worker yield / carry multiplier; Gathering adds
@@ -30,14 +27,15 @@ public class ResearchBaseConfig
 public class ResearchProgress
 {
     public string Id;
-    public int CyclesRemaining;
+    public int KillsRemaining;
 }
 
 public enum ResearchStatus { Locked, Available, Active, Completed }
 
 /// <summary>
 /// Owns research state (completed nodes + the active slots) and exposes the
-/// derived stats the rest of the game reads. Plain class owned by
+/// derived stats the rest of the game reads. Projects are paid for in battle:
+/// every kill a player unit lands counts toward all active projects. Plain class owned by
 /// GameStateManager, like EventManager. Consumers outside the Decision phase
 /// should read <see cref="Current"/> so the BattlePhase still works when it is
 /// opened directly without a GameStateManager (falls back to base values).
@@ -66,13 +64,17 @@ public class ResearchManager
 
     public static event Action<ResearchData> OnResearchCompleted;
 
+    /// <summary>Raised whenever active-project progress changes (a kill landed, or a project started/finished).</summary>
+    public static event Action OnProgressChanged;
+
     public ResearchManager(GameStateManager gsm) { _gsm = gsm; }
 
     private ResearchBaseConfig Config => _gsm != null && _gsm.ResearchBase != null ? _gsm.ResearchBase : (_defaultConfig ??= new ResearchBaseConfig());
     private static ResearchBaseConfig _defaultConfig;
 
     public IReadOnlyList<ResearchProgress> Active => _active;
-    public int SlotCount => Config.ResearchSlots;
+    public const int MaxActiveResearch = 3;
+    public int SlotCount => MaxActiveResearch;
     public int FreeSlots => Mathf.Max(0, SlotCount - _active.Count);
 
     // ------------------------------------------------------------
@@ -117,25 +119,35 @@ public class ResearchManager
 
         _gsm.Settlement.Food -= data.FoodCost;
         _gsm.Settlement.Materials -= data.MaterialsCost;
-        _active.Add(new ResearchProgress { Id = data.name, CyclesRemaining = Mathf.Max(1, data.CyclesToComplete) });
+        _active.Add(new ResearchProgress { Id = data.name, KillsRemaining = Mathf.Max(1, data.KillsToComplete) });
         _gsm.NotifySettlementChanged();
+        OnProgressChanged?.Invoke();
         return true;
     }
 
-    /// <summary>Advances every active project by one cycle and completes the finished ones. Called from ExecuteCycle.</summary>
-    public void Tick()
+    /// <summary>Credits one kill to every active project and completes the finished ones. Called when a player unit kills an enemy.</summary>
+    public void RegisterKill()
     {
+        if (_active.Count == 0) return;
+
         for (int i = _active.Count - 1; i >= 0; i--)
         {
             ResearchProgress progress = _active[i];
-            progress.CyclesRemaining--;
-            if (progress.CyclesRemaining > 0) continue;
+            progress.KillsRemaining--;
+            if (progress.KillsRemaining > 0) continue;
 
             _active.RemoveAt(i);
             ResearchData data = Find(progress.Id);
             if (data != null) Complete(data);
         }
+        OnProgressChanged?.Invoke();
     }
+
+    /// <summary>Kills landed so far on an active project, 0..total.</summary>
+    public int KillsDone(ResearchProgress progress, ResearchData data) =>
+        data == null ? 0 : Mathf.Clamp(data.KillsToComplete - progress.KillsRemaining, 0, data.KillsToComplete);
+
+    public ResearchData FindData(string id) => Find(id);
 
     private void Complete(ResearchData data)
     {
@@ -195,7 +207,7 @@ public class ResearchManager
 
     public float ChurchHealFraction => Config.ChurchHealFraction + Sum(ResearchTrack.Church, true);
 
-    public int MaxBattleRounds => Config.MaxBattleRounds;
+    public int MaxBattleRounds => Config.MaxBattleRounds + Mathf.RoundToInt(Sum(ResearchTrack.BattleLength));
 
     // ------------------------------------------------------------
     // Save / load
@@ -206,10 +218,10 @@ public class ResearchManager
         data.CompletedResearch = new List<string>(_completed);
         data.ActiveResearch = new List<ResearchProgress>();
         foreach (ResearchProgress p in _active)
-            data.ActiveResearch.Add(new ResearchProgress { Id = p.Id, CyclesRemaining = p.CyclesRemaining });
+            data.ActiveResearch.Add(new ResearchProgress { Id = p.Id, KillsRemaining = p.KillsRemaining });
     }
 
-    /// <summary>Older saves (version &lt; 8) have no research fields and load as an empty tree.</summary>
+    /// <summary>Older saves (version &lt; 8) have no research fields and load as an empty tree. Version 8 saves tracked cycles, so their active projects restart at the full kill count.</summary>
     public void ReadFrom(SaveData data)
     {
         _completed.Clear();
@@ -219,6 +231,11 @@ public class ResearchManager
             foreach (string id in data.CompletedResearch) if (!string.IsNullOrEmpty(id)) _completed.Add(id);
         if (data.ActiveResearch != null)
             foreach (ResearchProgress p in data.ActiveResearch)
-                if (p != null && !string.IsNullOrEmpty(p.Id)) _active.Add(new ResearchProgress { Id = p.Id, CyclesRemaining = Mathf.Max(1, p.CyclesRemaining) });
+                if (p != null && !string.IsNullOrEmpty(p.Id))
+                {
+                    ResearchData node = Find(p.Id);
+                    int kills = p.KillsRemaining > 0 ? p.KillsRemaining : (node != null ? node.KillsToComplete : 1);
+                    _active.Add(new ResearchProgress { Id = p.Id, KillsRemaining = Mathf.Max(1, kills) });
+                }
     }
 }

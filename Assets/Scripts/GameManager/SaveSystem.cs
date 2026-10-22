@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class SaveSystem
 {
-    public const int CurrentVersion = 8;
+    public const int CurrentVersion = 9;
 
     public static string SavePath => Path.Combine(Application.persistentDataPath, "savegame.json");
 

@@ -488,7 +488,10 @@ public class UnitInstance : MonoBehaviour
         {
             AddExperience(AttackExperience);
             if (target.IsDead)
+            {
                 AddExperience(KillExperience);
+                ResearchManager.Current.RegisterKill();
+            }
         }
         return true;
     }

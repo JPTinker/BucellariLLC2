@@ -64,6 +64,20 @@
 .hud-text-col { justify-content: center; }
 .hud-separator { width: 1px; height: 30px; margin-left: 20px; background-color: #35506a; }
 .hud-block--round { padding-left: 22px; }
+
+/* Research slots: one name + kill-progress bar per active project (max 3). */
+.research-block { padding-left: 6px; padding-right: 0; }
+.research-slot { width: 112px; margin-right: 10px; }
+.research-slot__name { font-size: 11px; color: #cfe3f0; -unity-font-style: bold; overflow: hidden; white-space: nowrap; }
+.research-slot__track {
+    height: 8px; margin-top: 2px; margin-bottom: 2px;
+    background-color: rgba(160, 200, 220, 0.15);
+    border-radius: 4px; overflow: hidden;
+}
+.research-slot__fill { height: 100%; width: 0; background-color: #6fd3a0; border-radius: 4px; }
+.research-slot__count { font-size: 10px; color: #9fb8c8; }
+.research-slot--empty .research-slot__name,
+.research-slot--empty .research-slot__count { color: #5d7587; }
 .hud-block--round .hud-text-col { align-items: center; }
 
 .value-gain { color: #ffffff; scale: 1.25 1.25; }

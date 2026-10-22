@@ -58,7 +58,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
     public void SetRound(int round)
     {
-        if (roundLabel != null) roundLabel.text = round.ToString("00");
+        if (roundLabel != null) roundLabel.text = $"{round:00}/{ResearchManager.Current.MaxBattleRounds:00}";
         // A fresh round means the "all units gone" condition can fire again.
         roundEndedSignaled = false;
     }
@@ -105,6 +105,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
     private void OnDisable()
     {
+        ResearchManager.OnProgressChanged -= RefreshResearchHud;
         GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
         if (MapManager.Instance != null)
             MapManager.Instance.VillagerCountChanged -= HandleVillagerCountChanged;
@@ -187,6 +188,8 @@ public class CombatPhaseUIController : MonoBehaviour
         SetGold(GameStateManager.Instance.Resources.Gold);
         RefreshSettlementLedger();
 
+        BuildResearchHud(root);
+
         // Repaint the top bar the moment workers deposit food/materials.
         GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
         GameStateManager.OnSettlementChanged += RefreshSettlementLedger;
@@ -220,6 +223,98 @@ public class CombatPhaseUIController : MonoBehaviour
             PlayGainAnimation("materials", settlementMaterialsLabel, s.Materials - lastMaterials);
         lastFood = s.Food;
         lastMaterials = s.Materials;
+    }
+
+    // ---------------------------------------------------------------
+    // Research HUD: up to ResearchManager.MaxActiveResearch projects, paid by kills.
+    // Built in code and inserted before the round block, so the UXML needs no edit.
+    // ---------------------------------------------------------------
+
+    private struct ResearchSlotView
+    {
+        public VisualElement Root, Fill;
+        public Label Name, Count;
+    }
+
+    private ResearchSlotView[] researchSlots;
+
+    private void BuildResearchHud(VisualElement root)
+    {
+        VisualElement bar = root.Q<VisualElement>("resource-bar");
+        if (bar == null) return;
+
+        var block = new VisualElement { name = "research-block" };
+        block.AddToClassList("hud-block");
+        block.AddToClassList("research-block");
+
+        researchSlots = new ResearchSlotView[ResearchManager.MaxActiveResearch];
+        for (int i = 0; i < researchSlots.Length; i++)
+        {
+            var slot = new VisualElement();
+            slot.AddToClassList("research-slot");
+            var name = new Label();
+            name.AddToClassList("research-slot__name");
+            var track = new VisualElement();
+            track.AddToClassList("research-slot__track");
+            var fill = new VisualElement();
+            fill.AddToClassList("research-slot__fill");
+            track.Add(fill);
+            var count = new Label();
+            count.AddToClassList("research-slot__count");
+            slot.Add(name);
+            slot.Add(track);
+            slot.Add(count);
+            block.Add(slot);
+            researchSlots[i] = new ResearchSlotView { Root = slot, Fill = fill, Name = name, Count = count };
+        }
+
+        var separator = new VisualElement();
+        separator.AddToClassList("hud-separator");
+        block.Add(separator);
+
+        VisualElement round = bar.Q<VisualElement>("round-block");
+        if (round != null) bar.Insert(bar.IndexOf(round), block);
+        else bar.Add(block);
+
+        ResearchManager.OnProgressChanged -= RefreshResearchHud;
+        ResearchManager.OnProgressChanged += RefreshResearchHud;
+        RefreshResearchHud();
+    }
+
+    public void RefreshResearchHud()
+    {
+        if (researchSlots == null) return;
+        ResearchManager research = ResearchManager.Current;
+
+        // Finished mid-battle: toast it here (the Research tab would otherwise announce it later).
+        if (research.RecentlyCompleted.Count > 0)
+        {
+            var names = new List<string>();
+            foreach (ResearchData done in research.RecentlyCompleted) names.Add(done.DisplayName);
+            research.RecentlyCompleted.Clear();
+            FindAnyObjectByType<NotificationManager>()?.ShowNotification($"Research complete: {string.Join(", ", names)}");
+        }
+
+        for (int i = 0; i < researchSlots.Length; i++)
+        {
+            ResearchSlotView view = researchSlots[i];
+            ResearchProgress progress = i < research.Active.Count ? research.Active[i] : null;
+            ResearchData data = progress != null ? research.FindData(progress.Id) : null;
+
+            view.Root.EnableInClassList("research-slot--empty", data == null);
+            if (data == null)
+            {
+                view.Name.text = "EMPTY";
+                view.Count.text = "-";
+                view.Fill.style.width = Length.Percent(0);
+                continue;
+            }
+
+            int done = research.KillsDone(progress, data);
+            view.Name.text = string.IsNullOrEmpty(data.DisplayName) ? data.name : data.DisplayName;
+            view.Count.text = $"{done}/{data.KillsToComplete}";
+            view.Fill.style.width = Length.Percent(100f * done / data.KillsToComplete);
+        }
     }
 
     private int lastFood = -1;

@@ -20,6 +20,6 @@ MonoBehaviour:
   Prerequisite: {fileID: 0}
   FoodCost: 50
   MaterialsCost: 100
-  CyclesToComplete: 3
+  KillsToComplete: 12
   Value: 0
   SecondaryValue: 0

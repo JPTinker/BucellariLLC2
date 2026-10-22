@@ -83,7 +83,7 @@ public class ResearchController : MonoBehaviour
         {
             ResearchData data = gsm.AvailableResearch != null ? gsm.AvailableResearch.Find(r => r != null && r.name == progress.Id) : null;
             string label = data != null ? data.DisplayName : progress.Id;
-            var chip = new Label($"{label} ({progress.CyclesRemaining} cycle{(progress.CyclesRemaining == 1 ? "" : "s")})");
+            var chip = new Label($"{label} ({research.KillsDone(progress, data)}/{(data != null ? data.KillsToComplete : progress.KillsRemaining)} kills)");
             chip.AddToClassList("label-caps");
             chip.AddToClassList("tag");
             chip.style.marginRight = 6;
@@ -148,7 +148,7 @@ public class ResearchController : MonoBehaviour
         effect.style.whiteSpace = WhiteSpace.Normal;
         card.Add(effect);
 
-        var cost = new Label($"{node.FoodCost} Food / {node.MaterialsCost} Materials / {node.CyclesToComplete} cycle{(node.CyclesToComplete == 1 ? "" : "s")}");
+        var cost = new Label($"{node.FoodCost} Food / {node.MaterialsCost} Materials / {node.KillsToComplete} kills");
         cost.AddToClassList("body-text");
         cost.style.whiteSpace = WhiteSpace.Normal;
         card.Add(cost);
@@ -160,7 +160,7 @@ public class ResearchController : MonoBehaviour
                 break;
             case ResearchStatus.Active:
                 ResearchProgress progress = research.GetActive(node);
-                card.Add(StatusLabel($"IN PROGRESS ({progress.CyclesRemaining} left)", null));
+                card.Add(StatusLabel($"IN PROGRESS ({progress.KillsRemaining} kills left)", null));
                 break;
             case ResearchStatus.Locked:
                 card.Add(StatusLabel($"Requires {node.Prerequisite.DisplayName}", "text-muted"));
@@ -214,6 +214,7 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Storehouses: return $"STOREHOUSES  (cap {r.MaxFood} Food / {r.MaxMaterials} Materials)";
             case ResearchTrack.Church: return $"CHURCH  (heals {r.ChurchHealCount} units/cycle at {r.ChurchHealFraction * 100f:0.#}%)";
             case ResearchTrack.Shipwright: return "SHIPWRIGHT";
+            case ResearchTrack.BattleLength: return $"MORALE  (battles last {r.MaxBattleRounds} rounds)";
             default: return track.ToString().ToUpperInvariant();
         }
     }
@@ -229,6 +230,7 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Engineering: return $"+{Mathf.RoundToInt(node.Value)} fortification level";
             case ResearchTrack.Storehouses: return $"+{Mathf.RoundToInt(node.Value)} Food and Materials cap";
             case ResearchTrack.Church: return $"+{Mathf.RoundToInt(node.Value)} unit(s) healed, +{node.SecondaryValue * 100f:0.#}% heal";
+            case ResearchTrack.BattleLength: return $"+{Mathf.RoundToInt(node.Value)} battle rounds";
             case ResearchTrack.Shipwright:
                 var b = gsm.Balance;
                 return $"+{b.ShipUnitCapacityGain} unit cap, +{b.ShipVillagerCapacityGain} villager cap, +1 boat";
