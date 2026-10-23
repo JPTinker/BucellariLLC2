@@ -928,7 +928,7 @@ public class MapManager : MonoBehaviour
     }
 
     /// <summary>Highest fortification level the player may build; raised by the Engineering research track.</summary>
-    public static int MaxFortificationLevel => ResearchManager.Current.MaxFortificationLevel;
+    public static int MaxFortificationLevel = 3;//=> ResearchManager.Current.MaxFortificationLevel;
 
     /// <summary>Builds the next fortification level on a tile (permanent for the battle). Returns false at max level.</summary>
     public bool BuildFortification(HexTile tile)

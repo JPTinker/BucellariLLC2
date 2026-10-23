@@ -60,6 +60,16 @@ public class UnitInstance : MonoBehaviour
                         bounds.Encapsulate(renderers[i].bounds);
                     return bounds.center;
                 }
+
+                // Static meshes (walls) have no skinned renderer; aim at their centre rather than a fixed height.
+                var meshRenderers = GetComponentsInChildren<MeshRenderer>();
+                if (meshRenderers.Length > 0)
+                {
+                    Bounds bounds = meshRenderers[0].bounds;
+                    for (int i = 1; i < meshRenderers.Length; i++)
+                        bounds.Encapsulate(meshRenderers[i].bounds);
+                    return bounds.center;
+                }
             }
             return transform.position + Vector3.up * aimHeight;
         }
@@ -482,7 +492,7 @@ public class UnitInstance : MonoBehaviour
                   (flank > 0f ? $" (flanking +{flank:P0})" : ""));
         if (target.Faction != UnitFaction.Structure) target.attackersThisRound.Add(this);
         if (flank > 0f) target.Say(UnitSpeechTrigger.Flanked, hitDelay);
-        target.TakeDamage(damage, hitDelay, weaponItem);
+        target.TakeDamage(damage, hitDelay, weaponItem, this);
         Say(target.IsDead ? UnitSpeechTrigger.Kill : UnitSpeechTrigger.Attack, hitDelay);
         if (Faction == UnitFaction.Player && target.Faction == UnitFaction.Enemy)
         {
@@ -616,7 +626,7 @@ public class UnitInstance : MonoBehaviour
     public void Say(UnitSpeechTrigger trigger, float delay = 0f) => UnitSpeech.Raise(this, trigger, delay);
     /// hitDelay postpones the visible reaction (flash, damage anim, removal on
     /// death) so it lines up with a projectile landing; the damage itself is immediate.
-    public void TakeDamage(int amount, float hitDelay = 0f, ItemData weapon = null)
+    public void TakeDamage(int amount, float hitDelay = 0f, ItemData weapon = null, UnitInstance attacker = null)
     {
         if (IsDead) return;
 
@@ -631,9 +641,9 @@ public class UnitInstance : MonoBehaviour
         if (damageTaken > 0)
         {
             if (hitDelay > 0f && gameObject.activeInHierarchy)
-                StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay, weapon));
+                StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay, weapon, attacker));
             else
-                PlayHitReaction(damageTaken, weapon);
+                PlayHitReaction(damageTaken, weapon, attacker);
         }
 
         if (currentHealth <= 0)
@@ -648,16 +658,19 @@ public class UnitInstance : MonoBehaviour
         RecordWounds(damageTaken);
     }
 
-    private IEnumerator PlayHitReactionAfterDelay(int damageTaken, float delay, ItemData weapon)
+    private IEnumerator PlayHitReactionAfterDelay(int damageTaken, float delay, ItemData weapon, UnitInstance attacker)
     {
         yield return new WaitForSeconds(delay);
-        PlayHitReaction(damageTaken, weapon);
+        PlayHitReaction(damageTaken, weapon, attacker);
     }
 
     private float _lastHitVfxTime = -1f;
 
-    private void PlayHitReaction(int damageTaken, ItemData weapon = null)
+    private void PlayHitReaction(int damageTaken, ItemData weapon = null, UnitInstance attacker = null)
     {
+        if (attacker != null && !IsDead && !IsMoving && Faction != UnitFaction.Structure)
+            FaceTowards(attacker.transform.position);
+
         if (_animator != null)
             _animator.SetInteger(DamageTakenParameter, damageTaken);
 
@@ -872,8 +885,8 @@ public class UnitInstance : MonoBehaviour
         // Parenting inherits this unit's scale, which shrinks the villager. Keep the size it had in the world.
         Vector3 villagerWorldScale = villager.transform.lossyScale;
         villager.transform.SetParent(transform, false);
-        // Trail behind and to the left of the carrier (local -Z is back, -X is left); each extra villager sits further out.
-        villager.transform.localPosition = new Vector3(-1f, 0f, -1f) * (rescueSlot + 1) * 0.9f;
+        // Trail behind the carrier (local -Z is back): first villager back-left, second back-right.
+        villager.transform.localPosition = new Vector3(rescueSlot == 0 ? -1f : 1f, 0f, -1f) * 0.9f;
         villager.transform.localRotation = Quaternion.identity;
         Vector3 carrierScale = transform.lossyScale;
         villager.transform.localScale = new Vector3(

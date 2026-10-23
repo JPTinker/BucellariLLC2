@@ -45,7 +45,7 @@ public class HexTile : MonoBehaviour
         }
         if (prefab == null) return;
         fortificationObject = Instantiate(prefab, transform);
-        fortificationObject.transform.localPosition = Vector3.up * heightOffset + offset;
+        fortificationObject.transform.localPosition = Vector3.up * .15f;
         fortificationObject.transform.localRotation = Quaternion.identity;
     }
     /// <summary>True on every tile adjacent to any boat; units standing here can Extract.</summary>

@@ -21,5 +21,5 @@ MonoBehaviour:
   FoodCost: 80
   MaterialsCost: 100
   KillsToComplete: 20
-  Value: 1
+  Value: 10
   SecondaryValue: 0

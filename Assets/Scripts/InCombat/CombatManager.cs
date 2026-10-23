@@ -17,6 +17,7 @@ public class CombatManager : MonoBehaviour
 
     [Header("Enemy Reinforcements")]
     [Tooltip("When living enemies drop below this count, reinforcements are spawned.")]
+    [SerializeField] private float enemyTurnDelay = 2f;
     [SerializeField] private int reinforcementThreshold = 10;
     [Tooltip("Reinforcements top the enemy count back up to this total.")]
     [SerializeField] private int reinforcementTargetCount = 8;
@@ -403,6 +404,9 @@ public class CombatManager : MonoBehaviour
             waited += Time.deltaTime;
             yield return null;
         }
+
+        if (enemyTurnDelay > 0f)
+            yield return new WaitForSeconds(enemyTurnDelay);
 
         if (enemyAI != null)
         {
