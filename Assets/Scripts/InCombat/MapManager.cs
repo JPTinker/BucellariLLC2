@@ -139,8 +139,6 @@ public class MapManager : MonoBehaviour
     // so villagers only start their camera zoom-in after the players' has finished.
     private bool initialUnitSpawnTourComplete = true;
 
-    /// <summary>Fired when a unit successfully reaches an extraction point and leaves the map.</summary>
-    public event Action<UnitInstance> UnitExtracted;
     public event Action<int, int> VillagerCountChanged;
 
 
@@ -923,26 +921,6 @@ public class MapManager : MonoBehaviour
             if (fortificationPrefabs != null && l - 1 < fortificationPrefabs.Length)
                 prefab = fortificationPrefabs[l - 1];
         tile.SetFortification(level, prefab, fortificationOffset);
-        return true;
-    }
-
-    /// <summary>Call when a unit attempts to leave the battle from its current tile.</summary>
-    public bool TryExtractUnit(UnitInstance unit)
-    {
-        if (unit == null || unit.currentTile == null) return false;
-
-        HexTile exfilTile = GetTile(ExfilTilePosition);
-        if (exfilTile == null || !IsAdjacentToBoat(unit.currentTile.gridPosition))
-        {
-            Debug.Log($"[MapGenerator] {unit.name} is not adjacent to the exfil tile.");
-            return false;
-        }
-
-        unit.currentTile.RemoveUnit();
-        unit.currentTile = null;
-        Debug.Log($"[MapGenerator] {unit.name} extracted safely.");
-        UnitExtracted?.Invoke(unit);
-        Destroy(unit.gameObject);
         return true;
     }
 

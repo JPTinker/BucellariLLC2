@@ -480,11 +480,13 @@ public class CombatPhaseUIController : MonoBehaviour
             return;
         }
 
-        // Rule 2: Extract is only enabled next to a boat (the original or any extra one)
+        // Rule 2: only villagers are extracted, so Extract (Drop Off) needs a carried villager and a spot next to an extraction point
         bool isAdjacentToOrigin = unit.currentTile != null &&
             (unit.currentTile.IsExtractable ||
              (MapManager.Instance != null && MapManager.Instance.IsAdjacentToBoat(unit.currentTile.gridPosition)));
-        extractButton?.SetEnabled(isAdjacentToOrigin);
+        bool carryingVillager = unit.rescuedUnitData != null && Array.Exists(unit.rescuedUnitData, v => v != null);
+        extractButton?.SetEnabled(isAdjacentToOrigin && carryingVillager);
+        if (extractButton != null) extractButton.text = "DROP OFF";
 
         // Rule 3: Fortify can be stacked up to the max level, then it is disabled
         bool maxFortified = !unit.CanFortifyFurther;

@@ -87,7 +87,7 @@
             </ui:VisualElement>
             <ui:VisualElement class="action-buttons">
                 <ui:Button name="action-fortify" text="FORTIFY" class="action-button" style="height: 60px;"/>
-                <ui:Button name="action-extract" text="EXTRACT" class="action-button action-button-extract" style="height: 60px;"/>
+                <ui:Button name="action-extract" text="DROP OFF" class="action-button action-button-extract" style="height: 60px;"/>
                 <ui:Button name="action-scout" text="SCOUT" class="action-button" style="height: 60px;"/>
                 <ui:Button name="action-build" text="BUILD WALL" class="action-button" style="height: 60px;"/>
                 <ui:Button name="action-next-unit" text="NEXT UNIT" tooltip="Jump to a unit that still has actions left." class="action-button" style="height: 60px;"/>
