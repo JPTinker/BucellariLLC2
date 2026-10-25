@@ -7,8 +7,6 @@ using UnityEngine;
 public class CombatManager : MonoBehaviour
 {
     public static CombatManager Instance { get; private set; }
-    public event Action OnLevelWon;
-    public event Action OnLevelLost;
     public event Action<int> OnRoundAdvanced;
 
 
@@ -25,11 +23,6 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private int enemiesPerExpansion = 2;
     [Tooltip("Extra enemies (added to both the reinforcement threshold and target) for every living player unit, so more units in the field means faster, bigger waves.")]
     [SerializeField] private int enemiesPerPlayerUnit = 1;
-    [Header("Round Limit (forced retreat)")]
-    [Tooltip("Max HP fraction a fleeing unit loses for every round it needs to reach the boat.")]
-    [SerializeField, Range(0f, 1f)] private float fleeDamageFractionPerRound = 0.15f;
-    [Tooltip("Extra flee damage per living enemy (0.05 = +5% each), capped at double.")]
-    [SerializeField, Range(0f, 0.2f)] private float fleePressurePerEnemy = 0.05f;
     // 0 = opening wave; incremented on each reinforcement wave to scale new enemies.
     private int enemyWaveLevel;
     private int mapExpansions;
@@ -77,17 +70,30 @@ public class CombatManager : MonoBehaviour
 
     private void OnEnable()
     {
+        GameStateManager.OnGameOver += HandleGameOver;
         if (combatUIManager != null)
             combatUIManager.OnActionRequested += HandleActionRequested;
     }
 
     private void OnDisable()
     {
+        GameStateManager.OnGameOver -= HandleGameOver;
         if (combatUIManager != null)
             combatUIManager.OnActionRequested -= HandleActionRequested;
     }
 
-    private void Start() => TrackAll(FindObjectsByType<UnitInstance>());
+    private void Start()
+    {
+        TrackAll(FindObjectsByType<UnitInstance>());
+        if (GameStateManager.Instance != null) GameStateManager.Instance.RoundsElapsed = currentRound;
+    }
+
+    // The run is over: freeze input so nothing moves behind the result panel.
+    private void HandleGameOver(GameStateManager.GameResult result)
+    {
+        levelEnded = true;
+        ClearSelection();
+    }
 
     private void HandleActionRequested(CombatPhaseUIController.CombatAction action, UnitInstance unit)
     {
@@ -203,19 +209,14 @@ public class CombatManager : MonoBehaviour
         Debug.Log($"CombatManager: Fortify clicked for {unit.unitName} (level {unit.FortifyLevel}).");
     }
 
-    private static void HandleExtractClicked(UnitInstance unit)
+    // Heroes no longer leave the map: Extract hands the villagers they carry over to the extraction point.
+    private void HandleExtractClicked(UnitInstance unit)
     {
-        if (unit == null) return;
+        if (unit == null || GameStateManager.Instance == null) return;
 
-        Debug.Log($"CombatManager: Extract clicked for {unit.unitName}.");
-
-        // Tell GameStateManager to handle the extraction logic (saving, tracking villagers, etc.)
-        if (GameStateManager.Instance != null)
-        {
-            unit.Say(UnitSpeechTrigger.Extract);
-            unit.currentTile.RemoveUnit();
-            GameStateManager.Instance.ProcessExtraction(unit);
-        }
+        unit.Say(UnitSpeechTrigger.Extract);
+        GameStateManager.Instance.ProcessExtraction(unit);
+        TakeAction(unit);
     }
 
     private static void HandleScoutClicked(UnitInstance unit)
@@ -476,6 +477,7 @@ public class CombatManager : MonoBehaviour
         foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
             unit.ClearRoundAttackers();
         currentRound++;
+        if (GameStateManager.Instance != null) GameStateManager.Instance.RoundsElapsed = currentRound;
         combatUIManager?.SetRound(currentRound);
         combatUIManager?.RefreshTownsfolkDisplay();
         OnRoundAdvanced?.Invoke(currentRound);
@@ -487,67 +489,6 @@ public class CombatManager : MonoBehaviour
                 unit.NotifyStatsChanged();
             }
         }
-        CheckRoundLimit();
-    }
-
-    // The last playable round is MaxBattleRounds; when the next one would start, everyone still out there retreats.
-    private void CheckRoundLimit()
-    {
-        if (levelEnded) return;
-
-        int roundsLeft = ResearchManager.Current.MaxBattleRounds - currentRound + 1;
-        if (roundsLeft <= 0)
-        {
-            ResolveForcedFlee();
-            return;
-        }
-
-        if (roundsLeft <= 3)
-        {
-            string plural = roundsLeft == 1 ? "round" : "rounds";
-            notificationManager.ShowNotification($"{roundsLeft} {plural} until your squad must retreat");
-        }
-    }
-
-    /// <summary>
-    /// Auto-resolves a retreat for every player unit still on the map (no animation yet).
-    /// Each unit needs ceil(distance / move) rounds to reach the boat and takes
-    /// damage for each, more with enemies about. Survivors extract; the rest fall.
-    /// </summary>
-    private void ResolveForcedFlee()
-    {
-        nonPlayerTurnInProgress = true; // lock input while the result resolves
-        ClearSelection();
-
-        GameStateManager gsm = GameStateManager.Instance;
-        MapManager map = MapManager.Instance;
-        if (gsm != null) gsm.LastBattleReport.ForcedFlee = true;
-        notificationManager.ShowNotification("Out of time - your squad retreats to the boats");
-
-        enemyUnits.RemoveAll(u => u == null || u.IsDead);
-        float pressure = Mathf.Min(2f, 1f + enemyUnits.Count * fleePressurePerEnemy);
-
-        foreach (UnitInstance unit in playerUnits.ToArray())
-        {
-            if (unit == null || unit.IsDead) continue;
-
-            int distance = map != null ? map.DistanceToExtraction(unit) : -1;
-            int roundsNeeded = distance <= 0 ? 0 : Mathf.CeilToInt(distance / (float)Mathf.Max(1, unit.movementRange));
-            int damage = Mathf.CeilToInt(unit.maxHealth * fleeDamageFractionPerRound * roundsNeeded * pressure);
-
-            if (damage > 0) unit.TakeDamage(damage);
-            if (unit.IsDead) continue; // HandleUnitDeath already recorded the casualty
-
-            if (gsm != null)
-            {
-                gsm.LastBattleReport.UnitsFled++;
-                if (unit.currentTile != null) unit.currentTile.RemoveUnit();
-                gsm.ProcessExtraction(unit);
-            }
-        }
-
-        // Covers a field where no death or extract event fired.
-        CheckLevelEnd();
     }
 
     // Uses the same clustered edge spawn as the opening wave in MapManager.
@@ -655,43 +596,18 @@ public class CombatManager : MonoBehaviour
         GameStateManager gsm = GameStateManager.Instance;
         if (gsm != null)
         {
-            if (unit.IsWorker) gsm.ProcessWorkerDeath();
+            if (unit.Faction == UnitFaction.Villager) gsm.RegisterVillagerDeath();
             if (unit.Faction == UnitFaction.Player) gsm.RegisterCasualty(unit.PersistentUnit);
             else if (unit.Faction == UnitFaction.Enemy) gsm.RegisterEnemyKilled();
         }
         if (unit == selectedUnit) ClearSelection();
-        CheckLevelEnd();
         CheckTurnEnd();
     }
-    public void HandleUnitExtract(UnitInstance unit)
-    {
-        playerUnits.Remove(unit);
-        if (unit == selectedUnit) ClearSelection();
-        CheckLevelEnd();
-        CheckTurnEnd();
-    }
-
     public void HandleVillagerEvacuated(UnitInstance villager)
     {
         villagerUnits.Remove(villager);
     }
 
-    private void CheckLevelEnd()
-    {
-        if (levelEnded) return;
-        if (playerUnits.Count == 0)
-        {
-            levelEnded = true;
-            OnLevelLost?.Invoke();
-            // No player units left on the map (all extracted or fallen): roll the after-action screen.
-            GameStateManager.Instance?.EndBattle();
-        }
-        else if (enemyUnits.Count == 0)
-        {
-            levelEnded = true;
-            OnLevelWon?.Invoke();
-        }
-    }
     public int GetVillagerCount()
     {
         return villagerUnits.Count;

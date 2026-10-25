@@ -16,7 +16,6 @@ public class ResearchBaseConfig
     public int MaxMaterials = 300;             // Storehouses adds
     public int ChurchHealCount = 2;            // benched units healed per cycle; Church adds
     public float ChurchHealFraction = 0.05f;   // of max HP; Church adds (SecondaryValue)
-    public int MaxBattleRounds = 20;           // units still on the map after this round are forced to flee
 
     [Header("Floors / ceilings")]
     public int MinVillagerSpawnInterval = 2;
@@ -36,8 +35,7 @@ public enum ResearchStatus { Locked, Available, Active, Completed }
 /// Owns research state (completed nodes + the active slots) and exposes the
 /// derived stats the rest of the game reads. Projects are paid for in battle:
 /// every kill a player unit lands counts toward all active projects. Plain class owned by
-/// GameStateManager, like EventManager. Consumers outside the Decision phase
-/// should read <see cref="Current"/> so the BattlePhase still works when it is
+/// GameStateManager. Consumers should read <see cref="Current"/> so the BattlePhase still works when it is
 /// opened directly without a GameStateManager (falls back to base values).
 /// </summary>
 public class ResearchManager
@@ -154,14 +152,6 @@ public class ResearchManager
         _completed.Add(data.name);
         RecentlyCompleted.Add(data);
 
-        // Ships keep the bonuses the old Build-a-Ship directive gave.
-        if (data.Track == ResearchTrack.Shipwright)
-        {
-            _gsm.Settlement.UnitCapacity += _gsm.Balance.ShipUnitCapacityGain;
-            _gsm.Settlement.VillagerCapacity += _gsm.Balance.ShipVillagerCapacityGain;
-            _gsm.Settlement.ExtraBoats++;
-        }
-
         OnResearchCompleted?.Invoke(data);
     }
 
@@ -206,36 +196,4 @@ public class ResearchManager
     public int ChurchHealCount => Config.ChurchHealCount + Mathf.RoundToInt(Sum(ResearchTrack.Church));
 
     public float ChurchHealFraction => Config.ChurchHealFraction + Sum(ResearchTrack.Church, true);
-
-    public int MaxBattleRounds => Config.MaxBattleRounds + Mathf.RoundToInt(Sum(ResearchTrack.BattleLength));
-
-    // ------------------------------------------------------------
-    // Save / load
-    // ------------------------------------------------------------
-
-    public void WriteTo(SaveData data)
-    {
-        data.CompletedResearch = new List<string>(_completed);
-        data.ActiveResearch = new List<ResearchProgress>();
-        foreach (ResearchProgress p in _active)
-            data.ActiveResearch.Add(new ResearchProgress { Id = p.Id, KillsRemaining = p.KillsRemaining });
-    }
-
-    /// <summary>Older saves (version &lt; 8) have no research fields and load as an empty tree. Version 8 saves tracked cycles, so their active projects restart at the full kill count.</summary>
-    public void ReadFrom(SaveData data)
-    {
-        _completed.Clear();
-        _active.Clear();
-        RecentlyCompleted.Clear();
-        if (data.CompletedResearch != null)
-            foreach (string id in data.CompletedResearch) if (!string.IsNullOrEmpty(id)) _completed.Add(id);
-        if (data.ActiveResearch != null)
-            foreach (ResearchProgress p in data.ActiveResearch)
-                if (p != null && !string.IsNullOrEmpty(p.Id))
-                {
-                    ResearchData node = Find(p.Id);
-                    int kills = p.KillsRemaining > 0 ? p.KillsRemaining : (node != null ? node.KillsToComplete : 1);
-                    _active.Add(new ResearchProgress { Id = p.Id, KillsRemaining = Mathf.Max(1, kills) });
-                }
-    }
 }

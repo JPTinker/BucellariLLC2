@@ -4,7 +4,7 @@ using UnityEngine.UIElements;
 
 /// <summary>
 /// Drives the Research tab (the old Store placeholder slot). Plain component
-/// with no UIDocument: PhaseShellController calls <see cref="Build"/> to get
+/// with no UIDocument: the battle HUD calls <see cref="Build"/> to get
 /// the tab's root element, then <see cref="Refresh"/> each time the tab opens.
 /// The tree is built in code from GameStateManager.AvailableResearch, one row
 /// per track with its tiers left to right, so adding a ResearchData asset is
@@ -199,7 +199,6 @@ public class ResearchController : MonoBehaviour
         }
 
         Refresh();
-        if (PhaseShellController.Instance != null) PhaseShellController.Instance.RefreshHeader();
     }
 
     private static string TrackTitle(ResearchTrack track, ResearchManager r)

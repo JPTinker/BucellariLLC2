@@ -4,30 +4,24 @@ using UnityEngine.UIElements;
 
 /// <summary>
 /// Drives TitleScreen.uxml. The title scene deliberately has no
-/// GameStateManager in it: both buttons just load DecisionPhase, whose own
-/// FullGameManager prefab boots the campaign. Continue sets
-/// SaveSystem.LoadOnNextStart first so that GameStateManager restores the
-/// save instead of starting fresh.
+/// GameStateManager in it: New Game just loads the battle scene, whose own
+/// FullGameManager prefab boots a fresh run. There is no save slot, so the
+/// Continue button and the new-game confirmation are hidden.
 /// </summary>
 [RequireComponent(typeof(UIDocument))]
 public class TitleScreenController : MonoBehaviour
 {
-    [SerializeField] private string gameSceneName = "DecisionPhase";
-
-    private Button _btnContinue, _btnNewGame, _btnConfirmNew, _btnCancelNew;
-    private Label _saveHint;
-    private VisualElement _confirmOverlay;
+    private Button _btnNewGame;
 
     private void OnEnable()
     {
         var root = GetComponent<UIDocument>().rootVisualElement;
 
-        _btnContinue = root.Q<Button>("btn-continue");
         _btnNewGame = root.Q<Button>("btn-new-game");
-        _btnConfirmNew = root.Q<Button>("btn-confirm-new");
-        _btnCancelNew = root.Q<Button>("btn-cancel-new");
-        _saveHint = root.Q<Label>("save-hint");
-        _confirmOverlay = root.Q<VisualElement>("confirm-overlay");
+
+        HideElement(root.Q<VisualElement>("btn-continue"));
+        HideElement(root.Q<VisualElement>("save-hint"));
+        HideElement(root.Q<VisualElement>("confirm-overlay"));
 
         // Settings: button goes under New Game; overlay lives on the root so it covers the screen.
         if (root.Q<Button>("btn-settings") == null)
@@ -36,51 +30,18 @@ public class TitleScreenController : MonoBehaviour
             if (settingsButton != null) settingsButton.AddToClassList("btn");
         }
 
-        bool hasSave = SaveSystem.HasSave;
-        _btnContinue?.SetEnabled(hasSave);
-
-        var continueDetail = root.Q<Label>("continue-detail");
-        if (continueDetail != null)
-        {
-            continueDetail.text = hasSave && SaveSystem.TryRead(out var save)
-                ? $"CYCLE {save.CycleNumber + 1} | {save.Roster.Count} UNITS"
-                : "";
-        }
-        if (_saveHint != null) _saveHint.style.display = hasSave ? DisplayStyle.None : DisplayStyle.Flex;
-
-        if (_btnContinue != null) _btnContinue.clicked += ContinueGame;
-        if (_btnNewGame != null) _btnNewGame.clicked += OnNewGameClicked;
-        if (_btnConfirmNew != null) _btnConfirmNew.clicked += StartNewGame;
-        if (_btnCancelNew != null) _btnCancelNew.clicked += HideConfirm;
+        if (_btnNewGame != null) _btnNewGame.clicked += StartNewGame;
     }
 
     private void OnDisable()
     {
-        if (_btnContinue != null) _btnContinue.clicked -= ContinueGame;
-        if (_btnNewGame != null) _btnNewGame.clicked -= OnNewGameClicked;
-        if (_btnConfirmNew != null) _btnConfirmNew.clicked -= StartNewGame;
-        if (_btnCancelNew != null) _btnCancelNew.clicked -= HideConfirm;
+        if (_btnNewGame != null) _btnNewGame.clicked -= StartNewGame;
     }
 
-    private void ContinueGame()
+    private static void HideElement(VisualElement element)
     {
-        if (!SaveSystem.HasSave) return;
-        SaveSystem.LoadOnNextStart = true;
-        SceneManager.LoadScene(gameSceneName);
+        if (element != null) element.style.display = DisplayStyle.None;
     }
 
-    private void OnNewGameClicked()
-    {
-        // Only ask for confirmation when there's a save the player might mean to keep.
-        if (SaveSystem.HasSave && _confirmOverlay != null) _confirmOverlay.RemoveFromClassList("hidden");
-        else StartNewGame();
-    }
-
-    private void StartNewGame()
-    {
-        SaveSystem.LoadOnNextStart = false;
-        SceneManager.LoadScene(gameSceneName);
-    }
-
-    private void HideConfirm() => _confirmOverlay?.AddToClassList("hidden");
+    private void StartNewGame() => SceneManager.LoadScene(GameStateManager.GameSceneName);
 }

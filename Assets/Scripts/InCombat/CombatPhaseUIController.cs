@@ -58,7 +58,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
     public void SetRound(int round)
     {
-        if (roundLabel != null) roundLabel.text = $"{round:00}/{ResearchManager.Current.MaxBattleRounds:00}";
+        if (roundLabel != null) roundLabel.text = $"{round:00}";
         // A fresh round means the "all units gone" condition can fire again.
         roundEndedSignaled = false;
     }
@@ -185,10 +185,10 @@ public class CombatPhaseUIController : MonoBehaviour
             MapManager.Instance.VillagerCountChanged += HandleVillagerCountChanged;
         RefreshTownsfolkDisplay();
         SetRound(combatManager.currentRound);
-        SetGold(GameStateManager.Instance.Resources.Gold);
         RefreshSettlementLedger();
 
         BuildResearchHud(root);
+        if (GetComponent<GameOverPanel>() == null) gameObject.AddComponent<GameOverPanel>();
 
         // Repaint the top bar the moment workers deposit food/materials.
         GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
@@ -198,9 +198,8 @@ public class CombatPhaseUIController : MonoBehaviour
     /// <summary>
     /// Read-only snapshot of the settlement economy (GameStateManager.Settlement)
     /// so the player can see what they're fighting for without leaving combat.
-    /// Food/Materials/Morale only change via ExecuteCycle/ApplyPostBattleResults
-    /// (neither runs mid-battle), but Units can drop mid-fight via casualties, so
-    /// this is re-pulled after every action alongside the roster/townsfolk panels.
+    /// Re-pulled after every action and whenever GameStateManager.OnSettlementChanged
+    /// fires (deposits, spending, morale, escapes).
     /// </summary>
     public void RefreshSettlementLedger()
     {
@@ -210,8 +209,8 @@ public class CombatPhaseUIController : MonoBehaviour
         GameStateManager.SettlementResources s = gsm.Settlement;
         RefreshWorkerEscapeButton();
 
-        if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.Population}/{s.UnitCapacity}";
-        if (settlementVillagersLabel != null) settlementVillagersLabel.text = $"{s.Villagers}/{s.VillagerCapacity}";
+        if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.FullRoster.Count}/{GameStateManager.MaxHeroes}";
+        if (settlementVillagersLabel != null) settlementVillagersLabel.text = $"{gsm.VillagersEscapedThisBattle}/{gsm.Balance.VillagersToWin}";
         if (settlementFoodLabel != null) settlementFoodLabel.text = s.Food.ToString();
         if (settlementMaterialsLabel != null) settlementMaterialsLabel.text = s.Materials.ToString();
         if (settlementMoraleLabel != null) settlementMoraleLabel.text = $"{s.Morale}%";
@@ -354,7 +353,7 @@ public class CombatPhaseUIController : MonoBehaviour
     private void HandleVillagerCountChanged(int spawned, int target)
     {
         SetTownsfolkSpawned(spawned, target);
-        SetTownsfolkSaved(GameStateManager.Instance.SavedVillagersThisBattle, target);
+        SetTownsfolkSaved(CombatManager.Instance != null ? CombatManager.Instance.GetVillagerCount() : 0, target);
     }
 
     public void RefreshTownsfolkDisplay()
@@ -365,7 +364,7 @@ public class CombatPhaseUIController : MonoBehaviour
         int spawned = MapManager.Instance.GetVillagersSpawned();
         int target = MapManager.Instance.GetVillagerSpawnTarget();
         SetTownsfolkSpawned(spawned, target);
-        SetTownsfolkSaved(GameStateManager.Instance.SavedVillagersThisBattle, target);
+        SetTownsfolkSaved(CombatManager.Instance != null ? CombatManager.Instance.GetVillagerCount() : 0, target);
     }
 
     private void SetTownsfolkSpawned(int spawned, int target)

@@ -9,7 +9,7 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-text-col">
                     <ui:Label text="HEROES" class="resource-label"/>
-                    <ui:Label name="settlement-units-value" text="5/5" class="resource-value"/>
+                    <ui:Label name="settlement-units-value" text="2/7" class="resource-value"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
@@ -19,8 +19,8 @@
                     <ui:VisualElement class="hud-glow hud-glow--villager"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-text-col">
-                    <ui:Label text="VILLAGERS" class="resource-label"/>
-                    <ui:Label name="settlement-villagers-value" text="5/10" class="resource-value"/>
+                    <ui:Label text="ESCAPED" class="resource-label"/>
+                    <ui:Label name="settlement-villagers-value" text="0/10" class="resource-value"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
@@ -57,9 +57,16 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
+            <ui:VisualElement name="morale-block" class="hud-block">
+                <ui:VisualElement class="hud-text-col">
+                    <ui:Label text="MORALE" class="resource-label"/>
+                    <ui:Label name="settlement-morale-value" text="50%" class="resource-value"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-separator"/>
+            </ui:VisualElement>
             <ui:VisualElement name="round-block" class="hud-block hud-block--round">
                 <ui:VisualElement class="hud-text-col">
-                    <ui:Label text="ENEMY ROUND" class="resource-label"/>
+                    <ui:Label text="ROUND" class="resource-label"/>
                     <ui:Label name="round-value" text="04" class="round-value"/>
                 </ui:VisualElement>
             </ui:VisualElement>

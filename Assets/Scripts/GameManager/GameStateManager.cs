@@ -5,108 +5,19 @@ using UnityEngine.SceneManagement;
 
 public class GameStateManager : MonoBehaviour
 {
-
-    [System.Serializable]
-    public class PlayerResources
-    {
-        public int Gold = 100;
-        public int CurrentStageIndex = 1;
-        // Add unlocked craftables, metadata, progression flags, etc.
-    }
-
-    /// <summary>
-    /// The settlement's persistent economy. This is what the Decision (planning)
-    /// screen reads and writes. Population (Units) isn't stored here - it's
-    /// FullRoster.Count. Villagers ARE stored here: unlike Units they aren't
-    /// individual Unit records with HP/Attack, just a headcount resource (like
-    /// Food/Materials) that gets sent out to labor directives each cycle.
-    /// </summary>
+    /// <summary>The settlement's economy. Morale is the lose condition: it starts at <see cref="CycleBalanceConfig.StartingMorale"/> and the run ends at 0.</summary>
     [System.Serializable]
     public class SettlementResources
     {
         public int Food = 200;
         public int Materials = 185;
-        [Range(0, 100)] public int Morale = 84;
-        public int Villagers = 2;          // current available villager headcount (worker pool)
-        public int VillagerCapacity = 5;   // max Villagers the settlement can support (+5 per boat)
-        public int UnitCapacity = 5;       // max Units (FullRoster) the settlement can support
-        public int ExtraBoats;             // ships built beyond the starting boat; each docks beside it in battle
+        [Range(0, 100)] public int Morale = 50;
     }
 
-    /// <summary>
-    /// Which directive a block of Units/Villagers is assigned to for the upcoming
-    /// cycle. Mirrors the four cards on the Decision screen 1:1. Vanguard draws
-    /// from Units (Population); Scavenge/Harvest/Expansion draw from Villagers.
-    /// </summary>
-    public enum Directive { Vanguard, Scavenge, Harvest, Expansion }
-
-    /// <summary>
-    /// The player's chosen course for the upcoming cycle, picked on the
-    /// Campaign Map tab. Mutually exclusive - one applies per cycle, layered
-    /// on top of whatever Directive allocation is chosen on the Decision tab.
-    /// Consumed by ComputeForecast()/ExecuteCycle(), then reset to Travel once
-    /// the cycle commits so Stay Put/Rest have to be consciously repicked
-    /// rather than silently repeating.
-    /// </summary>
-    public enum CampaignAction { Travel, StayPut, Rest }
-
-    /// <summary>
-    /// The player's in-progress, not-yet-committed allocation for this planning
-    /// cycle. Adjusted live by the Decision screen via AdjustAllocation(), applied
-    /// to Settlement by ExecuteCycle(). ScavengeUnits (material workers) and
-    /// HarvestUnits (food workers) are headcounts of Villagers despite the field
-    /// name (kept for UXML/binding compatibility); they spawn as autonomous
-    /// workers in the battle. ExpansionUnits (Build a Ship) is special: it is
-    /// only ever 0 or 1 (queued) and costs Materials, not Villagers.
-    ///
-    /// Vanguard has no field here - it's derived from ActiveTeam.Count (the
-    /// units picked on the Roster tab), not manually adjustable. See
-    /// TryAdjustAllocation() and ComputeForecast()/ExecuteCycle().
-    /// </summary>
-    [System.Serializable]
-    public class CycleAllocation
-    {
-        public int ScavengeUnits;
-        public int HarvestUnits;
-        public int ExpansionUnits;
-
-        public int Get(Directive d) => d switch
-        {
-            Directive.Scavenge => ScavengeUnits,
-            Directive.Harvest => HarvestUnits,
-            Directive.Expansion => ExpansionUnits,
-            _ => 0
-        };
-
-        public void Set(Directive d, int value)
-        {
-            switch (d)
-            {
-                case Directive.Scavenge: ScavengeUnits = value; break;
-                case Directive.Harvest: HarvestUnits = value; break;
-                case Directive.Expansion: ExpansionUnits = value; break;
-            }
-        }
-
-        public void Reset(int scavenge = 0, int harvest = 0, int expansion = 0)
-        {
-            ScavengeUnits = scavenge;
-            HarvestUnits = harvest;
-            ExpansionUnits = expansion;
-        }
-    }
-
-    /// <summary>
-    /// Tunable rates for the planning economy. Exposed so designers can
-    /// rebalance from the Inspector instead of editing code.
-    /// </summary>
+    /// <summary>Tunable rates for the run. Exposed so designers can rebalance from the Inspector instead of editing code.</summary>
     [System.Serializable]
     public class CycleBalanceConfig
     {
-        [Header("Food costs (paid when the cycle executes)")]
-        public int FoodCostPerVanguardUnit = 20;  // Food spent per Unit sent to battle (Vanguard)
-        public int FoodCostPerVillagerSent = 10;  // Food spent per Villager sent to ANY labor directive
-
         [Header("Worker villagers (in battle)")]
         public int WorkerFoodPerGather = 30;       // food carried per gather turn at a farm
         public int WorkerMaterialsPerGather = 20;  // materials carried per gather turn at a lumber mill
@@ -114,51 +25,40 @@ public class GameStateManager : MonoBehaviour
         public float WorkerHpBonusPerLevel = 0.10f;    // +HP fraction per enemy wave level
         public float WorkerYieldBonusPerLevel = 0.10f; // +gather yield fraction per enemy wave level
 
-        [Header("Shipwright research (what each ship node grants; costs live on the ResearchData)")]
-        public int ShipUnitCapacityGain = 5;
-        public int ShipVillagerCapacityGain = 3;
-
         [Header("Leveling")]
         public int FoodCostPerLevelUp = 5;        // Food the settlement spends each time a unit levels up
 
-        [Header("Morale - per-cycle allocation costs")]
-        public float MoralePenaltyPerVanguardUnit = 1f;   // -1% per Unit sent to battle
-        public float MoralePenaltyPerVillagerSent = 3f;   // -3% per Villager sent to any labor directive
+        [Header("Morale (lose at 0)")]
+        public int StartingMorale = 50;
+        public int HeroDeathMoralePenalty = 8;
+        public int VillagerDeathMoralePenalty = 5;
+        [Tooltip("Lost per extraction slot left unused when an extraction point disappears.")]
+        public int UnusedExtractionSlotMoralePenalty = 6;
 
-        [Header("Morale - post-battle bonuses/penalties")]
-        public float EnemyKilledMoraleBonus = 0.25f;      // per confirmed kill, applied post-battle
-        public int VillagerSavedMoraleBonus = 5;         // per rescued villager extracted, applied post-battle
-        public int UnitLostMoralePenalty = 10;            // per casualty, applied post-battle
-
-        [Header("Travel progression")]
-        [Tooltip("Travel cycles toward the Evacuation Zone needed for each +1 level on newly drafted units.")]
-        public int TravelsPerDraftLevel = 3;
-
-        [Header("Events")]
-        [Range(0f, 1f)] public float EventChance = 0.5f;  // odds a Random event fires when DecisionPhase loads
+        [Header("Win / score")]
+        public int VillagersToWin = 10;
+        public int ScoreBase = 10000;
+        public int ScorePerRound = -50;
+        public int ScorePerEnemyKilled = 100;
+        public int ScorePerHeroLost = -250;
+        public int ScorePerVillagerLost = -100;
     }
 
-    /// <summary>
-    /// Read-only projection of what ExecuteCycle() would do if called right now,
-    /// with the current CurrentAllocation. The Decision screen renders this
-    /// every time the player taps a stepper - call ComputeForecast(), don't
-    /// duplicate this math in the UI layer.
-    /// </summary>
-    public struct CycleForecast
+    /// <summary>Everything the Win/Lose panel shows once the run ends.</summary>
+    public struct GameResult
     {
-        public int IdleUnits;
-        public int VillagersSent;
-        public int IdleVillagers;
-        public int FoodDelta;
-        public int MaterialsDelta;
-        public int MoraleDelta;
+        public bool Won;
+        public int Score;
+        public int Rounds;
+        public int EnemiesKilled;
+        public int HeroesLost;
+        public int VillagersLost;
+        public int VillagersEscaped;
     }
 
     /// <summary>
     /// Snapshot of a single unit's level-up, captured at the moment the level-up
-    /// happens (in combat, on the results screen, wherever your XP logic lives).
-    /// The planning screen drains PendingLevelUps and reads this struct to know
-    /// what to show on the level-up card - it doesn't recompute anything itself.
+    /// happens. Drained via PendingLevelUps.
     /// </summary>
     [System.Serializable]
     public struct LevelUpInfo
@@ -186,14 +86,11 @@ public class GameStateManager : MonoBehaviour
     // --- SINGLETON SETUP ---
     public static GameStateManager Instance { get; private set; }
 
+    public const string TitleSceneName = "TitleScreen";
+    public const string GameSceneName = "BattlePhase";
+
     [Header("Available Unit Templates")]
-    public List<UnitData> AvailablePlayerArchetypes; // Drag 'Knight' and 'Warrior' assets here
-
-    [Header("Events")]
-    public List<EventData> AvailableEvents; // Drag EventData assets here (asset name is the save ID)
-
-    private EventManager _events;
-    public EventManager Events => _events ??= new EventManager(this);
+    public List<UnitData> AvailablePlayerArchetypes; // Drag the hero UnitData assets here
 
     [Header("Research")]
     public List<ResearchData> AvailableResearch; // Drag ResearchData assets here (asset name is the save ID)
@@ -202,119 +99,43 @@ public class GameStateManager : MonoBehaviour
     private ResearchManager _research;
     public ResearchManager Research => _research ??= new ResearchManager(this);
 
-    /// <summary>Cycles executed so far this campaign (used for event cooldowns).</summary>
-    public int CycleNumber { get; private set; }
+    /// <summary>Most heroes allowed on the field at once.</summary>
+    public const int MaxHeroes = 7;
+    public const int StarterHeroCount = 2;
 
-    // Maximum number of units the player can bring into a single battle.
-    public const int MaxTeamSize = 5;
-
-    [Header("Persistent Data")]
-    public PlayerResources Resources = new PlayerResources();
-
-    [Header("Settlement / Planning Phase")]
+    [Header("Settlement")]
     public SettlementResources Settlement = new SettlementResources();
-    public CycleAllocation CurrentAllocation = new CycleAllocation();
     public CycleBalanceConfig Balance = new CycleBalanceConfig();
 
-    [Header("Campaign Map")]
-    public CampaignAction SelectedCampaignAction = CampaignAction.Travel;
-    public bool HasSelectedCampaignAction { get; private set; }
-    /// <summary>Cycles of travel from the start to the Evacuation Zone (used to place the boat on the Voyage screen).</summary>
-    public const int EvacuationCyclesTotal = 10;
-    public int EvacuationCyclesRemaining = EvacuationCyclesTotal;
-
-    /// <summary>How many times the player has travelled toward the Evacuation Zone.</summary>
-    public int TravelCount => Mathf.Clamp(EvacuationCyclesTotal - EvacuationCyclesRemaining, 0, EvacuationCyclesTotal);
-
-    /// <summary>Extra levels newly drafted units start with: +1 per <see cref="CycleBalanceConfig.TravelsPerDraftLevel"/> travels.</summary>
-    public int DraftLevelBonus => TravelCount / Mathf.Max(1, Balance.TravelsPerDraftLevel);
-
-    /// <summary>Set by ExecuteCycle when the course was Travel; consumed by the Voyage scene.</summary>
-    public bool HasPendingVoyage { get; private set; }
-    public int VoyageFromRemaining { get; private set; }
-    public int VoyageToRemaining { get; private set; }
-    public const string VoyageSceneName = "Voyage";
-    public string BattleSceneAfterVoyage { get; private set; } = "BattlePhase";
-
-    /// <summary>Called by the Voyage scene once its sailing animation is done.</summary>
-    public void ClearPendingVoyage() => HasPendingVoyage = false;
-
-    // Roster of all owned units (the pool shown on the team-selection screen).
+    /// <summary>All heroes owned this run. The battle scene spawns every one of them.</summary>
     public List<Unit> FullRoster = new List<Unit>();
 
-    // Units lost for good (battle deaths, event losses), newest last. Shown on the Memorial tab.
-    public List<FallenRecord> Memorial = new List<FallenRecord>();
-
-    // Units the player has picked to bring into the current battle (max MaxTeamSize).
+    // Heroes in the battle scene. Kept equal to FullRoster; MapManager reads it when placing the starting team.
     public List<Unit> ActiveTeam = new List<Unit>();
 
-    // Units added to FullRoster that haven't been shown to the player yet via the
-    // "new unit" reveal animation on the team-selection screen. The UI drains this
-    // queue and calls ClearPendingReveal() once it has shown them all.
-    public List<Unit> PendingReveal = new List<Unit>();
-
-    // Units that leveled up (e.g. during the last battle) and haven't had their
-    // "level up" animation shown yet. The UI drains this queue with QueueLevelUp
-    // and calls ClearPendingLevelUps() once it has shown them all. Populate it by
-    // calling QueueLevelUp() from wherever your XP/leveling logic lives.
+    // Units that leveled up and haven't had their "level up" feedback shown yet.
     [NonSerialized] public Queue<LevelUpInfo> PendingLevelUps = new Queue<LevelUpInfo>();
 
-    // When populated, the team-selection screen shows two unit candidates. The
-    // player can also choose to add the saved person as a Villager instead.
-    public List<UnitData> PendingDraftOptions = new List<UnitData>();
-    // Rarity pre-rolled for each draft option (same index) so the card can show
-    // it before the pick, and the recruited unit matches what was shown.
-    public List<UnitRarity> PendingDraftRarities = new List<UnitRarity>();
-    /// <summary>
-    /// Rescued people not yet turned into recruits ("potential people saved").
-    /// +1 per villager extracted; each draft resolved (unit or villager) spends 1.
-    /// Kept while the settlement is full, so the draft is offered once space frees up.
-    /// </summary>
-    public int PeopleSaved { get; private set; }
-    public int PendingDraftsToOffer => PeopleSaved;
-    public bool CanDraftSavedVillager { get; private set; }
+    public bool HeroesFull => FullRoster.Count >= MaxHeroes;
 
-    public bool UnitsFull => FullRoster.Count >= Settlement.UnitCapacity;
-    public bool VillagersFull => Settlement.Villagers >= Settlement.VillagerCapacity;
-    /// <summary>True when a reward draft (unit cards and/or a villager card) is waiting to be shown.</summary>
-    public bool HasPendingDraft => PendingDraftOptions.Count > 0 || CanDraftSavedVillager;
+    [Header("Run progress")]
+    public int EnemiesKilledThisBattle;
+    public int HeroesLostThisBattle;
+    public int VillagersLostThisBattle;
+    public int VillagersEscapedThisBattle;
+    public int RoundsElapsed;
 
-    [Header("Extraction & Combat Progress")]
-    // Tracks units that successfully extracted during the current battle
-    public List<Unit> ExtractedUnitsThisBattle = new List<Unit>();
-    // Tracks villagers saved during the current battle
-    public int SavedVillagersThisBattle = 0;
-    // Tracks confirmed enemy kills during the current battle
-    public int EnemiesKilledThisBattle = 0;
-    // Tracks player units lost (died, not extracted) during the current battle
-    public int CasualtiesThisBattle = 0;
-
-    /// <summary>Per-unit record of the battle that just ended; read by the AfterAction scene.</summary>
+    /// <summary>Per-unit record of the run so far.</summary>
     public BattleReport LastBattleReport { get; private set; } = new BattleReport();
-    private bool _battleEnding;
-    public const string AfterActionScene = "AfterAction";
 
-    [Header("Last Cycle Debrief (read-only snapshot for UI)")]
+    public bool GameEnded { get; private set; }
+    public GameResult LastResult { get; private set; }
 
-    // Snapshot of the *This Battle counters, taken by ApplyPostBattleResults()
+    /// <summary>Raised once when the run is won or lost, so the HUD can show the result panel.</summary>
+    public static event Action<GameResult> OnGameOver;
 
-    // right before it clears them. The Decision screen reads these to show
-
-    // "what just happened" - the *ThisBattle fields themselves are already
-
-    // zero by the time any UI script's Start()/OnEnable() runs, since
-
-    // ApplyPostBattleResults() fires from OnSceneLoaded ahead of the UI.
-
-    public int LastCycleKills { get; private set; }
-
-    public int LastCycleVillagersSaved { get; private set; }
-
-    public int LastCycleCasualties { get; private set; }
-
-    public int LastCycleMoraleDelta { get; private set; }
-
-
+    /// <summary>Raised when Settlement values change mid-scene (worker deposits, spending, morale) so HUDs can repaint.</summary>
+    public static event Action OnSettlementChanged;
 
     private void Awake()
     {
@@ -327,108 +148,17 @@ public class GameStateManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        // Title screen's Continue button: restore the saved campaign instead
-        // of rolling a fresh starter squad + draft.
-        if (SaveSystem.LoadOnNextStart)
-        {
-            SaveSystem.LoadOnNextStart = false;
-            if (SaveSystem.TryRead(out SaveData save) && ApplySaveData(save))
-                return;
-            Debug.LogWarning("GameStateManager: couldn't load save file, starting a new game instead.");
-        }
-
-        EnsurePlayerHasTeam();
+        Settlement.Morale = Balance.StartingMorale;
+        if (FullRoster.Count == 0) GrantStarterUnits(StarterHeroCount);
+        ActiveTeam = new List<Unit>(FullRoster);
     }
-    private void OnEnable()
+
+    private void OnDestroy()
     {
-        // Subscribe to the sceneLoaded event
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-    // This method runs automatically when any scene loads
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        Debug.Log($"Scene loaded: {scene.name}");
-        if (scene.name == "BattlePhase")
-        {
-            // Fresh report for the new battle; units add their entry when MapManager spawns them in Start().
-            LastBattleReport = new BattleReport();
-            ExtractedUnitsThisBattle.Clear();
-            _battleEnding = false;
-        }
-        // Add your custom logic here (e.g., spawn player, update UI)
-        if (scene.name == "DecisionPhase")
-        {
-            Debug.Log(" Scene has been confirmed");
-            PlanningPhaseController planningController =
-                GameObject.FindAnyObjectByType<PlanningPhaseController>();
-
-            // Resolve morale from whatever happened in the battle just finished
-            // (kills, casualties, villagers saved) BEFORE the player sees the
-            // ledger, so the Morale value on screen already reflects last cycle.
-            ApplyPostBattleResults();
-
-            PeopleSaved += SavedVillagersThisBattle;
-            SavedVillagersThisBattle = 0;
-            if (PeopleSaved > 0 && !HasPendingDraft)
-            {
-                OfferNextUnitDraft();
-                planningController?.LevelChangeDraftOffer();
-            }
-
-            // Roll this cycle's narrative event last, so the popup sits on top of
-            // any draft/reveal. Pending state is saved, so reloads can't reroll it.
-            Events.TryQueueEvent();
-        }
-    }
-    /// <summary>
-    /// Sets up whatever the current scene needs on startup:
-    ///  - "DecisionPhase": make sure a roster exists, then offer a unit draft
-    ///    so the player picks their recruit + team on the planning screen.
-    ///  - "BattlePhase": the game was launched straight into combat (e.g. for
-    ///    testing), so skip the planning screen and auto-pick a random team.
-    ///  - anything else: just make sure the player has a roster.
-    /// </summary>
-    public void EnsurePlayerHasTeam(int startingCount = 2)
-    {
-        // Remove invalid entries left by older saves that stored archetype assets
-        // directly instead of owned Unit records.
-        FullRoster.RemoveAll(unit => unit == null || unit.Archetype == null);
-        PendingReveal.RemoveAll(unit => unit == null || unit.Archetype == null);
-        for (int i = PendingDraftOptions.Count - 1; i >= 0; i--)
-        {
-            if (PendingDraftOptions[i] != null) continue;
-            PendingDraftOptions.RemoveAt(i);
-            if (i < PendingDraftRarities.Count) PendingDraftRarities.RemoveAt(i);
-        }
-
-        string sceneName = SceneManager.GetActiveScene().name;
-
-        if (sceneName == "DecisionPhase")
-        {
-            if (FullRoster.Count == 0) GrantStarterUnits(startingCount);
-            OfferUnitDraft(2, allowVillagerChoice: true);
-            return;
-        }
-
-        if (sceneName == "BattlePhase")
-        {
-            if (FullRoster.Count == 0) GrantStarterUnits(startingCount);
-            // Preserve the team chosen on the planning screen. Only auto-pick
-            // when the battle scene was entered without an active team.
-            if (ActiveTeam.Count == 0)
-                AutoSelectRandomTeam(startingCount);
-            return;
-        }
-
-        // Any other scene (menu, bootstrap, etc.): just make sure a roster exists.
-        if (FullRoster.Count == 0) GrantStarterUnits(startingCount);
+        if (Instance == this) Instance = null;
     }
 
-    /// <summary>
-    /// Grants `count` random starter units into FullRoster. These skip the
-    /// "new unit" reveal animation since they're the player's default squad,
-    /// not something they just earned. Starter units are always Legendary.
-    /// </summary>
+    /// <summary>Gives the player's starting heroes. Starters are always Legendary.</summary>
     private void GrantStarterUnits(int count)
     {
         if (AvailablePlayerArchetypes == null || AvailablePlayerArchetypes.Count == 0)
@@ -437,211 +167,18 @@ public class GameStateManager : MonoBehaviour
             return;
         }
 
-        List<UnitData> starters = new List<UnitData>();
+        var starters = new List<UnitData>();
         for (int i = 0; i < count; i++)
         {
-            // Pick randomly between Knight and Warrior
             int randomIndex = UnityEngine.Random.Range(0, AvailablePlayerArchetypes.Count);
             starters.Add(AvailablePlayerArchetypes[randomIndex]);
         }
 
-        AddUnitsToRoster(starters, flagAsNew: false, rarity: UnitRarity.Legendary);
+        AddUnitsToRoster(starters, UnitRarity.Legendary);
     }
 
-    /// <summary>
-    /// Picks up to `count` random units already in FullRoster and sets them as
-    /// the ActiveTeam. Used when a scene skips the planning screen entirely
-    /// (e.g. launching straight into BattlePhase for testing).
-    /// </summary>
-    private void AutoSelectRandomTeam(int count)
-    {
-        if (FullRoster.Count == 0)
-        {
-            Debug.LogWarning("AutoSelectRandomTeam: FullRoster is empty, nothing to select.");
-            return;
-        }
-
-        List<Unit> pool = new List<Unit>(FullRoster);
-        for (int i = pool.Count - 1; i > 0; i--)
-        {
-            int j = UnityEngine.Random.Range(0, i + 1);
-            (pool[i], pool[j]) = (pool[j], pool[i]);
-        }
-
-        int take = Mathf.Min(count, pool.Count);
-        SetActiveTeam(pool.GetRange(0, take));
-    }
-
-    public void OfferUnitDraft(int optionCount = 2, bool allowVillagerChoice = false)
-    {
-        Debug.Log("Offering draft");
-        // Capacity gating: full roster -> villager card only; full villagers ->
-        // unit cards only; both full -> nothing is offered.
-        CanDraftSavedVillager = allowVillagerChoice && !VillagersFull;
-        if (UnitsFull)
-        {
-            PendingDraftOptions.Clear();
-            PendingDraftRarities.Clear();
-            return;
-        }
-        if (AvailablePlayerArchetypes == null || AvailablePlayerArchetypes.Count == 0)
-        {
-            Debug.LogError("No UnitData archetypes assigned in GameStateManager!");
-            return;
-        }
-
-        // Filter out any unassigned (null) slots in the archetype list before
-        // shuffling — an empty Inspector slot here would otherwise ride through
-        // into PendingDraftOptions and NRE when the UI reads its stats.
-        List<UnitData> pool = new List<UnitData>();
-        foreach (var archetype in AvailablePlayerArchetypes)
-        {
-            if (archetype != null) pool.Add(archetype);
-        }
-
-        if (pool.Count == 0)
-        {
-            Debug.LogError("AvailablePlayerArchetypes only contains null/unassigned entries!");
-            return;
-        }
-
-        // Shuffle (Fisher-Yates) and take the first N so options are distinct
-        // rather than possibly offering duplicates.
-        for (int i = pool.Count - 1; i > 0; i--)
-        {
-            int j = UnityEngine.Random.Range(0, i + 1);
-            (pool[i], pool[j]) = (pool[j], pool[i]);
-        }
-
-        int count = Mathf.Min(optionCount, pool.Count);
-        PendingDraftOptions = pool.GetRange(0, count);
-        PendingDraftRarities.Clear();
-        for (int i = 0; i < count; i++) PendingDraftRarities.Add(UnitRarityTable.Roll());
-    }
-
-    /// <summary>The pre-rolled rarity for the draft option at <paramref name="index"/>.</summary>
-    public UnitRarity GetDraftRarity(int index)
-    {
-        return index >= 0 && index < PendingDraftRarities.Count ? PendingDraftRarities[index] : UnitRarity.Common;
-    }
-
-    public void OfferNextUnitDraft()
-    {
-        // If the settlement is full on both counts nothing is shown and the
-        // people stay banked in PeopleSaved until there is room.
-        if (PeopleSaved > 0)
-            OfferUnitDraft(2, allowVillagerChoice: true);
-    }
-
-    private void SpendSavedPerson()
-    {
-        if (PeopleSaved > 0) PeopleSaved--;
-    }
-
-    /// <summary>Why <paramref name="unit"/> can't be dismissed, or null when it can.</summary>
-    public bool CanDismissUnit(Unit unit, out string reason)
-    {
-        reason = null;
-        if (unit == null || !FullRoster.Contains(unit)) reason = "Unit not found.";
-        else if (FullRoster.Count <= 1) reason = "You must keep at least one unit.";
-        else if (VillagersFull) reason = "Villager capacity is full.";
-        return reason == null;
-    }
-
-    /// <summary>Removes a unit from the roster permanently and converts them to a Villager.</summary>
-    public bool DismissUnitForVillager(Unit unit)
-    {
-        if (!CanDismissUnit(unit, out _)) return false;
-        FullRoster.Remove(unit);
-        ActiveTeam.Remove(unit);
-        PendingReveal.Remove(unit);
-        Settlement.Villagers++;
-        return true;
-    }
-
-    public void ResolveUnitDraft(UnitData chosen)
-    {
-        ResolveUnitDraft(chosen, GetDraftRarity(PendingDraftOptions.IndexOf(chosen)));
-    }
-
-    public void ResolveUnitDraft(UnitData chosen, UnitRarity rarity)
-    {
-        // Reuse the unit the draft card showed so the roster portrait (colour scheme) matches it.
-        int index = PendingDraftOptions.IndexOf(chosen);
-        Unit previewed = index >= 0 ? GetDraftUnit(index) : null;
-
-        PendingDraftOptions.Clear();
-        PendingDraftRarities.Clear();
-        _draftPreviewUnits.Clear();
-        CanDraftSavedVillager = false;
-        if (chosen == null) return;
-        SpendSavedPerson();
-
-        if (previewed != null && previewed.Rarity == rarity)
-        {
-            previewed.UnitName = NameGenerator.Random();
-            FullRoster.Add(previewed);
-            PendingReveal.Add(previewed);
-        }
-        else
-        {
-            AddUnitToRoster(chosen, flagAsNew: true, rarity: rarity);
-        }
-    }
-
-    private readonly List<Unit> _draftPreviewUnits = new List<Unit>();
-
-    /// <summary>
-    /// The concrete unit the draft option at <paramref name="index"/> will become if picked.
-    /// Built once so its rolled colour scheme stays the same between the card and the roster.
-    /// </summary>
-    public Unit GetDraftUnit(int index)
-    {
-        if (index < 0 || index >= PendingDraftOptions.Count || PendingDraftOptions[index] == null) return null;
-        while (_draftPreviewUnits.Count <= index) _draftPreviewUnits.Add(null);
-
-        UnitRarity rarity = GetDraftRarity(index);
-        Unit cached = _draftPreviewUnits[index];
-        if (cached == null || cached.Archetype != PendingDraftOptions[index] || cached.Rarity != rarity)
-        {
-            _draftPreviewUnits[index] = cached = new Unit(PendingDraftOptions[index], rarity);
-            cached.GrantLevels(DraftLevelBonus);
-        }
-        return cached;
-    }
-
-    /// <summary>The player declined every draft option: the saved person is spent and nothing is recruited.</summary>
-    public void ResolveDraftSkip()
-    {
-        PendingDraftOptions.Clear();
-        PendingDraftRarities.Clear();
-        _draftPreviewUnits.Clear();
-        CanDraftSavedVillager = false;
-        SpendSavedPerson();
-    }
-
-    public void ResolveVillagerDraft()
-    {
-        if (!CanDraftSavedVillager)
-        {
-            Debug.LogWarning("ResolveVillagerDraft called when no saved-villager draft choice is active.");
-            return;
-        }
-
-        PendingDraftOptions.Clear();
-        PendingDraftRarities.Clear();
-        CanDraftSavedVillager = false;
-        Settlement.Villagers++;
-        SpendSavedPerson();
-    }
-
-    /// <summary>
-    /// Adds one or more units to the player's roster.
-    /// </summary>
-    /// <param name="flagAsNew">If true, the units are queued for the reveal animation
-    /// the next time the team-selection screen is shown.</param>
-    /// <param name="rarity">Rarity for every added unit; null rolls one per unit.</param>
-    public void AddUnitsToRoster(List<UnitData> archetypes, bool flagAsNew = true, UnitRarity? rarity = null)
+    /// <summary>Adds heroes to the roster. <paramref name="rarity"/> null rolls one per unit.</summary>
+    public void AddUnitsToRoster(List<UnitData> archetypes, UnitRarity? rarity = null)
     {
         if (archetypes == null) return;
         foreach (UnitData archetype in archetypes)
@@ -649,182 +186,96 @@ public class GameStateManager : MonoBehaviour
             if (archetype == null) continue;
             Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
             unit.UnitName = NameGenerator.Random();
-            unit.GrantLevels(DraftLevelBonus);
             FullRoster.Add(unit);
-            if (flagAsNew) PendingReveal.Add(unit);
         }
     }
 
-    public void AddUnitToRoster(UnitData archetype, bool flagAsNew = true, UnitRarity? rarity = null)
+    /// <summary>Adds a single hero to the roster and the battle team, returning the new record (null if the hero cap is reached).</summary>
+    public Unit AddHero(UnitData archetype, UnitRarity? rarity = null)
     {
-        AddUnitsToRoster(new List<UnitData> { archetype }, flagAsNew, rarity);
+        if (archetype == null || HeroesFull) return null;
+        Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
+        unit.UnitName = NameGenerator.Random();
+        FullRoster.Add(unit);
+        ActiveTeam.Add(unit);
+        return unit;
     }
 
-    /// <summary>
-    /// Called by the team-selection screen once it has finished animating in
-    /// all pending new units, so they aren't shown again next visit.
-    /// </summary>
-    public void ClearPendingReveal()
-    {
-        PendingReveal.Clear();
-    }
-
-    /// <summary>
-    /// Queues a level-up card to be shown on the planning screen the next time
-    /// it's visited. Call this from wherever your XP/leveling logic actually
-    /// applies the stat increase (e.g. end-of-combat XP tally, or the moment a
-    /// unit crosses an XP threshold mid-battle) - pass the stats from just
-    /// before and just after the level-up so the UI can show the delta without
-    /// needing to know how leveling math works.
-    /// </summary>
+    /// <summary>Queues a level-up card. Call from wherever XP/leveling is applied.</summary>
     public void QueueLevelUp(Unit unit, int oldLevel, int newLevel, int oldMaxHP, int newMaxHP, int oldAttack, int newAttack)
     {
         if (unit == null) return;
         PendingLevelUps.Enqueue(new LevelUpInfo(unit, oldLevel, newLevel, oldMaxHP, newMaxHP, oldAttack, newAttack));
     }
 
-    /// <summary>
-    /// Called by the team-selection screen once it has finished animating
-    /// through all pending level-ups, so they aren't shown again next visit.
-    /// </summary>
-    public void ClearPendingLevelUps()
+    public void ClearPendingLevelUps() => PendingLevelUps.Clear();
+
+    // --- RUN END ---
+
+    /// <summary>Ends the run and raises <see cref="OnGameOver"/> with the final score. Only the first call counts.</summary>
+    public void EndGame(bool won)
     {
-        PendingLevelUps.Clear();
+        if (GameEnded) return;
+        GameEnded = true;
+
+        LastBattleReport.EnemiesKilled = EnemiesKilledThisBattle;
+        LastBattleReport.VillagersSaved = VillagersEscapedThisBattle;
+        LastBattleReport.Won = won;
+
+        LastResult = new GameResult
+        {
+            Won = won,
+            Rounds = RoundsElapsed,
+            EnemiesKilled = EnemiesKilledThisBattle,
+            HeroesLost = HeroesLostThisBattle,
+            VillagersLost = VillagersLostThisBattle,
+            VillagersEscaped = VillagersEscapedThisBattle,
+            Score = ComputeScore()
+        };
+        OnGameOver?.Invoke(LastResult);
     }
 
-    /// <summary>
-    /// Validates and commits the player's chosen battle team.
-    /// </summary>
-    public bool SetActiveTeam(List<Unit> selected)
+    private int ComputeScore()
     {
-        if (selected == null || selected.Count == 0)
-        {
-            Debug.LogWarning("Cannot set an empty battle team.");
-            return false;
-        }
-
-        if (selected.Count > MaxTeamSize)
-        {
-            Debug.LogWarning($"Cannot select more than {MaxTeamSize} units for battle.");
-            return false;
-        }
-
-        ActiveTeam = new List<Unit>(selected);
-        return true;
+        var b = Balance;
+        int score = b.ScoreBase
+            + b.ScorePerRound * RoundsElapsed
+            + b.ScorePerEnemyKilled * EnemiesKilledThisBattle
+            + b.ScorePerHeroLost * HeroesLostThisBattle
+            + b.ScorePerVillagerLost * VillagersLostThisBattle;
+        return Mathf.Max(0, score);
     }
 
-    // --- GAME / SCENE STATE ---
-    public enum GameState
+    /// <summary>Starts a fresh run. This manager is discarded so the reloaded scene builds a clean one.</summary>
+    public void RestartGame() => LoadFresh(GameSceneName);
+
+    public void ReturnToTitle() => LoadFresh(TitleSceneName);
+
+    private void LoadFresh(string sceneName)
     {
-        TeamManagement,
-        InCombat,
-        GameOver,
-        StartMenu
-    }
-
-    public GameState CurrentState { get; private set; } = GameState.TeamManagement;
-
-    // Events for other systems to listen to
-    public static event Action<GameState> OnGameStateChanged;
-
-    // --- SCENE TRANSITION METHODS ---
-
-    /// <summary>
-    /// Loads the combat scene and initializes battle state.
-    /// </summary>
-    public void LoadCombatMap(string sceneName = "BattlePhase")
-    {
-        if (ActiveTeam.Count == 0)
-        {
-            Debug.LogWarning("Cannot start battle without units in ActiveTeam!");
-            return;
-        }
-
-        SetState(GameState.InCombat);
+        Instance = null;
+        Destroy(gameObject);
         SceneManager.LoadScene(sceneName);
     }
 
-    private void SetState(GameState newState)
-    {
-        CurrentState = newState;
-        OnGameStateChanged?.Invoke(newState);
-    }
+    // --- EXTRACTION / RESCUE ---
 
+    /// <summary>A hero drops its carried villagers at an extraction point.</summary>
     public void ProcessExtraction(UnitInstance unitInstance)
     {
         if (unitInstance == null) return;
 
-        // 1. Set the unit as saved / extracted
-        unitInstance.IsExtracted = true;
-
-        // Write the battle's damage back onto the persistent roster record
-        // before the UnitInstance is destroyed, so it carries over into the
-        // next battle instead of resetting to full - only Rest heals it back up.
-        Unit persistent = unitInstance.PersistentUnit;
-        if (persistent != null)
-        {
-            persistent.CurrentHP = unitInstance.currentHealth;
-            if (!ExtractedUnitsThisBattle.Contains(persistent))
-                ExtractedUnitsThisBattle.Add(persistent);
-        }
-
-        // 2. If the unit was carrying / saved any villagers, tally them up
         int rescued = 0;
-        if (unitInstance.rescuedUnitData[0] != null)
+        for (int i = 0; i < unitInstance.rescuedUnitData.Length; i++)
         {
-            Debug.Log("Villager has been saved");
+            if (unitInstance.rescuedUnitData[i] == null) continue;
+            unitInstance.rescuedUnitData[i] = null;
             rescued++;
         }
-        if (unitInstance.rescuedUnitData[1] != null)
-        {
-            rescued++;
-        }
-        SavedVillagersThisBattle += rescued;
-
-        UnitReportEntry entry = LastBattleReport.GetOrCreate(persistent);
-        if (entry != null)
-        {
-            entry.Outcome = BattleOutcome.Extracted;
-            entry.RescuedVillagers = rescued;
-            entry.EndXP = unitInstance.Experience;
-        }
-
-        // 3. Remove the unit from the battlefield. HandleUnitExtract may end the
-        // battle once the last player unit is gone (see EndBattle).
-        CombatManager.Instance.HandleUnitExtract(unitInstance);
-        Destroy(unitInstance.gameObject);
-
-        Debug.Log($"GameStateManager: Unit {unitInstance.unitName} successfully extracted!");
+        for (int i = 0; i < rescued; i++) RegisterVillagerEscaped();
     }
 
-    /// <summary>
-    /// Finishes the battle: seals the report and hands off to the AfterAction
-    /// scene. Called by CombatManager when no player units remain on the map.
-    /// </summary>
-    public void EndBattle(float delaySeconds = 0.8f)
-    {
-        if (_battleEnding) return;
-        _battleEnding = true;
-
-        LastBattleReport.EnemiesKilled = EnemiesKilledThisBattle;
-        LastBattleReport.VillagersSaved = SavedVillagersThisBattle;
-        LastBattleReport.Won = ExtractedUnitsThisBattle.Count > 0;
-
-        // A wiped squad would leave the campaign with nobody to field.
-        if (FullRoster.Count == 0) GrantStarterUnits(2);
-
-        SetState(GameState.InCombat);
-        StartCoroutine(LoadSceneAfterDelay(AfterActionScene, delaySeconds));
-    }
-
-    private System.Collections.IEnumerator LoadSceneAfterDelay(string sceneName, float delay)
-    {
-        // Lets the last hit / extract play out before the scene swap.
-        if (delay > 0f) yield return new WaitForSecondsRealtime(delay);
-        SceneManager.LoadScene(sceneName);
-    }
-
-    /// <summary>Called by VillagerAIController when a villager reaches the evacuation zone under its own power.</summary>
+    /// <summary>Called when a villager reaches an extraction point under its own power.</summary>
     public void ProcessVillagerEvacuation(UnitInstance villager)
     {
         if (villager == null || villager.IsExtracted) return;
@@ -838,197 +289,30 @@ public class GameStateManager : MonoBehaviour
             villager.currentTile = null;
         }
 
-        SavedVillagersThisBattle++;
-        Debug.Log($"GameStateManager: {villager.unitName} reached the evacuation zone and was saved!");
-
+        RegisterVillagerEscaped();
         Destroy(villager.gameObject);
     }
 
-    /// <summary>Called when a worker villager drops its load at the boat. Credits Settlement immediately.</summary>
+    private void RegisterVillagerEscaped()
+    {
+        VillagersEscapedThisBattle++;
+        OnSettlementChanged?.Invoke();
+        if (VillagersEscapedThisBattle >= Balance.VillagersToWin) EndGame(true);
+    }
+
+    /// <summary>Called when a worker drops its load. Credits Settlement immediately.</summary>
     public void ProcessWorkerDeposit(bool isFood, int amount)
     {
         if (amount <= 0) return;
         if (isFood) AddFood(amount);
         else AddMaterials(amount);
 
-        if (LastBattleReport != null)
-        {
-            if (isFood) LastBattleReport.FoodGathered += amount;
-            else LastBattleReport.MaterialsGathered += amount;
-        }
+        if (isFood) LastBattleReport.FoodGathered += amount;
+        else LastBattleReport.MaterialsGathered += amount;
         OnSettlementChanged?.Invoke();
     }
 
-    /// <summary>Raised when Settlement values change mid-scene (worker deposits, spending) so HUDs can repaint.</summary>
-    public static event Action OnSettlementChanged;
-
-    /// <summary>Called when a worker villager is killed. The loss is permanent.</summary>
-    public void ProcessWorkerDeath()
-    {
-        Settlement.Villagers = Mathf.Max(0, Settlement.Villagers - 1);
-        if (LastBattleReport != null) LastBattleReport.WorkersLost++;
-        OnSettlementChanged?.Invoke();
-    }
-
-    // ============================================================
-    // SETTLEMENT / DECISION SCREEN
-    // ============================================================
-    // Everything below backs the Decision (planning) tab: the player sends
-    // Units (Vanguard) into battle and Villagers into three labor directives
-    // (Scavenge/Search for Materials, Harvest/Hunt and Gather, Expansion/Build
-    // a Ship), previews the effect on Food, Materials and Morale, then commits
-    // with ExecuteCycle(). The UI should call TryAdjustAllocation() and
-    // ComputeForecast() on every stepper tap and never do this math itself.
-
-    /// <summary>Total Units currently owned (population), independent of housing.</summary>
-    public int Population => FullRoster.Count;
-
-    /// <summary>Units not currently picked for the Vanguard team (ActiveTeam, chosen on the Roster tab).</summary>
-    public int IdleUnits => Mathf.Max(0, Population - ActiveTeam.Count);
-
-    /// <summary>Villagers not currently assigned to a labor directive this cycle.</summary>
-    public int IdleVillagers => Mathf.Max(0, Settlement.Villagers - VillagersSent);
-
-    /// <summary>Total Villagers committed across Scavenge/Harvest/Expansion this cycle.</summary>
-    public int VillagersSent => CurrentAllocation.ScavengeUnits + CurrentAllocation.HarvestUnits;
-
-    /// <summary>Food workers (HarvestUnits) that will spawn in the next battle.</summary>
-    public int FoodWorkersToSpawn => CurrentAllocation.HarvestUnits;
-
-    /// <summary>Material workers (ScavengeUnits) that will spawn in the next battle.</summary>
-    public int MaterialWorkersToSpawn => CurrentAllocation.ScavengeUnits;
-
-    // Worker counts committed by ExecuteCycle(), read by MapManager when the battle scene loads
-    // (CurrentAllocation is reset at the end of ExecuteCycle).
-    public int BattleFoodWorkers { get; private set; }
-    public int BattleMaterialWorkers { get; private set; }
-
-    public void SelectCampaignAction(CampaignAction action)
-    {
-        SelectedCampaignAction = action;
-        HasSelectedCampaignAction = true;
-    }
-
-    /// <summary>
-    /// Attempts to move Villagers (Scavenge/Harvest) into/out of a directive, one
-    /// at a time. Fails silently (returns false) rather than throwing, so the UI
-    /// can just no-op a stepper tap that would go negative or exceed the idle
-    /// pool - mirrors the mock's adjustUnits(). Expansion (Build a Ship) is
-    /// routed to TryToggleShipBuild instead, since it's an all-or-nothing
-    /// fixed-cost directive rather than a per-villager one. Vanguard is rejected
-    /// outright - it's derived from ActiveTeam (picked on the Roster tab), not a
-    /// steppable headcount.
-    /// </summary>
-    public bool TryAdjustAllocation(Directive directive, int delta)
-    {
-        // Vanguard is derived from ActiveTeam; Expansion (ships) moved to the Shipwright research track.
-        if (directive == Directive.Vanguard || directive == Directive.Expansion) return false;
-
-        int idle = IdleVillagers;
-        if (delta > 0 && idle < delta) return false;
-
-        int newValue = CurrentAllocation.Get(directive) + delta;
-        if (newValue < 0) return false;
-
-        CurrentAllocation.Set(directive, newValue);
-        return true;
-    }
-
-    public void ResetAllocation() => CurrentAllocation.Reset();
-
-    /// <summary>
-    /// Pure projection - does not mutate Settlement. Call this after every
-    /// allocation change to refresh the "Projected Cycle Outcomes" panel.
-    /// </summary>
-    public CycleForecast ComputeForecast()
-    {
-        var b = Balance;
-
-        // Vanguard headcount is derived from ActiveTeam (units picked on the
-        // Roster tab), not a manually steppable allocation field.
-        int vanguardUnits = ActiveTeam.Count;
-        int villagersSent = VillagersSent;
-
-        // Worker income is no longer projected here: villagers gather in the
-        // battle and credit Settlement via ProcessWorkerDeposit().
-        int foodDelta = Mathf.RoundToInt(
-            -vanguardUnits * b.FoodCostPerVanguardUnit
-            - villagersSent * b.FoodCostPerVillagerSent);
-
-        float moraleDelta =
-            -vanguardUnits * b.MoralePenaltyPerVanguardUnit
-            - villagersSent * b.MoralePenaltyPerVillagerSent;
-
-        return new CycleForecast
-        {
-            IdleUnits = IdleUnits,
-            VillagersSent = villagersSent,
-            IdleVillagers = IdleVillagers,
-            FoodDelta = foodDelta,
-            MaterialsDelta = 0,
-            MoraleDelta = Mathf.RoundToInt(moraleDelta)
-        };
-    }
-
-    /// <summary>
-    /// Commits the current allocation: applies the forecasted Food/Morale
-    /// deltas to Settlement, sends the Vanguard block into ActiveTeam, and hands off to
-    /// combat.
-    /// </summary>
-    public bool ExecuteCycle(string battleSceneName = "BattlePhase")
-    {
-        var forecast = ComputeForecast();
-
-        CycleNumber++;
-        AddFood(forecast.FoodDelta);
-        AddMaterials(forecast.MaterialsDelta);
-        Settlement.Morale = Mathf.Clamp(Settlement.Morale + forecast.MoraleDelta, 0, 100);
-
-        HealBenchedUnits();
-
-        // Apply this cycle's Campaign Map course. Stay Put's yield doubling
-        // already happened above (it's baked into the forecast); Rest and
-        // Travel have their own effects to commit here.
-        // Rest heals everyone and skips this cycle's battle entirely.
-        bool skipBattle = false;
-        switch (SelectedCampaignAction)
-        {
-            case CampaignAction.Rest:
-                RestAllUnits();
-                skipBattle = true;
-                break;
-            case CampaignAction.Travel:
-                VoyageFromRemaining = EvacuationCyclesRemaining;
-                EvacuationCyclesRemaining = Mathf.Max(0, EvacuationCyclesRemaining - 1);
-                VoyageToRemaining = EvacuationCyclesRemaining;
-                HasPendingVoyage = true;
-                break;
-        }
-        SelectedCampaignAction = CampaignAction.Travel;
-        HasSelectedCampaignAction = false;
-
-        // Commit worker counts for the battle scene (allocation resets below).
-        BattleFoodWorkers = CurrentAllocation.HarvestUnits;
-        BattleMaterialWorkers = CurrentAllocation.ScavengeUnits;
-
-        // Hand the Vanguard block off to combat - ActiveTeam already holds
-        // whichever units are picked on the Roster tab (kept live in sync by
-        // PlanningPhaseController.ToggleSelection).
-        if (HasPendingVoyage)
-        {
-            // Show the boat sailing first; the Voyage scene then loads combat
-            // (BattleSceneAfterVoyage) or plays the victory screen on arrival.
-            BattleSceneAfterVoyage = battleSceneName;
-            SceneManager.LoadScene(VoyageSceneName);
-        }
-        else if (!skipBattle && ActiveTeam.Count > 0)
-        {
-            LoadCombatMap(battleSceneName);
-        }
-
-        CurrentAllocation.Reset(0, 0, 0);
-        return true;
-    }
+    // --- RESOURCES ---
 
     /// <summary>Adds (or removes) Food, never below 0. Gains stop at the Storehouses cap; stock already above it is left alone.</summary>
     public void AddFood(int amount)
@@ -1054,235 +338,62 @@ public class GameStateManager : MonoBehaviour
     /// <summary>Lets ResearchManager refresh settlement readouts after it spends resources.</summary>
     public void NotifySettlementChanged() => OnSettlementChanged?.Invoke();
 
-    /// <summary>Spends settlement Materials (e.g. to build a wall mid-battle). Returns false, spending nothing, if short.</summary>
-    public bool TrySpendMaterials(int amount)
+    /// <summary>Spends settlement Materials. Returns false, spending nothing, if short.</summary>
+    public bool TrySpendMaterials(int amount) => TrySpend(0, amount);
+
+    /// <summary>Spends settlement Food. Returns false, spending nothing, if short.</summary>
+    public bool TrySpendFood(int amount) => TrySpend(amount, 0);
+
+    /// <summary>Spends Food and Materials together, all or nothing.</summary>
+    public bool TrySpend(int food, int materials)
     {
-        if (amount < 0 || Settlement.Materials < amount) return false;
-        Settlement.Materials -= amount;
+        if (food < 0 || materials < 0 || Settlement.Food < food || Settlement.Materials < materials) return false;
+        Settlement.Food -= food;
+        Settlement.Materials -= materials;
         OnSettlementChanged?.Invoke();
         return true;
     }
 
-    /// <summary>
-    /// Injured roster units not picked for the battle recover a share of max HP
-    /// each cycle. The Church research track sets how many units get healed
-    /// (most wounded first) and how much.
-    /// </summary>
-    private void HealBenchedUnits()
-    {
-        var injured = new List<Unit>();
-        foreach (Unit unit in FullRoster)
-        {
-            if (!ActiveTeam.Contains(unit) && unit.CurrentHP < unit.MaxHP) injured.Add(unit);
-        }
-        injured.Sort((a, b) => ((float)a.CurrentHP / a.MaxHP).CompareTo((float)b.CurrentHP / b.MaxHP));
+    // --- MORALE ---
 
-        int count = Mathf.Min(injured.Count, Research.ChurchHealCount);
-        float fraction = Research.ChurchHealFraction;
-        for (int i = 0; i < count; i++)
-        {
-            Unit unit = injured[i];
-            int heal = Mathf.Max(1, Mathf.RoundToInt(unit.MaxHP * fraction));
-            unit.CurrentHP = Mathf.Min(unit.MaxHP, unit.CurrentHP + heal);
-        }
+    /// <summary>Changes morale (clamped 0..100) and ends the run in defeat when it reaches 0.</summary>
+    public void AdjustMorale(int delta)
+    {
+        if (GameEnded) return;
+        Settlement.Morale = Mathf.Clamp(Settlement.Morale + delta, 0, 100);
+        OnSettlementChanged?.Invoke();
+        if (Settlement.Morale <= 0) EndGame(false);
     }
 
-    /// <summary>Heals every roster unit's persistent HP to full - the Campaign Map "Rest" action.</summary>
-    private void RestAllUnits()
+    /// <summary>An extraction point vanished with <paramref name="unusedSlots"/> places still open.</summary>
+    public void RegisterExtractionWasted(int unusedSlots)
     {
-        foreach (Unit unit in FullRoster)
-            unit.CurrentHP = unit.MaxHP;
+        if (unusedSlots > 0) AdjustMorale(-unusedSlots * Balance.UnusedExtractionSlotMoralePenalty);
     }
 
-    public void ApplyPostBattleResults()
+    // --- CASUALTIES / KILLS ---
 
-    {
-
-        int delta = Mathf.RoundToInt(
-
-                    EnemiesKilledThisBattle * Balance.EnemyKilledMoraleBonus
-
-                  + SavedVillagersThisBattle * Balance.VillagerSavedMoraleBonus
-
-                  - CasualtiesThisBattle * Balance.UnitLostMoralePenalty);
-
-
-
-        if (delta != 0)
-
-            Settlement.Morale = Mathf.Clamp(Settlement.Morale + delta, 0, 100);
-
-
-
-        // Snapshot before clearing so the Decision screen can still show
-
-        // what happened, even though the *ThisBattle counters reset here.
-
-        LastCycleKills = EnemiesKilledThisBattle;
-
-        LastCycleVillagersSaved = SavedVillagersThisBattle;
-
-        LastCycleCasualties = CasualtiesThisBattle;
-
-        LastCycleMoraleDelta = delta;
-
-
-
-        EnemiesKilledThisBattle = 0;
-
-        CasualtiesThisBattle = 0;
-
-        // Note: SavedVillagersThisBattle is intentionally left for the existing
-
-        // draft-offer logic just below this call, and is cleared there.
-
-    }
-
-
-
-    // ============================================================
-    // SAVE / LOAD
-    // ============================================================
-
-    /// <summary>Writes the current campaign to the single save slot. Called from the Decision tab's Save button.</summary>
-    public bool SaveGame()
-    {
-        var data = new SaveData
-        {
-            Resources = Resources,
-            Settlement = Settlement,
-            CurrentAllocation = CurrentAllocation,
-            SelectedCampaignAction = SelectedCampaignAction,
-            HasSelectedCampaignAction = HasSelectedCampaignAction,
-            EvacuationCyclesRemaining = EvacuationCyclesRemaining,
-            PendingDraftRarities = new List<UnitRarity>(PendingDraftRarities),
-            PeopleSaved = PeopleSaved,
-            CanDraftSavedVillager = CanDraftSavedVillager,
-            LastCycleKills = LastCycleKills,
-            LastCycleVillagersSaved = LastCycleVillagersSaved,
-            LastCycleCasualties = LastCycleCasualties,
-            LastCycleMoraleDelta = LastCycleMoraleDelta,
-            CycleNumber = CycleNumber,
-            Memorial = new List<FallenRecord>(Memorial)
-        };
-        Events.WriteTo(data);
-        Research.WriteTo(data);
-
-        foreach (Unit unit in FullRoster)
-        {
-            if (unit != null && unit.Archetype != null) data.Roster.Add(UnitSaveData.From(unit));
-        }
-        foreach (Unit unit in PendingReveal)
-        {
-            if (unit != null) data.PendingRevealIds.Add(unit.InstanceID);
-        }
-        foreach (UnitData archetype in PendingDraftOptions)
-        {
-            data.PendingDraftArchetypes.Add(archetype != null ? archetype.name : null);
-        }
-
-        return SaveSystem.Write(data);
-    }
-
-    /// <summary>
-    /// Restores a campaign from a SaveData. ActiveTeam is left empty on
-    /// purpose: the Roster tab always starts with no units selected, so a
-    /// restored team would be out of sync with what the player sees.
-    /// </summary>
-    private bool ApplySaveData(SaveData d)
-    {
-        if (d == null) return false;
-
-        if (d.Resources != null) Resources = d.Resources;
-        if (d.Settlement != null) Settlement = d.Settlement;
-        CurrentAllocation = d.CurrentAllocation ?? new CycleAllocation();
-        SelectedCampaignAction = d.SelectedCampaignAction;
-        HasSelectedCampaignAction = d.HasSelectedCampaignAction;
-        EvacuationCyclesRemaining = d.EvacuationCyclesRemaining;
-
-        FullRoster.Clear();
-        ActiveTeam.Clear();
-        PendingReveal.Clear();
-        PendingLevelUps.Clear();
-
-        var byId = new Dictionary<string, Unit>();
-        foreach (UnitSaveData saved in d.Roster)
-        {
-            UnitData archetype = FindArchetype(saved.ArchetypeName);
-            if (archetype == null)
-            {
-                Debug.LogWarning($"GameStateManager: saved unit '{saved.UnitName}' uses unknown archetype '{saved.ArchetypeName}', skipping.");
-                continue;
-            }
-            Unit unit = saved.ToUnit(archetype);
-            FullRoster.Add(unit);
-            if (!string.IsNullOrEmpty(unit.InstanceID)) byId[unit.InstanceID] = unit;
-        }
-
-        foreach (string id in d.PendingRevealIds)
-        {
-            if (id != null && byId.TryGetValue(id, out Unit unit)) PendingReveal.Add(unit);
-        }
-
-        PendingDraftOptions.Clear();
-        PendingDraftRarities.Clear();
-        for (int i = 0; i < d.PendingDraftArchetypes.Count; i++)
-        {
-            UnitData archetype = FindArchetype(d.PendingDraftArchetypes[i]);
-            if (archetype == null) continue;
-            PendingDraftOptions.Add(archetype);
-            PendingDraftRarities.Add(i < d.PendingDraftRarities.Count ? d.PendingDraftRarities[i] : UnitRarity.Common);
-        }
-        // Older saves stored a queued-draft count instead of a pool.
-        PeopleSaved = d.Version >= 5 ? d.PeopleSaved : d.PendingDraftsToOffer;
-        CanDraftSavedVillager = d.CanDraftSavedVillager;
-
-        LastCycleKills = d.LastCycleKills;
-        LastCycleVillagersSaved = d.LastCycleVillagersSaved;
-        LastCycleCasualties = d.LastCycleCasualties;
-        LastCycleMoraleDelta = d.LastCycleMoraleDelta;
-
-        CycleNumber = d.CycleNumber;
-        Memorial = d.Memorial != null ? new List<FallenRecord>(d.Memorial) : new List<FallenRecord>();
-        Events.ReadFrom(d);
-        Research.ReadFrom(d);
-
-        // A save with an empty roster (e.g. every unit fell) still needs a squad to play.
-        if (FullRoster.Count == 0) GrantStarterUnits(2);
-        return true;
-    }
-
-    private UnitData FindArchetype(string archetypeName)
-    {
-        if (string.IsNullOrEmpty(archetypeName) || AvailablePlayerArchetypes == null) return null;
-        foreach (UnitData archetype in AvailablePlayerArchetypes)
-        {
-            if (archetype != null && archetype.name == archetypeName) return archetype;
-        }
-        return null;
-    }
-
-    /// <summary>Adds a Memorial entry for a unit that is about to leave the roster permanently.</summary>
-    public void RecordFallen(Unit unit, LossCause cause, string detail = null)
-    {
-        if (unit == null) return;
-        Memorial.Add(FallenRecord.From(unit, CycleNumber, cause, detail));
-    }
-
-    /// <summary>Call from CombatManager when a player unit dies (not extracted).</summary>
+    /// <summary>Call from CombatManager when a hero dies.</summary>
     public void RegisterCasualty(Unit unit)
     {
         if (unit != null)
         {
-            RecordFallen(unit, LossCause.Battle);
             FullRoster.Remove(unit);
             ActiveTeam.Remove(unit);
-            PendingReveal.Remove(unit);
 
             UnitReportEntry entry = LastBattleReport.GetOrCreate(unit);
             if (entry != null) entry.Outcome = BattleOutcome.Died;
         }
-        CasualtiesThisBattle++;
+        HeroesLostThisBattle++;
+        AdjustMorale(-Balance.HeroDeathMoralePenalty);
+    }
+
+    /// <summary>Call from CombatManager when a villager dies.</summary>
+    public void RegisterVillagerDeath()
+    {
+        VillagersLostThisBattle++;
+        LastBattleReport.WorkersLost++;
+        AdjustMorale(-Balance.VillagerDeathMoralePenalty);
     }
 
     /// <summary>Call from CombatManager when an enemy unit is killed.</summary>
