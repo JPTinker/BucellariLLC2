@@ -2,7 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum BuildingType { WoodTower, StoneTower, Mine, Farm, WoodenWall, StoneWall, LumberMill }
 public enum TerrainType { Water, Sand, Grass, StoneHill, StoneMountain, Buildings, Exfil }
 public enum TileHighlightType { None, Movement, Attack, Build, Path, Rescue }
 
@@ -21,10 +20,11 @@ public class HexTile : MonoBehaviour
     [Tooltip("Set by MapManager from the tile prefab name (grass-forest). Lumber mill sites.")] public bool isForest;
     [Tooltip("Set by MapManager from the tile prefab name (grass-hill). Not farmable.")] public bool isHill;
     [Tooltip("A worker has claimed this tile for a farm / lumber mill.")] public bool workerSiteClaimed;
+    [Tooltip("Next to a Town Center: permanently unbuildable (no walls, fortifications, buildings, farms or mills).")] public bool IsReserved;
     /// <summary>Flat, open grass: valid farm ground.</summary>
     public bool IsFarmable => terrainType == TerrainType.Grass && !isForest && !isHill && !workerSiteClaimed && isWalkable;
     /// <summary>Forested grass: valid lumber mill ground.</summary>
-    public bool IsLumberable => isForest && !workerSiteClaimed && isWalkable;
+    public bool IsLumberable => isForest && !workerSiteClaimed && !IsReserved && isWalkable;
     [Header("Click Feedback")]
     [SerializeField, Min(0f)] private float clickBounceHeight = 0.25f;
     [SerializeField, Min(0.01f)] private float clickBounceDuration = 0.3f;

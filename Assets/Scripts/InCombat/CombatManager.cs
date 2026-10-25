@@ -49,6 +49,7 @@ public class CombatManager : MonoBehaviour
     private HexTile pendingDestination;
     private bool levelEnded;
     private bool buildMode;
+    private BuildingType? pendingBuilding;
     private bool nonPlayerTurnInProgress;
     public int currentRound { get; private set; } = 1;
 
@@ -72,14 +73,22 @@ public class CombatManager : MonoBehaviour
     {
         GameStateManager.OnGameOver += HandleGameOver;
         if (combatUIManager != null)
+        {
             combatUIManager.OnActionRequested += HandleActionRequested;
+            combatUIManager.OnBuildingChosen += HandleBuildingChosen;
+            combatUIManager.OnBuildCancelled += HandleBuildCancelled;
+        }
     }
 
     private void OnDisable()
     {
         GameStateManager.OnGameOver -= HandleGameOver;
         if (combatUIManager != null)
+        {
             combatUIManager.OnActionRequested -= HandleActionRequested;
+            combatUIManager.OnBuildingChosen -= HandleBuildingChosen;
+            combatUIManager.OnBuildCancelled -= HandleBuildCancelled;
+        }
     }
 
     private void Start()
@@ -123,27 +132,21 @@ public class CombatManager : MonoBehaviour
                 HandleScoutClicked(unit);
                 ClearSelection();
                 break;
-            case CombatPhaseUIController.CombatAction.BuildWall:
+            case CombatPhaseUIController.CombatAction.Build:
                 EnterBuildMode(unit);
                 break;
         }
     }
 
     // ---------------------------------------------------------------
-    // Building: click Build Wall, then click a highlighted adjacent tile.
-    // Clicking anywhere else (or selecting another unit) cancels.
+    // Building: press Build, pick a building from the bottom bar's build menu,
+    // then click one of the highlighted adjacent tiles. Clicking anywhere else
+    // (or selecting another unit, or Back) cancels.
     // ---------------------------------------------------------------
 
     private void EnterBuildMode(UnitInstance unit)
     {
         if (MapManager.Instance == null || unit.actionsRemaining <= 0) return;
-
-        if (GameStateManager.Instance == null ||
-            GameStateManager.Instance.Settlement.Materials < MapManager.Instance.wallMaterialCost)
-        {
-            notificationManager?.ShowNotification($"Not enough materials (need {MapManager.Instance.wallMaterialCost})");
-            return;
-        }
 
         List<HexTile> buildable = MapManager.Instance.GetBuildableTiles(unit);
         if (buildable.Count == 0)
@@ -161,25 +164,77 @@ public class CombatManager : MonoBehaviour
 
         selectedUnit = unit;
         buildMode = true;
+        pendingBuilding = null;
         foreach (HexTile tile in buildable)
         {
             highlightedTiles.Add(tile);
             tile.Highlight(TileHighlightType.Build);
         }
+
+        combatUIManager?.ShowBuildMenu(true);
+    }
+
+    private void HandleBuildingChosen(BuildingType type, UnitInstance unit)
+    {
+        MapManager map = MapManager.Instance;
+        if (!buildMode || map == null) return;
+
+        if (!map.CanBuild(type, out string reason))
+        {
+            notificationManager?.ShowNotification(reason);
+            return;
+        }
+
+        pendingBuilding = type;
+        notificationManager?.ShowNotification($"Pick a highlighted tile for the {map.GetBuildingSpec(type).DisplayName}");
+    }
+
+    // Back in the build menu: drop the build highlights and return to the unit's normal move/attack view.
+    private void HandleBuildCancelled(UnitInstance unit)
+    {
+        if (!buildMode) return;
+        UnitInstance builder = unit != null ? unit : selectedUnit;
+        ClearSelection();
+        if (builder == null || builder.IsDead) return;
+        SelectUnit(builder);
+        combatUIManager?.SelectUnit(builder);
     }
 
     private void HandleBuildClick(HexTile tile)
     {
+        // Off the highlighted tiles: cancel building.
+        if (!highlightedTiles.Contains(tile)) { ClearSelection(); return; }
+
+        // On a build tile before choosing what to build: keep the menu open.
+        if (pendingBuilding == null)
+        {
+            notificationManager?.ShowNotification("Choose a building first");
+            return;
+        }
+
         UnitInstance builder = selectedUnit;
         MapManager map = MapManager.Instance;
         GameStateManager gsm = GameStateManager.Instance;
+        BuildingType type = pendingBuilding.Value;
 
         bool built = false;
-        if (builder != null && map != null && gsm != null && highlightedTiles.Contains(tile) &&
-            gsm.TrySpendMaterials(map.wallMaterialCost))
+        string reason = null;
+        if (builder != null && map != null && gsm != null && map.CanBuild(type, out reason))
         {
-            built = map.BuildWall(tile) != null;
-            if (!built) gsm.Settlement.Materials += map.wallMaterialCost; // refund if placement failed
+            BuildingSpec spec = map.GetBuildingSpec(type);
+            if (gsm.TrySpend(spec.FoodCost, spec.MaterialCost))
+            {
+                built = map.BuildStructure(type, tile) != null;
+                if (!built) // refund if placement failed
+                {
+                    gsm.AddFood(spec.FoodCost);
+                    gsm.AddMaterials(spec.MaterialCost);
+                }
+            }
+        }
+        else if (reason != null)
+        {
+            notificationManager?.ShowNotification(reason);
         }
 
         // Same tail as every other action: spend the action, then drop the selection.
@@ -550,6 +605,7 @@ public class CombatManager : MonoBehaviour
         combatUIManager.SelectUnit(null);
         selectedUnit = null;
         buildMode = false;
+        pendingBuilding = null;
         pendingDestination = null;
         previewPath.Clear();
         reachableTiles.Clear();

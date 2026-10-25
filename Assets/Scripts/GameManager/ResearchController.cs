@@ -213,7 +213,7 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Storehouses: return $"STOREHOUSES  (cap {r.MaxFood} Food / {r.MaxMaterials} Materials)";
             case ResearchTrack.Church: return $"CHURCH  (heals {r.ChurchHealCount} units/cycle at {r.ChurchHealFraction * 100f:0.#}%)";
             case ResearchTrack.Shipwright: return "SHIPWRIGHT";
-            case ResearchTrack.BattleLength: return $"MORALE  (battles last {r.MaxBattleRounds} rounds)";
+            //case ResearchTrack.BattleLength: return $"MORALE  (battles last {r.MaxBattleRounds} rounds)";
             default: return track.ToString().ToUpperInvariant();
         }
     }
@@ -230,9 +230,9 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Storehouses: return $"+{Mathf.RoundToInt(node.Value)} Food and Materials cap";
             case ResearchTrack.Church: return $"+{Mathf.RoundToInt(node.Value)} unit(s) healed, +{node.SecondaryValue * 100f:0.#}% heal";
             case ResearchTrack.BattleLength: return $"+{Mathf.RoundToInt(node.Value)} battle rounds";
-            case ResearchTrack.Shipwright:
-                var b = gsm.Balance;
-                return $"+{b.ShipUnitCapacityGain} unit cap, +{b.ShipVillagerCapacityGain} villager cap, +1 boat";
+            //case ResearchTrack.Shipwright:
+            //var b = gsm.Balance;
+            //return $"+{b.ShipUnitCapacityGain} unit cap, +{b.ShipVillagerCapacityGain} villager cap, +1 boat";
             default: return "";
         }
     }

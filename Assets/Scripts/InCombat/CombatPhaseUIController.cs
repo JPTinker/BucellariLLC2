@@ -80,6 +80,12 @@ public class CombatPhaseUIController : MonoBehaviour
     /// <summary>Raised when an action button is pressed for the currently selected unit.</summary>
     public event Action<CombatAction, UnitInstance> OnActionRequested;
 
+    /// <summary>Raised when a building is picked in the build menu.</summary>
+    public event Action<BuildingType, UnitInstance> OnBuildingChosen;
+
+    /// <summary>Raised when Back is pressed in the build menu.</summary>
+    public event Action<UnitInstance> OnBuildCancelled;
+
     /// <summary>Raised when a unit card is selected.</summary>
     public event Action<UnitInstance> OnUnitSelected;
 
@@ -91,12 +97,20 @@ public class CombatPhaseUIController : MonoBehaviour
         Fortify,
         Extract,
         Scout,
-        BuildWall,
+        Build,
         EndTurn,
         EscapeWorkers
     }
 
     private Button escapeWorkersButton;
+
+    // Build menu: replaces the action buttons in the bottom bar while a hero is choosing what to build.
+    private VisualElement actionButtonsRow;
+    private VisualElement buildMenuRow;
+    private Label actionHeadingLabel;
+    private readonly Dictionary<BuildingType, Button> buildMenuButtons = new Dictionary<BuildingType, Button>();
+    private static readonly BuildingType[] BuildMenuOrder =
+        { BuildingType.TownCenter, BuildingType.Church, BuildingType.Wall, BuildingType.Barracks };
 
     private void Awake()
     {
@@ -142,7 +156,7 @@ public class CombatPhaseUIController : MonoBehaviour
         nextUnitButton = root.Q<Button>("action-next-unit");
 
         nextUnitButton?.RegisterCallback<ClickEvent>(_ => SelectNextReadyUnit());
-        buildButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.BuildWall));
+        buildButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Build));
         fortifyButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Fortify));
         extractButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Extract));
         scoutButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Scout));
@@ -175,6 +189,7 @@ public class CombatPhaseUIController : MonoBehaviour
         }
 
         unitList = root.Q<ScrollView>("unit-list");
+        BuildBuildMenu(root);
 
         // End Turn doesn't depend on a selected unit; the rest start disabled.
         endTurnButton?.SetEnabled(true);
@@ -433,6 +448,7 @@ public class CombatPhaseUIController : MonoBehaviour
     {
         Debug.Log($"CombatPhaseUIController: SelectUnit called with {unit?.unitName ?? "null"}");
         selectedUnit = unit;
+        ShowBuildMenu(false);
 
         foreach (KeyValuePair<UnitInstance, UnitCardView> kvp in cardViews)
             kvp.Value.SetSelected(kvp.Key == unit);
@@ -494,16 +510,105 @@ public class CombatPhaseUIController : MonoBehaviour
         // Scout can be used if they have actions remaining
         scoutButton?.SetEnabled(true);
 
-        // Build Wall needs enough Materials and a free adjacent tile.
+        // Build needs a free adjacent tile; each building's cost and prerequisites are checked in the build menu.
         MapManager map = MapManager.Instance;
         GameStateManager gsm = GameStateManager.Instance;
         bool canFortify = !maxFortified && map != null && gsm != null &&
                           gsm.Settlement.Materials >= map.fortifyMaterialCost;
         fortifyButton?.SetEnabled(canFortify);
-        bool canBuild = map != null && gsm != null &&
-                        gsm.Settlement.Materials >= map.wallMaterialCost &&
-                        map.GetBuildableTiles(unit).Count > 0;
+        bool canBuild = map != null && map.GetBuildableTiles(unit).Count > 0;
         buildButton?.SetEnabled(canBuild);
+    }
+
+    // ---------------------------------------------------------------
+    // Build menu (bottom bar). Built in code beside the action buttons.
+    // ---------------------------------------------------------------
+
+    private void BuildBuildMenu(VisualElement root)
+    {
+        VisualElement bar = root.Q<VisualElement>("action-bar");
+        if (bar == null) return;
+
+        actionButtonsRow = bar.Q<VisualElement>(className: "action-buttons");
+        actionHeadingLabel = bar.Q<Label>(className: "panel-title");
+        if (actionButtonsRow == null) return;
+
+        buildMenuRow = new VisualElement { name = "build-menu" };
+        buildMenuRow.AddToClassList("action-buttons");
+        buildMenuRow.style.display = DisplayStyle.None;
+
+        foreach (BuildingType type in BuildMenuOrder)
+        {
+            BuildingType captured = type;
+            var button = new Button { name = $"build-{type}" };
+            button.AddToClassList("action-button");
+            button.style.height = 60;
+            button.style.whiteSpace = WhiteSpace.Normal;
+            button.RegisterCallback<ClickEvent>(_ =>
+            {
+                OnBuildingChosen?.Invoke(captured, selectedUnit);
+                MarkChosenBuilding(captured);
+                RefreshBuildMenuStates();
+            });
+            buildMenuButtons[type] = button;
+            buildMenuRow.Add(button);
+        }
+
+        var back = new Button { name = "build-back", text = "BACK" };
+        back.AddToClassList("action-button");
+        back.style.height = 60;
+        back.RegisterCallback<ClickEvent>(_ => OnBuildCancelled?.Invoke(selectedUnit));
+        buildMenuRow.Add(back);
+
+        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(actionButtonsRow) + 1, buildMenuRow);
+    }
+
+    /// <summary>Swaps the bottom bar between the normal actions and the build menu.</summary>
+    public void ShowBuildMenu(bool show)
+    {
+        if (buildMenuRow == null || actionButtonsRow == null) return;
+
+        buildMenuRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
+        if (actionHeadingLabel != null)
+            actionHeadingLabel.text = show ? "BUILD - PICK A BUILDING, THEN A HIGHLIGHTED TILE" : "AVAILABLE ACTIONS";
+
+        if (show)
+        {
+            MarkChosenBuilding(null);
+            RefreshBuildMenuStates();
+        }
+    }
+
+    /// <summary>Labels each building with its cost and greys out the ones that can't be built yet, with the reason as a tooltip.</summary>
+    private void RefreshBuildMenuStates()
+    {
+        MapManager map = MapManager.Instance;
+        if (map == null) return;
+
+        foreach (KeyValuePair<BuildingType, Button> entry in buildMenuButtons)
+        {
+            BuildingSpec spec = map.GetBuildingSpec(entry.Key);
+            string cost = spec.FoodCost > 0 ? $"{spec.MaterialCost} MAT  {spec.FoodCost} FOOD" : $"{spec.MaterialCost} MAT";
+            bool ok = map.CanBuild(entry.Key, out string reason);
+            entry.Value.text = $"{spec.DisplayName.ToUpperInvariant()}\n{cost}";
+            entry.Value.tooltip = ok ? "" : reason;
+            entry.Value.SetEnabled(ok);
+        }
+    }
+
+    private void MarkChosenBuilding(BuildingType? chosen)
+    {
+        foreach (KeyValuePair<BuildingType, Button> entry in buildMenuButtons)
+        {
+            bool isChosen = chosen.HasValue && entry.Key == chosen.Value;
+            Color border = isChosen ? new Color(0f, 0.95f, 1f) : new Color(0.29f, 0.32f, 0.36f);
+            entry.Value.style.borderTopColor = entry.Value.style.borderBottomColor = border;
+            entry.Value.style.borderLeftColor = entry.Value.style.borderRightColor = border;
+            float width = isChosen ? 3 : 1;
+            entry.Value.style.borderTopWidth = entry.Value.style.borderBottomWidth = width;
+            entry.Value.style.borderLeftWidth = entry.Value.style.borderRightWidth = width;
+        }
     }
 
     /// <summary>Shows the Escape button only while worker villagers are on the field and haven't been told to flee yet.</summary>

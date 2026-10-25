@@ -133,6 +133,8 @@ public class MapManager : MonoBehaviour
     [Tooltip("Offset from the tile's top surface where the fortification object is placed.")]
     [SerializeField] private Vector3 fortificationOffset = Vector3.zero;
     public int wallDefense = 1;
+    [Tooltip("Cost, health and look of Town Center, Church and Barracks (and the wall's size). Walls take cost/prefab/health from the wall fields above.")]
+    [SerializeField] private BuildingSpec[] buildingSpecs = BuildingSpec.CreateDefaults();
     [SerializeField] private Color fallbackWallColor = new Color(0.45f, 0.33f, 0.22f);
 
     // Gates the villager spawn-focus tour behind the player unit spawn-focus tour,
@@ -320,12 +322,81 @@ public class MapManager : MonoBehaviour
     }
 
     // ---------------------------------------------------------------------
-    // Building: a unit spends Materials to raise a wall on an adjacent tile.
-    // Walls are UnitInstances (Faction.Structure) so enemies attack them
+    // Building: a hero spends Materials/Food to raise a structure on an adjacent tile.
+    // Structures are UnitInstances (Faction.Structure) so enemies attack them
     // through the normal combat pipeline; they block movement while standing.
+    // Church and Barracks need a standing Town Center, and the tiles around a
+    // Town Center are reserved: nothing can be built on them afterwards.
     // ---------------------------------------------------------------------
 
-    /// <summary>Empty, revealed tiles next to the builder where a wall can go.</summary>
+    private readonly Dictionary<BuildingType, List<UnitInstance>> structures = new Dictionary<BuildingType, List<UnitInstance>>();
+
+    /// <summary>The cost/look of a structure type. Walls take their cost, prefab and health from the older wall fields and research.</summary>
+    public BuildingSpec GetBuildingSpec(BuildingType type)
+    {
+        BuildingSpec spec = null;
+        if (buildingSpecs != null)
+            foreach (BuildingSpec candidate in buildingSpecs)
+                if (candidate != null && candidate.Type == type) { spec = candidate; break; }
+        if (spec == null)
+            foreach (BuildingSpec candidate in BuildingSpec.CreateDefaults())
+                if (candidate.Type == type) { spec = candidate; break; }
+
+        if (type != BuildingType.Wall) return spec;
+        return new BuildingSpec
+        {
+            Type = spec.Type,
+            DisplayName = spec.DisplayName,
+            Size = spec.Size,
+            Color = fallbackWallColor,
+            MaterialCost = wallMaterialCost,
+            MaxHealth = Mathf.Max(1, ResearchManager.Current.WallMaxHealth),
+            Defense = wallDefense,
+            Prefab = wallPrefab
+        };
+    }
+
+    /// <summary>Standing structures of a type (destroyed ones are dropped).</summary>
+    public List<UnitInstance> GetStructures(BuildingType type)
+    {
+        if (!structures.TryGetValue(type, out List<UnitInstance> list)) return new List<UnitInstance>();
+        list.RemoveAll(unit => unit == null || unit.IsDead);
+        return new List<UnitInstance>(list);
+    }
+
+    public bool HasStandingTownCenter => GetStructures(BuildingType.TownCenter).Count > 0;
+
+    /// <summary>Whether the player may start this building now: prerequisites first, then resources. <paramref name="reason"/> explains a no.</summary>
+    public bool CanBuild(BuildingType type, out string reason)
+    {
+        reason = null;
+        if (!MeetsPrerequisites(type, out reason)) return false;
+
+        BuildingSpec spec = GetBuildingSpec(type);
+        GameStateManager gsm = GameStateManager.Instance;
+        if (gsm == null) { reason = "Unavailable"; return false; }
+        if (gsm.Settlement.Materials < spec.MaterialCost) { reason = $"Need {spec.MaterialCost} Materials"; return false; }
+        if (gsm.Settlement.Food < spec.FoodCost) { reason = $"Need {spec.FoodCost} Food"; return false; }
+        return true;
+    }
+
+    private bool MeetsPrerequisites(BuildingType type, out string reason)
+    {
+        reason = null;
+        if (type == BuildingType.TownCenter && HasStandingTownCenter)
+        {
+            reason = "A Town Center is already standing";
+            return false;
+        }
+        if (GetBuildingSpec(type).RequiresTownCenter && !HasStandingTownCenter)
+        {
+            reason = "Requires a standing Town Center";
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>Empty, revealed tiles next to the builder where a structure can go.</summary>
     public List<HexTile> GetBuildableTiles(UnitInstance builder)
     {
         List<HexTile> tiles = new List<HexTile>();
@@ -342,62 +413,73 @@ public class MapManager : MonoBehaviour
     private static bool IsBuildable(HexTile tile)
     {
         return tile != null && tile.isRevealed && tile.CanEnter() &&
+               !tile.IsReserved &&
                tile.terrainType != TerrainType.Water &&
                tile.terrainType != TerrainType.Exfil &&
                !tile.IsExtractionPoint;
     }
 
-    /// <summary>Spawns a wall on the tile. Does not charge Materials - the caller does.</summary>
-    public UnitInstance BuildWall(HexTile tile)
+    /// <summary>Spawns a structure on the tile. Does not charge resources - the caller does. Returns null if it can't be placed.</summary>
+    public UnitInstance BuildStructure(BuildingType type, HexTile tile)
     {
-        if (!IsBuildable(tile)) return null;
+        if (!IsBuildable(tile) || !MeetsPrerequisites(type, out _)) return null;
 
+        BuildingSpec spec = GetBuildingSpec(type);
         Vector3 position = tile.transform.position + Vector3.up * tile.heightOffset;
-        GameObject wallObject;
+        GameObject structureObject;
         float visualLift = 0f;
 
-        if (wallPrefab != null)
+        if (spec.Prefab != null)
         {
-            wallObject = Instantiate(wallPrefab, position, Quaternion.identity);
+            structureObject = Instantiate(spec.Prefab, position, Quaternion.identity);
         }
         else
         {
-            wallObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Vector3 size = new Vector3(hexSize * 0.8f, hexSize * 0.7f, hexSize * 0.8f);
-            wallObject.transform.localScale = size;
+            structureObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Vector3 size = spec.Size * hexSize;
+            structureObject.transform.localScale = size;
             visualLift = size.y * 0.5f;
 
             // Clicks should fall through to the tile underneath.
-            Collider col = wallObject.GetComponent<Collider>();
+            Collider col = structureObject.GetComponent<Collider>();
             if (col != null) Destroy(col);
 
-            Renderer wallRenderer = wallObject.GetComponent<Renderer>();
-            if (wallRenderer != null) wallRenderer.material.color = fallbackWallColor;
+            Renderer structureRenderer = structureObject.GetComponent<Renderer>();
+            if (structureRenderer != null) structureRenderer.material.color = spec.Color;
         }
 
-        if (!wallObject.TryGetComponent(out UnitInstance wall))
-            wall = wallObject.AddComponent<UnitInstance>();
+        if (!structureObject.TryGetComponent(out UnitInstance building))
+            building = structureObject.AddComponent<UnitInstance>();
 
-        wall.Faction = UnitFaction.Structure;
-        wall.unitName = $"Wall_{GenerateUnique4DigitString()}";
-        wallObject.name = wall.unitName;
-        wall.maxHealth = Mathf.Max(1, ResearchManager.Current.WallMaxHealth);
-        wall.currentHealth = wall.maxHealth;
-        wall.defensePower = wallDefense;
-        wall.attackPower = 0;
-        wall.attackRange = 0;
-        wall.movementRange = 0;
-        wall.visibilityRange = 0;
-        wall.maxActionsPerTurn = 0;
-        wall.actionsRemaining = 0;
+        building.Faction = UnitFaction.Structure;
+        building.unitName = type == BuildingType.Wall ? $"Wall_{GenerateUnique4DigitString()}" : spec.DisplayName;
+        structureObject.name = building.unitName;
+        building.maxHealth = Mathf.Max(1, spec.MaxHealth);
+        building.currentHealth = building.maxHealth;
+        building.defensePower = spec.Defense;
+        building.attackPower = 0;
+        building.attackRange = 0;
+        building.movementRange = 0;
+        building.visibilityRange = 0;
+        building.maxActionsPerTurn = 0;
+        building.actionsRemaining = 0;
 
-        wall.PlaceOnTile(tile);
+        building.PlaceOnTile(tile);
         if (visualLift > 0f)
-            wall.transform.position += Vector3.up * visualLift;
+            building.transform.position += Vector3.up * visualLift;
+
+        if (!structures.TryGetValue(type, out List<UnitInstance> list))
+            structures[type] = list = new List<UnitInstance>();
+        list.Add(building);
+
+        // Nothing may ever be built around a Town Center.
+        if (type == BuildingType.TownCenter)
+            foreach (HexTile neighbor in tile.neighbors)
+                if (neighbor != null) neighbor.IsReserved = true;
 
         PlaySpawnEffects(tile.transform.position);
-        wall.NotifyStatsChanged();
-        return wall;
+        building.NotifyStatsChanged();
+        return building;
     }
 
     private void PlaySpawnEffects(Vector3 position)
@@ -913,7 +995,7 @@ public class MapManager : MonoBehaviour
     /// <summary>Builds the next fortification level on a tile (permanent for the battle). Returns false at max level.</summary>
     public bool BuildFortification(HexTile tile)
     {
-        if (tile == null || tile.FortificationLevel >= MaxFortificationLevel) return false;
+        if (tile == null || tile.IsReserved || tile.FortificationLevel >= MaxFortificationLevel) return false;
 
         int level = tile.FortificationLevel + 1;
         GameObject prefab = null;
