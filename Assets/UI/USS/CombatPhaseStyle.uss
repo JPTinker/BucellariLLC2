@@ -27,6 +27,8 @@
 .resource-value-positive { color: #8db58c; }
 .resource-value-food { color: #d4a359; }
 .resource-value-materials { color: #e09a55; }
+.resource-value-morale { color: #e6808c; }
+.resource-value-score { color: #f0c75e; }
 .round-value { font-size: 26px; -unity-font-style: bold; color: #00f2ff; }
 
 /* Top HUD blocks: icon + label/value, separated by thin dividers. Set .hud-icon background-image later. */
@@ -45,6 +47,8 @@
 .hud-icon--saveable { background-color: rgba(141, 181, 140, 0.18); }
 .hud-icon--food { background-color: rgba(212, 163, 89, 0.18); }
 .hud-icon--materials { background-color: rgba(125, 65, 0, 0.35); }
+.hud-icon--morale { background-color: rgba(230, 128, 140, 0.20); }
+.hud-icon--score { background-color: rgba(240, 199, 94, 0.20); }
 .hud-icon--gain { scale: 1.15 1.15; }
 
 .hud-glow {
@@ -59,6 +63,8 @@
 .hud-glow--saveable { background-color: rgba(141, 181, 140, 0.3); }
 .hud-glow--food { background-color: rgba(212, 163, 89, 0.55); }
 .hud-glow--materials { background-color: rgba(214, 120, 30, 0.55); }
+.hud-glow--morale { background-color: rgba(230, 128, 140, 0.55); }
+.hud-glow--score { background-color: rgba(240, 199, 94, 0.55); }
 .hud-glow--active { opacity: 1; transition-duration: 0.08s; }
 
 .hud-text-col { justify-content: center; }
@@ -74,13 +80,24 @@
     background-color: rgba(160, 200, 220, 0.15);
     border-radius: 4px; overflow: hidden;
 }
-.research-slot__fill { height: 100%; width: 0; background-color: #6fd3a0; border-radius: 4px; }
+.research-slot__fill {
+    height: 100%; width: 0; background-color: #6fd3a0; border-radius: 4px;
+    transition-property: width, background-color;
+    transition-duration: 0.45s, 0.25s;
+}
+.research-slot { transition-property: scale; transition-duration: 0.2s; }
+.research-slot--pop { scale: 1.08 1.08; }
+.research-slot--pop .research-slot__fill { background-color: #ffffff; }
+.research-slot--pop .research-slot__name { color: #ffffff; }
+.research-block { transition-property: background-color, scale; transition-duration: 0.5s; border-radius: 6px; }
+.research-block--complete { background-color: rgba(111, 211, 160, 0.4); scale: 1.06 1.06; }
 .research-slot__count { font-size: 10px; color: #9fb8c8; }
 .research-slot--empty .research-slot__name,
 .research-slot--empty .research-slot__count { color: #5d7587; }
 .hud-block--round .hud-text-col { align-items: center; }
 
 .value-gain { color: #ffffff; scale: 1.25 1.25; }
+.value-loss { color: #ff7a7a; scale: 1.25 1.25; }
 
 /* Floating "+N" that rises off a block when food/materials are gained. */
 .gain-float {
@@ -92,8 +109,10 @@
     transition-duration: 0.9s;
     transition-timing-function: ease-out;
 }
+.gain-float--up { color: #9be8a8; }
 .gain-float--food { color: #f0c27a; }
 .gain-float--materials { color: #f09a4a; }
+.gain-float--down { color: #ff7a7a; }
 .gain-float--rise { translate: 0 -24px; opacity: 0; }
 
 .play-area { flex-grow: 1; flex-direction: row; margin-top: 14px; margin-bottom: 14px; background-color: rgba(26, 38, 52, 0); }

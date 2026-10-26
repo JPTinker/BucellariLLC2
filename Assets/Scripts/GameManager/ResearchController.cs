@@ -142,7 +142,7 @@ public class ResearchController : MonoBehaviour
         name.AddToClassList("label-caps");
         card.Add(name);
 
-        var effect = new Label(DescribeEffect(node, gsm));
+        var effect = new Label(DescribeEffect(node));
         effect.AddToClassList("body-text");
         effect.AddToClassList("text-muted");
         effect.style.whiteSpace = WhiteSpace.Normal;
@@ -207,32 +207,30 @@ public class ResearchController : MonoBehaviour
         {
             case ResearchTrack.Recruiting: return $"RECRUITING  (stray villager every {r.VillagerSpawnInterval} rounds)";
             case ResearchTrack.Gathering: return $"GATHERING  (worker yield x{r.GatherMultiplier:0.##})";
-            case ResearchTrack.Training: return $"TRAINING  (max unit level {r.MaxUnitLevel})";
+            case ResearchTrack.Training: return $"TRAINING  (new heroes start at level {r.StartingHeroLevel})";
             case ResearchTrack.Masonry: return $"MASONRY  (wall health {r.WallMaxHealth})";
             case ResearchTrack.Engineering: return $"ENGINEERING  (fortify up to level {r.MaxFortificationLevel})";
             case ResearchTrack.Storehouses: return $"STOREHOUSES  (cap {r.MaxFood} Food / {r.MaxMaterials} Materials)";
-            case ResearchTrack.Church: return $"CHURCH  (heals {r.ChurchHealCount} units/cycle at {r.ChurchHealFraction * 100f:0.#}%)";
-            case ResearchTrack.Shipwright: return "SHIPWRIGHT";
+            case ResearchTrack.Church: return $"CHURCH  (heroes resting in a Church heal {r.ChurchHealAmount} HP per round)";
+            case ResearchTrack.LevelCap: return $"LEVEL CAP  (units level up to {r.MaxUnitLevel})";
             //case ResearchTrack.BattleLength: return $"MORALE  (battles last {r.MaxBattleRounds} rounds)";
             default: return track.ToString().ToUpperInvariant();
         }
     }
 
-    private static string DescribeEffect(ResearchData node, GameStateManager gsm)
+    public static string DescribeEffect(ResearchData node)
     {
         switch (node.Track)
         {
             case ResearchTrack.Recruiting: return $"Stray villagers arrive {Mathf.RoundToInt(node.Value)} round(s) sooner";
             case ResearchTrack.Gathering: return $"+{node.Value * 100f:0.#}% worker haul and carry";
-            case ResearchTrack.Training: return $"+{Mathf.RoundToInt(node.Value)} max unit level";
+            case ResearchTrack.Training: return $"+{Mathf.RoundToInt(node.Value)} starting level for new heroes";
             case ResearchTrack.Masonry: return $"+{Mathf.RoundToInt(node.Value)} wall health";
             case ResearchTrack.Engineering: return $"+{Mathf.RoundToInt(node.Value)} fortification level";
-            case ResearchTrack.Storehouses: return $"+{Mathf.RoundToInt(node.Value)} Food and Materials cap";
-            case ResearchTrack.Church: return $"+{Mathf.RoundToInt(node.Value)} unit(s) healed, +{node.SecondaryValue * 100f:0.#}% heal";
+            case ResearchTrack.Storehouses: return $"+{Mathf.RoundToInt(node.Value)} Food and Materials storage per Town Center";
+            case ResearchTrack.Church: return $"+{Mathf.RoundToInt(node.Value)} HP healed per round in a Church";
+            case ResearchTrack.LevelCap: return $"+{Mathf.RoundToInt(node.Value)} maximum unit level";
             case ResearchTrack.BattleLength: return $"+{Mathf.RoundToInt(node.Value)} battle rounds";
-            //case ResearchTrack.Shipwright:
-            //var b = gsm.Balance;
-            //return $"+{b.ShipUnitCapacityGain} unit cap, +{b.ShipVillagerCapacityGain} villager cap, +1 boat";
             default: return "";
         }
     }

@@ -22,6 +22,10 @@ public class UnitInstance : MonoBehaviour
     private const int AttackExperience = 10;
     private const int KillExperience = 20;
     private const int RescueExperience = 25;
+    /// <summary>XP a hero earns for placing a building.</summary>
+    public const int BuildExperience = 20;
+    /// <summary>Every XP gain (attacks, kills, rescues, scouting, building) is multiplied by this.</summary>
+    private const int ExperienceMultiplier = 2;
 
     public UnitFaction Faction;
 
@@ -96,6 +100,11 @@ public class UnitInstance : MonoBehaviour
     public int maxActionsPerTurn = 2;
     public int actionsRemaining = 2;
     public UnitData[] rescuedUnitData = new UnitData[2];
+    private UnitInstance[] carriedVillagers;
+    /// <summary>True for Wall structures; destroying one costs morale.</summary>
+    public bool IsWall;
+    /// <summary>True for Town Center, Barracks, Church and Library: player units may walk through and stand in them.</summary>
+    public bool IsEnterable;
     public event Action<UnitInstance> OnDeath;
 
     public bool IsExtracted = false;
@@ -247,7 +256,7 @@ public class UnitInstance : MonoBehaviour
     {
         if (amount <= 0 || PersistentUnit == null) return;
 
-        Experience += amount;
+        Experience += amount * ExperienceMultiplier;
         PersistentUnit.Experience = Experience;
 
         // The Training research track sets the level cap: XP stops at a full bar instead of overflowing into more levels.
@@ -354,7 +363,7 @@ public class UnitInstance : MonoBehaviour
         if (currentTile != null)
         {
             if (currentTile != tile) RemoveFortifyStatBonuses();
-            currentTile.RemoveUnit();
+            currentTile.RemoveUnit(this);
         }
 
         currentTile = tile;
@@ -382,7 +391,7 @@ public class UnitInstance : MonoBehaviour
         // Free up the starting tile immediately so other units/pathfinding don't treat it as blocked
         if (currentTile != null)
         {
-            currentTile.RemoveUnit();
+            currentTile.RemoveUnit(this);
         }
 
         // Traverse each tile node in the path sequentially
@@ -443,7 +452,7 @@ public class UnitInstance : MonoBehaviour
     {
         if (currentTile == null || destinationTile == null) return false;
 
-        var path = HexPathfinder.FindPath(currentTile, destinationTile, maxMovementCost >= 0 ? maxMovementCost : movementRange);
+        var path = HexPathfinder.FindPath(currentTile, destinationTile, maxMovementCost >= 0 ? maxMovementCost : movementRange, this);
         if (path == null || path.Count < 2) return false;
 
         Debug.Log($"{unitName} moving from {currentTile.gridPosition} to {destinationTile.gridPosition} via path of length {path.Count}");
@@ -640,6 +649,7 @@ public class UnitInstance : MonoBehaviour
 
         if (damageTaken > 0)
         {
+            if (Faction == UnitFaction.Villager) GameStateManager.Instance?.RegisterVillagerHit();
             if (hitDelay > 0f && gameObject.activeInHierarchy)
                 StartCoroutine(PlayHitReactionAfterDelay(damageTaken, hitDelay, weapon, attacker));
             else
@@ -796,11 +806,12 @@ public class UnitInstance : MonoBehaviour
     {
         if (currentTile != null)
         {
-            currentTile.RemoveUnit();
+            currentTile.RemoveUnit(this);
             currentTile = null;
         }
 
         Say(UnitSpeechTrigger.Death);
+        if (IsWall) GameStateManager.Instance?.RegisterWallDestroyed();
         OnDeath?.Invoke(this);
         if (vfx != null)
         {
@@ -850,7 +861,7 @@ public class UnitInstance : MonoBehaviour
     /// </summary>
     public bool Rescue(UnitInstance villager)
     {
-        if (villager == null || villager.Faction != UnitFaction.Villager || villager.IsWorker ||
+        if (villager == null || villager.Faction != UnitFaction.Villager ||
             villager.currentTile == null || rescuedUnitData == null || !CanAttack(villager))
             return false;
 
@@ -880,7 +891,33 @@ public class UnitInstance : MonoBehaviour
         HexTile villagerTile = villager.currentTile;
         villagerTile.RemoveUnit();
         villager.currentTile = null;
+        AttachCarried(villager, villagerData, rescueSlot);
+        if (Faction == UnitFaction.Player)
+            AddExperience(RescueExperience);
+        Debug.Log($"{unitName} has rescued {villager.unitName}!");
+        return true;
+    }
+
+    /// <summary>The villagers this unit currently carries, with the slot each one occupies.</summary>
+    public IEnumerable<KeyValuePair<int, UnitInstance>> CarriedVillagers
+    {
+        get
+        {
+            if (carriedVillagers == null) yield break;
+            for (int i = 0; i < carriedVillagers.Length; i++)
+                if (carriedVillagers[i] != null) yield return new KeyValuePair<int, UnitInstance>(i, carriedVillagers[i]);
+        }
+    }
+
+    /// <summary>Parents a villager (already off the grid) to this unit in the given slot so it trails behind and counts at drop-off.</summary>
+    public void AttachCarried(UnitInstance villager, UnitData villagerData, int rescueSlot)
+    {
         rescuedUnitData[rescueSlot] = villagerData;
+        if (carriedVillagers == null || carriedVillagers.Length != rescuedUnitData.Length)
+            carriedVillagers = new UnitInstance[rescuedUnitData.Length];
+        carriedVillagers[rescueSlot] = villager;
+        // A carried worker stops working: free its farm / lumber site.
+        if (villager.TryGetComponent(out WorkerVillager worker)) worker.ReleaseSite();
 
         // Parenting inherits this unit's scale, which shrinks the villager. Keep the size it had in the world.
         Vector3 villagerWorldScale = villager.transform.lossyScale;
@@ -898,11 +935,27 @@ public class UnitInstance : MonoBehaviour
             collider.enabled = false;
 
         villager.enabled = false;
-        if (Faction == UnitFaction.Player)
-            AddExperience(RescueExperience);
-        Debug.Log($"{unitName} has rescued {villager.unitName}!");
-        return true;
     }
+    /// <summary>Hands up to <paramref name="max"/> carried villagers over at an evacuation point and removes them. Returns how many were dropped off.</summary>
+    public int DropOffRescued(int max)
+    {
+        int dropped = 0;
+        if (rescuedUnitData == null) return 0;
+        for (int i = 0; i < rescuedUnitData.Length && dropped < max; i++)
+        {
+            if (rescuedUnitData[i] == null) continue;
+            rescuedUnitData[i] = null;
+            if (carriedVillagers != null && i < carriedVillagers.Length && carriedVillagers[i] != null)
+            {
+                carriedVillagers[i].IsExtracted = true;
+                Destroy(carriedVillagers[i].gameObject);
+                carriedVillagers[i] = null;
+            }
+            dropped++;
+        }
+        return dropped;
+    }
+
     private IEnumerator DeathVfxAfterDelay(float delay)
     {
         yield return new WaitForSeconds(delay);

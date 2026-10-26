@@ -14,13 +14,12 @@ using UnityEngine;
 /// marking extraction points, and spawning villagers to be rescued. Rescue logic
 /// itself (a unit carrying up to 2 rescued villagers) lives on UnitInstance, not here.
 /// </summary>
-public class MapManager : MonoBehaviour
+public partial class MapManager : MonoBehaviour
 {
     public static MapManager Instance { get; private set; }
     private static readonly Vector2Int ExfilTilePosition = new Vector2Int(0, 0);
     private const int StartZoneSize = 3;
     private const int VillagerEdgeMargin = 2;
-    private const int InitialVillagerSpawnCount = 1;
     private const int VillagersPerPlayerUnit = 2;
 
     [Serializable]
@@ -96,6 +95,8 @@ public class MapManager : MonoBehaviour
     [SerializeField] private float attackScalingPerWave = 0.20f;
     [Tooltip("Each level adds this fraction of base defense (rounded, so +1 defense shows up after a few levels).")]
     [SerializeField] private float defenseScalingPerWave = 0.15f;
+    [Tooltip("Multiplier on every per-wave scaling rate above; below 1 slows how fast enemies grow.")]
+    [SerializeField] private float waveScalingPace = 0.4f;
     [Tooltip("Levels needed per +1 movement range (0 disables).")]
     [SerializeField] private int levelsPerMovementBonus = 6;
     [Tooltip("Levels needed per +1 attack range (0 disables). Capped at +1 so ranged enemies don't outrange everything.")]
@@ -154,6 +155,17 @@ public class MapManager : MonoBehaviour
         }
         Instance = this;
         BuildTerrainDatabase();
+        if (SaveSystem.LoadOnNextStart)
+        {
+            SaveSystem.LoadOnNextStart = false;
+            if (SaveSystem.TryRead(out BattleSaveData save))
+            {
+                gameStateManager = GameStateManager.Instance;
+                RestoreFromSave(save);
+                return;
+            }
+            Debug.LogWarning("MapManager: no readable save found; starting a new battle.");
+        }
         if (randomizeSeed)
             seed = UnityEngine.Random.Range(0, 10000);
         Generate();
@@ -161,7 +173,6 @@ public class MapManager : MonoBehaviour
         placeUnits();
         SpawnEnemyWave(enemySpawnCount);
         villagerSpawnTarget = GetPlayerUnitCount() * VillagersPerPlayerUnit;
-        SpawnVillagers(InitialVillagerSpawnCount);
         InitializeRevealState();
     }
 
@@ -192,18 +203,39 @@ public class MapManager : MonoBehaviour
         return playerCount;
     }
 
+    private const int TownCenterVillagerInterval = 3;
+    private const int VillagersPerTownCenter = 5;
+    private int roundsSinceTownCenterVillager;
+    private int nextTownCenterIndex;
+
+    private void HandleTownCenterVillagers()
+    {
+        List<UnitInstance> centers = GetStructures(BuildingType.TownCenter);
+        if (centers.Count == 0) { roundsSinceTownCenterVillager = 0; return; }
+        if (++roundsSinceTownCenterVillager < TownCenterVillagerInterval) return;
+
+        // Every Town Center raises the villager cap by 5. Keep the timer full at the cap so one spawns as soon as a slot frees.
+        if (GetTownCenterVillagers().Count >= centers.Count * VillagersPerTownCenter) return;
+
+        roundsSinceTownCenterVillager = 0;
+        // Take turns so each Town Center fills its own 5 slots.
+        SpawnTownCenterVillager(centers[nextTownCenterIndex++ % centers.Count].currentTile);
+    }
+
     private void HandleRoundAdvanced(int round)
     {
-        // Rounds between stray villagers comes from the Recruiting research track.
-        if (round <= 1 || (round - 1) % ResearchManager.Current.VillagerSpawnInterval != 0)
-            return;
+        HandleTownCenterVillagers();
+    }
 
-        var newVillagers = SpawnVillagers(1);
-        if (newVillagers.Count > 0)
-        {
-            RevealAround(newVillagers[0].currentTile, 0);
-        }
-
+    /// <summary>The player's Town Center villagers still on the field.</summary>
+    public List<WorkerVillager> GetTownCenterVillagers()
+    {
+        var result = new List<WorkerVillager>();
+        foreach (UnitInstance unit in FindObjectsByType<UnitInstance>())
+            if (unit != null && unit.IsWorker && EnemyBattlefieldState.IsOnField(unit) &&
+                unit.TryGetComponent(out WorkerVillager worker))
+                result.Add(worker);
+        return result;
     }
 
     /// Archetypes enemies may spawn as at this wave level: one type at wave 0, one more per wave, all by wave 3.
@@ -305,10 +337,11 @@ public class MapManager : MonoBehaviour
     {
         if (waveLevel <= 0) return;
 
-        enemy.maxHealth = Mathf.RoundToInt(enemy.maxHealth * (1f + waveLevel * hpScalingPerWave));
+        float pace = waveScalingPace;
+        enemy.maxHealth = Mathf.RoundToInt(enemy.maxHealth * (1f + waveLevel * hpScalingPerWave * pace));
         enemy.currentHealth = enemy.maxHealth;
-        enemy.attackPower = Mathf.RoundToInt(enemy.attackPower * (1f + waveLevel * attackScalingPerWave));
-        enemy.defensePower += Mathf.RoundToInt(enemy.defensePower * waveLevel * defenseScalingPerWave);
+        enemy.attackPower = Mathf.RoundToInt(enemy.attackPower * (1f + waveLevel * attackScalingPerWave * pace));
+        enemy.defensePower += Mathf.RoundToInt(enemy.defensePower * waveLevel * defenseScalingPerWave * pace);
         if (levelsPerMovementBonus > 0)
             enemy.movementRange += waveLevel / levelsPerMovementBonus;
         if (levelsForRangeBonus > 0 && waveLevel >= levelsForRangeBonus)
@@ -383,11 +416,6 @@ public class MapManager : MonoBehaviour
     private bool MeetsPrerequisites(BuildingType type, out string reason)
     {
         reason = null;
-        if (type == BuildingType.TownCenter && HasStandingTownCenter)
-        {
-            reason = "A Town Center is already standing";
-            return false;
-        }
         if (GetBuildingSpec(type).RequiresTownCenter && !HasStandingTownCenter)
         {
             reason = "Requires a standing Town Center";
@@ -424,6 +452,18 @@ public class MapManager : MonoBehaviour
     {
         if (!IsBuildable(tile) || !MeetsPrerequisites(type, out _)) return null;
 
+        UnitInstance building = CreateStructure(type, tile);
+        PlaySpawnEffects(tile.transform.position);
+        if (type == BuildingType.TownCenter)
+        {
+            SpawnTownCenterVillager(tile); // the first villager arrives with the building
+        }
+        return building;
+    }
+
+    /// <summary>Raises the structure with no cost, prerequisite or villager side effects (also used to rebuild a saved game).</summary>
+    private UnitInstance CreateStructure(BuildingType type, HexTile tile)
+    {
         BuildingSpec spec = GetBuildingSpec(type);
         Vector3 position = tile.transform.position + Vector3.up * tile.heightOffset;
         GameObject structureObject;
@@ -431,7 +471,7 @@ public class MapManager : MonoBehaviour
 
         if (spec.Prefab != null)
         {
-            structureObject = Instantiate(spec.Prefab, position, Quaternion.identity);
+            structureObject = Instantiate(spec.Prefab, position, new Quaternion(0f, 120f, 0f, 1f));
         }
         else
         {
@@ -452,6 +492,8 @@ public class MapManager : MonoBehaviour
             building = structureObject.AddComponent<UnitInstance>();
 
         building.Faction = UnitFaction.Structure;
+        building.IsWall = type == BuildingType.Wall;
+        building.IsEnterable = type != BuildingType.Wall;
         building.unitName = type == BuildingType.Wall ? $"Wall_{GenerateUnique4DigitString()}" : spec.DisplayName;
         structureObject.name = building.unitName;
         building.maxHealth = Mathf.Max(1, spec.MaxHealth);
@@ -477,9 +519,33 @@ public class MapManager : MonoBehaviour
             foreach (HexTile neighbor in tile.neighbors)
                 if (neighbor != null) neighbor.IsReserved = true;
 
-        PlaySpawnEffects(tile.transform.position);
         building.NotifyStatsChanged();
         return building;
+    }
+
+    /// <summary>A new Town Center starts with one villager on the Food role; WorkerVillager.SetRole swaps it.</summary>
+    private void SpawnTownCenterVillager(HexTile townCenter)
+    {
+        UnitData data = workerArchetype != null ? workerArchetype
+            : (villagerArchetypes != null && villagerArchetypes.Count > 0 ? villagerArchetypes[0] : null);
+        if (data == null)
+        {
+            Debug.LogError("[MapGenerator] No worker (or villager) archetype assigned; Town Center villager not spawned.");
+            return;
+        }
+
+        foreach (HexTile neighbor in townCenter.neighbors)
+        {
+            if (neighbor == null || !neighbor.CanEnter() || neighbor.terrainType == TerrainType.Water ||
+                neighbor.IsExtractionPoint) continue;
+
+            UnitInstance villager = SpawnWorkerUnit(neighbor, data, isFood: true);
+            if (villager == null) return;
+            if (CombatManager.Instance != null) CombatManager.Instance.TrackAll(new List<UnitInstance> { villager });
+            villager.playSpawnAnimation();
+            return;
+        }
+        Debug.LogWarning("[MapGenerator] No free tile next to the Town Center for its villager.");
     }
 
     private void PlaySpawnEffects(Vector3 position)
@@ -565,9 +631,7 @@ public class MapManager : MonoBehaviour
         }
 
         Vector2Int gridPosition = new Vector2Int(x, y);
-        TerrainType terrain = gridPosition == ExfilTilePosition || ExtraBoatPositions().Contains(gridPosition)
-            ? TerrainType.Exfil
-            : PickTerrain(noiseValue);
+        TerrainType terrain = PickTerrain(noiseValue);
 
         // Keep the player start/exfil corner dry so units can always move out.
         if (terrain == TerrainType.Water && x <= StartZoneSize && y <= StartZoneSize)
@@ -843,6 +907,42 @@ public class MapManager : MonoBehaviour
         return spawnedUnits;
     }
 
+    /// <summary>Spawns a freshly drafted hero on a free tile next to the Barracks (or the nearest free tile). Null if there is no room.</summary>
+    public UnitInstance SpawnHero(Unit unit)
+    {
+        List<UnitInstance> barracks = GetStructures(BuildingType.Barracks);
+        if (unit == null || unit.Archetype == null || unit.Archetype.ModelPrefab == null) return null;
+
+        HexTile tile = null;
+        if (barracks.Count > 0 && barracks[0].currentTile != null)
+        {
+            foreach (HexTile neighbor in barracks[0].currentTile.neighbors)
+            {
+                if (neighbor != null && neighbor.CanEnter() && neighbor.terrainType != TerrainType.Water &&
+                    neighbor.terrainType != TerrainType.Exfil && !neighbor.IsExtractionPoint)
+                {
+                    tile = neighbor;
+                    break;
+                }
+            }
+            if (tile == null) tile = GetPlayerSpawnTile(barracks[0].currentTile.gridPosition);
+        }
+        if (tile == null) return null;
+
+        GameObject prefab = unit.Archetype.ModelPrefab;
+        GameObject spawned = Instantiate(prefab, tile.transform.position, prefab.transform.rotation);
+        if (!spawned.TryGetComponent(out UnitInstance instance))
+        {
+            Destroy(spawned);
+            return null;
+        }
+        instance.Initialize(unit);
+        instance.PlaceOnTile(tile);
+        PlaySpawnEffects(tile.transform.position);
+        instance.playSpawnAnimation();
+        return instance;
+    }
+
     private IEnumerator PlayInitialUnitSpawnTour(UnitInstance unit)
     {
         yield return PlayUnitSpawnFocusTour(unit);
@@ -894,60 +994,117 @@ public class MapManager : MonoBehaviour
     // ---------------------------------------------------------------------
     // Extraction: a unit must stand adjacent to the fixed exfil tile.
     // ---------------------------------------------------------------------
-    private void MarkExtractionPoints()
+    // Evacuation points: one opens on a water tile every few map expansions, takes two villagers, then closes.
+    private const int EvacuationPointSlots = 2;
+    private readonly Dictionary<HexTile, GameObject> evacuationMarkers = new Dictionary<HexTile, GameObject>();
+
+    /// <summary>Opens an evacuation point on a random water tile that touches land. Returns its tile, or null if none fits.</summary>
+    public HexTile CreateEvacuationPoint()
     {
-        HexTile exfilTile = GetTile(ExfilTilePosition);
-        if (exfilTile == null)
-        {
-            Debug.LogWarning($"MapGenerator: exfil tile {ExfilTilePosition} has no matching tile.");
-            return;
-        }
-
-        exfilTile.IsExtractionPoint = true;
-        exfilTile.isWalkable = false;
-
-        foreach (Vector2Int boatPosition in ExtraBoatPositions())
-        {
-            HexTile boatTile = GetTile(boatPosition);
-            if (boatTile == null) continue;
-            boatTile.IsExtractionPoint = true;
-            boatTile.isWalkable = false;
-        }
-
-        // Every tile adjacent to any boat (original or extra) is extractable.
+        var revealed = new List<HexTile>();
+        var hidden = new List<HexTile>();
         foreach (HexTile tile in tileMap.Values)
         {
-            if (tile == null || tile.IsExtractionPoint) continue;
-            tile.IsExtractable = IsAdjacentToBoat(tile.gridPosition);
+            if (tile == null || tile.terrainType != TerrainType.Water || tile.IsExtractionPoint) continue;
+            bool touchesLand = false;
+            foreach (HexTile neighbor in tile.neighbors)
+                if (neighbor != null && neighbor.terrainType != TerrainType.Water) { touchesLand = true; break; }
+            if (!touchesLand) continue;
+            (tile.isRevealed ? revealed : hidden).Add(tile);
         }
+
+        List<HexTile> pool = revealed.Count > 0 ? revealed : hidden;
+        if (pool.Count == 0) return null;
+
+        HexTile point = pool[UnityEngine.Random.Range(0, pool.Count)];
+        point.IsExtractionPoint = true;
+        point.ExtractionSlots = EvacuationPointSlots;
+        RefreshExtractableTiles(point);
+        RevealAround(point, 1);
+        AddEvacuationMarker(point);
+        return point;
     }
 
-    // Every boat the player owns docks as two in battle. Extra boats line the map's outer edges
-    // beside the original (0,0), alternating (0,1), (1,0), (0,2), (2,0), ...
-    private const int BoatsDockedPerOwnedBoat = 2;
-
-    private static List<Vector2Int> ExtraBoatPositions()
+    private void AddEvacuationMarker(HexTile point)
     {
-        var positions = new List<Vector2Int>();
-        GameStateManager gsm = GameStateManager.Instance;
-        int extraBoats = 0;
-        int ownedBoats = 1 + Mathf.Max(0, extraBoats);
-        int count = ownedBoats * BoatsDockedPerOwnedBoat - 1; // the original (0,0) is one of them
-        for (int i = 0; i < count; i++)
+        GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        marker.name = "EvacuationPoint";
+        marker.transform.SetParent(point.transform, false);
+        marker.transform.position = point.transform.position + Vector3.up * (point.heightOffset + hexSize * 0.4f);
+        marker.transform.localScale = new Vector3(hexSize * 0.5f, hexSize * 0.4f, hexSize * 0.5f);
+        if (marker.TryGetComponent(out Collider col)) Destroy(col);
+        Color gold = new Color(1f, 0.82f, 0.1f);
+        if (marker.TryGetComponent(out Renderer rend)) rend.material.color = gold;
+
+        // Flat gold disc over the whole tile so the point reads as highlighted.
+        GameObject glow = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        glow.name = "EvacuationGlow";
+        glow.transform.SetParent(marker.transform, true);
+        glow.transform.position = point.transform.position + Vector3.up * (point.heightOffset + 0.02f);
+        glow.transform.localScale = new Vector3(hexSize * 1.6f, 0.01f, hexSize * 1.6f);
+        if (glow.TryGetComponent(out Collider glowCol)) Destroy(glowCol);
+        if (glow.TryGetComponent(out Renderer glowRend)) glowRend.material.color = gold;
+        evacuationMarkers[point] = marker;
+    }
+
+    /// <summary>Villagers a hero standing on this tile can still hand over (sum of open adjacent points).</summary>
+    public int GetEvacuationSlots(HexTile standingOn)
+    {
+        int slots = 0;
+        if (standingOn == null) return 0;
+        foreach (HexTile neighbor in standingOn.neighbors)
+            if (neighbor != null && neighbor.IsExtractionPoint) slots += neighbor.ExtractionSlots;
+        return slots;
+    }
+
+    /// <summary>Spends <paramref name="count"/> slots from the open points next to this tile, closing any that run out.</summary>
+    public void UseEvacuationSlots(HexTile standingOn, int count)
+    {
+        if (standingOn == null) return;
+        foreach (HexTile neighbor in standingOn.neighbors)
         {
-            int step = i / 2 + 1;
-            positions.Add(i % 2 == 0 ? new Vector2Int(0, step) : new Vector2Int(step, 0));
+            if (count <= 0) break;
+            if (neighbor == null || !neighbor.IsExtractionPoint) continue;
+
+            int used = Mathf.Min(count, neighbor.ExtractionSlots);
+            neighbor.ExtractionSlots -= used;
+            count -= used;
+            if (neighbor.ExtractionSlots > 0) continue;
+
+            neighbor.IsExtractionPoint = false;
+            if (evacuationMarkers.TryGetValue(neighbor, out GameObject marker))
+            {
+                if (marker != null) Destroy(marker);
+                evacuationMarkers.Remove(neighbor);
+            }
+            RefreshExtractableTiles(neighbor);
         }
-        return positions;
     }
 
-    public bool IsAdjacentToBoat(Vector2Int position)
+    // A land tile is extractable while any adjacent evacuation point is open.
+    private static void RefreshExtractableTiles(HexTile point)
     {
-        if (HexCoordinates.GetDistance(position, ExfilTilePosition) == 1) return true;
-        foreach (Vector2Int boat in ExtraBoatPositions())
-            if (HexCoordinates.GetDistance(position, boat) == 1) return true;
-        return false;
+        foreach (HexTile tile in point.neighbors)
+        {
+            if (tile == null || tile.IsExtractionPoint) continue;
+            bool open = false;
+            foreach (HexTile other in tile.neighbors)
+                if (other != null && other.IsExtractionPoint) { open = true; break; }
+            tile.IsExtractable = open;
+        }
     }
+
+    private void MarkExtractionPoints()
+    {
+        foreach (HexTile tile in tileMap.Values)
+        {
+            if (tile == null) continue;
+            tile.IsExtractionPoint = false;
+            tile.IsExtractable = false;
+        }
+    }
+
+    public bool IsAdjacentToBoat(Vector2Int position) => false;
 
     /// Straight hex distance from the unit to the nearest tile it could extract from (-1 if there is none).
     /// Used to auto-resolve a forced retreat without animating the run.
@@ -980,11 +1137,44 @@ public class MapManager : MonoBehaviour
             {
                 if (neighbor == null || !neighbor.isWalkable) continue;
 
-                List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, neighbor, -1);
+                List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, neighbor, -1, unit);
                 if (path == null || path.Count >= bestLength) continue;
                 bestLength = path.Count;
                 best = neighbor;
             }
+        }
+        return best;
+    }
+
+    /// <summary>The standing Town Center's tile (where workers deposit), or null if none.</summary>
+    public HexTile GetTownCenterTile()
+    {
+        List<UnitInstance> centers = GetStructures(BuildingType.TownCenter);
+        return centers.Count > 0 ? centers[0].currentTile : null;
+    }
+
+    public bool IsAdjacentToTownCenter(HexTile tile)
+    {
+        HexTile center = GetTownCenterTile();
+        return tile != null && center != null && HexCoordinates.GetDistance(tile.gridPosition, center.gridPosition) == 1;
+    }
+
+    /// <summary>The reachable walkable tile beside the Town Center with the shortest route from the unit, or null.</summary>
+    public HexTile FindTownCenterApproach(UnitInstance unit)
+    {
+        HexTile center = GetTownCenterTile();
+        if (unit == null || unit.currentTile == null || center == null) return null;
+
+        HexTile best = null;
+        int bestLength = int.MaxValue;
+        foreach (HexTile neighbor in center.neighbors)
+        {
+            if (neighbor == null || !neighbor.isWalkable) continue;
+            // The unit's own tile counts even though it is unwalkable while occupied.
+            List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, neighbor, -1, unit);
+            if (path == null || path.Count >= bestLength) continue;
+            bestLength = path.Count;
+            best = neighbor;
         }
         return best;
     }
@@ -1200,9 +1390,9 @@ public class MapManager : MonoBehaviour
         return terrainBands.Count > 0 ? terrainBands[^1].terrain : TerrainType.Grass;
     }
 
-    private void SpawnTile(Vector2Int gridPosition, TerrainType terrain)
+    private void SpawnTile(Vector2Int gridPosition, TerrainType terrain, GameObject forcedPrefab = null)
     {
-        GameObject prefab = GetPrefabForTerrain(terrain);
+        GameObject prefab = forcedPrefab != null ? forcedPrefab : GetPrefabForTerrain(terrain);
         if (prefab == null)
         {
             Debug.LogWarning($"MapGenerator: no prefab configured for {terrain} at {gridPosition}, skipping tile.");
@@ -1214,6 +1404,7 @@ public class MapManager : MonoBehaviour
 
         HexTile tile = tileObj.GetComponent<HexTile>();
         tile.gridPosition = gridPosition;
+        tile.prefabIndex = System.Array.IndexOf(tileGameObjectDatabase, prefab);
         string prefabName = prefab.name.ToLowerInvariant();
         tile.isForest = prefabName.Contains("forest");
         tile.isHill = prefabName.Contains("hill");

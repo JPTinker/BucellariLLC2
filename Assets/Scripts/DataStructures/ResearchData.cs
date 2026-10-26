@@ -5,12 +5,12 @@ public enum ResearchTrack
 {
     Recruiting,    // fewer rounds between stray villagers on the battle map
     Gathering,     // workers collect more per gather turn
-    Training,      // higher max unit level
+    Training,      // newly recruited heroes start at a higher level
     Masonry,       // sturdier walls
     Engineering,   // more fortification levels
-    Storehouses,   // higher Food / Materials cap
+    Storehouses,   // each Town Center stores more Food / Materials
     Church,        // more benched units healed per cycle, and a higher heal %
-    Shipwright,    // each node builds a ship (+unit / villager capacity, +1 docked boat)
+    LevelCap,      // raises the maximum unit level (base 10, +Value per node)
     BattleLength   // longer battles (+rounds before everyone is forced to retreat)
 }
 

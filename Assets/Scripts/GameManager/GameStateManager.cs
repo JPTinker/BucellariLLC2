@@ -20,10 +20,15 @@ public class GameStateManager : MonoBehaviour
     {
         [Header("Worker villagers (in battle)")]
         public int WorkerFoodPerGather = 30;       // food carried per gather turn at a farm
-        public int WorkerMaterialsPerGather = 20;  // materials carried per gather turn at a lumber mill
-        public int WorkerCarryCap = 60;            // max a worker carries before it must deposit
+        public int WorkerMaterialsPerGather = 40;  // materials carried per gather turn at a lumber mill
+        public int WorkerCarryCap = 120;           // max a worker carries before it must deposit
         public float WorkerHpBonusPerLevel = 0.10f;    // +HP fraction per enemy wave level
         public float WorkerYieldBonusPerLevel = 0.10f; // +gather yield fraction per enemy wave level
+
+        [Header("Zone of control")]
+        public bool ZocEnabled = true;
+        [Tooltip("Extra movement spent to step onto a tile next to a hostile melee unit.")]
+        public int ZocPenalty = 2;
 
         [Header("Leveling")]
         public int FoodCostPerLevelUp = 5;        // Food the settlement spends each time a unit levels up
@@ -32,6 +37,12 @@ public class GameStateManager : MonoBehaviour
         public int StartingMorale = 50;
         public int HeroDeathMoralePenalty = 8;
         public int VillagerDeathMoralePenalty = 5;
+        [Tooltip("Gained for each enemy unit killed.")]
+        public int EnemyKillMoraleBonus = 3;
+        [Tooltip("Lost when a wall is destroyed.")]
+        public int WallDestroyedMoralePenalty = 1;
+        [Tooltip("Lost each time a villager takes damage.")]
+        public int VillagerHitMoralePenalty = 2;
         [Tooltip("Lost per extraction slot left unused when an extraction point disappears.")]
         public int UnusedExtractionSlotMoralePenalty = 6;
 
@@ -99,8 +110,9 @@ public class GameStateManager : MonoBehaviour
     private ResearchManager _research;
     public ResearchManager Research => _research ??= new ResearchManager(this);
 
-    /// <summary>Most heroes allowed on the field at once.</summary>
-    public const int MaxHeroes = 7;
+    /// <summary>Hard ceiling on heroes; each standing Barracks raises the cap by <see cref="HeroesPerBarracks"/> up to this.</summary>
+    public const int MaxHeroes = 8;
+    public const int HeroesPerBarracks = 2;
     public const int StarterHeroCount = 2;
 
     [Header("Settlement")]
@@ -116,7 +128,17 @@ public class GameStateManager : MonoBehaviour
     // Units that leveled up and haven't had their "level up" feedback shown yet.
     [NonSerialized] public Queue<LevelUpInfo> PendingLevelUps = new Queue<LevelUpInfo>();
 
-    public bool HeroesFull => FullRoster.Count >= MaxHeroes;
+    /// <summary>Current hero cap: the starting squad plus two per standing Barracks, never above <see cref="MaxHeroes"/>.</summary>
+    public int HeroCap
+    {
+        get
+        {
+            int barracks = MapManager.Instance != null ? MapManager.Instance.GetStructures(BuildingType.Barracks).Count : 0;
+            return Mathf.Min(MaxHeroes, StarterHeroCount + barracks * HeroesPerBarracks);
+        }
+    }
+
+    public bool HeroesFull => FullRoster.Count >= HeroCap;
 
     [Header("Run progress")]
     public int EnemiesKilledThisBattle;
@@ -186,6 +208,7 @@ public class GameStateManager : MonoBehaviour
             if (archetype == null) continue;
             Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
             unit.UnitName = NameGenerator.Random();
+            unit.GrantLevels(Research.StartingHeroLevel - 1);
             FullRoster.Add(unit);
         }
     }
@@ -196,6 +219,7 @@ public class GameStateManager : MonoBehaviour
         if (archetype == null || HeroesFull) return null;
         Unit unit = new Unit(archetype, rarity ?? UnitRarityTable.Roll());
         unit.UnitName = NameGenerator.Random();
+        unit.GrantLevels(Research.StartingHeroLevel - 1); // Training research: recruits arrive already leveled
         FullRoster.Add(unit);
         ActiveTeam.Add(unit);
         return unit;
@@ -209,6 +233,53 @@ public class GameStateManager : MonoBehaviour
     }
 
     public void ClearPendingLevelUps() => PendingLevelUps.Clear();
+
+    // --- SAVE / LOAD ---
+
+    /// <summary>Copies the run's economy, counters, roster and research into the snapshot.</summary>
+    public void WriteSave(BattleSaveData data)
+    {
+        data.Food = Settlement.Food;
+        data.Materials = Settlement.Materials;
+        data.Morale = Settlement.Morale;
+        data.EnemiesKilled = EnemiesKilledThisBattle;
+        data.HeroesLost = HeroesLostThisBattle;
+        data.VillagersLost = VillagersLostThisBattle;
+        data.VillagersEscaped = VillagersEscapedThisBattle;
+        data.RoundsElapsed = RoundsElapsed;
+        data.Roster = new List<UnitSaveData>();
+        foreach (Unit unit in FullRoster) data.Roster.Add(UnitSaveData.From(unit));
+        Research.WriteTo(data);
+    }
+
+    /// <summary>Replaces the fresh-run state this manager booted with by the saved one.</summary>
+    public void ApplySave(BattleSaveData data)
+    {
+        Settlement.Food = data.Food;
+        Settlement.Materials = data.Materials;
+        Settlement.Morale = data.Morale;
+        EnemiesKilledThisBattle = data.EnemiesKilled;
+        HeroesLostThisBattle = data.HeroesLost;
+        VillagersLostThisBattle = data.VillagersLost;
+        VillagersEscapedThisBattle = data.VillagersEscaped;
+        RoundsElapsed = data.RoundsElapsed;
+
+        FullRoster.Clear();
+        foreach (UnitSaveData saved in data.Roster)
+        {
+            UnitData archetype = AvailablePlayerArchetypes != null
+                ? AvailablePlayerArchetypes.Find(a => a != null && a.name == saved.ArchetypeName) : null;
+            if (archetype == null)
+            {
+                Debug.LogWarning($"GameStateManager: saved hero '{saved.UnitName}' has unknown archetype '{saved.ArchetypeName}'; skipped.");
+                continue;
+            }
+            FullRoster.Add(saved.ToUnit(archetype));
+        }
+        ActiveTeam = new List<Unit>(FullRoster);
+        Research.ReadFrom(data);
+        NotifySettlementChanged();
+    }
 
     // --- RUN END ---
 
@@ -235,6 +306,9 @@ public class GameStateManager : MonoBehaviour
         OnGameOver?.Invoke(LastResult);
     }
 
+    /// <summary>Live score shown in the top bar (same formula as the final score).</summary>
+    public int CurrentScore => ComputeScore();
+
     private int ComputeScore()
     {
         var b = Balance;
@@ -260,19 +334,14 @@ public class GameStateManager : MonoBehaviour
 
     // --- EXTRACTION / RESCUE ---
 
-    /// <summary>A hero drops its carried villagers at an extraction point.</summary>
-    public void ProcessExtraction(UnitInstance unitInstance)
+    /// <summary>A hero drops up to <paramref name="maxVillagers"/> carried villagers at an evacuation point. Returns how many were saved.</summary>
+    public int ProcessExtraction(UnitInstance unitInstance, int maxVillagers)
     {
-        if (unitInstance == null) return;
+        if (unitInstance == null) return 0;
 
-        int rescued = 0;
-        for (int i = 0; i < unitInstance.rescuedUnitData.Length; i++)
-        {
-            if (unitInstance.rescuedUnitData[i] == null) continue;
-            unitInstance.rescuedUnitData[i] = null;
-            rescued++;
-        }
+        int rescued = unitInstance.DropOffRescued(maxVillagers);
         for (int i = 0; i < rescued; i++) RegisterVillagerEscaped();
+        return rescued;
     }
 
     /// <summary>Called when a villager reaches an extraction point under its own power.</summary>
@@ -388,6 +457,9 @@ public class GameStateManager : MonoBehaviour
         AdjustMorale(-Balance.HeroDeathMoralePenalty);
     }
 
+    /// <summary>Call whenever a villager takes a hit.</summary>
+    public void RegisterVillagerHit() => AdjustMorale(-Balance.VillagerHitMoralePenalty);
+
     /// <summary>Call from CombatManager when a villager dies.</summary>
     public void RegisterVillagerDeath()
     {
@@ -400,5 +472,9 @@ public class GameStateManager : MonoBehaviour
     public void RegisterEnemyKilled()
     {
         EnemiesKilledThisBattle++;
+        AdjustMorale(Balance.EnemyKillMoraleBonus);
     }
+
+    /// <summary>Call when a wall is destroyed.</summary>
+    public void RegisterWallDestroyed() => AdjustMorale(-Balance.WallDestroyedMoralePenalty);
 }

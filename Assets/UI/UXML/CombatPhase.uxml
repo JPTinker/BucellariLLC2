@@ -5,7 +5,7 @@
             <ui:VisualElement name="hero-block" class="hud-block">
                 <ui:VisualElement class="hud-icon-wrap">
                     <ui:VisualElement name="hero-icon" class="hud-icon hud-icon--hero" style="background-image: url(&quot;project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_2_head_gladiator_.png?fileID=2800000&amp;guid=e128b01dab70e7a498a78577123c2db0&amp;type=3#T_2_head_gladiator_&quot;);"/>
-                    <ui:VisualElement class="hud-glow hud-glow--hero" style="background-size: 100% 100%;"/>
+                    <ui:VisualElement name="hero-glow" class="hud-glow hud-glow--hero" style="background-size: 100% 100%;"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-text-col">
                     <ui:Label text="HEROES" class="resource-label"/>
@@ -16,22 +16,11 @@
             <ui:VisualElement name="villager-block" class="hud-block">
                 <ui:VisualElement class="hud-icon-wrap">
                     <ui:VisualElement name="villager-icon" class="hud-icon hud-icon--villager" style="background-image: url(&quot;project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_8_silhouette_.png?fileID=2800000&amp;guid=72cdd1b1bb49d5f47bd5d2b3ecd3e851&amp;type=3#T_8_silhouette_&quot;);"/>
-                    <ui:VisualElement class="hud-glow hud-glow--villager"/>
+                    <ui:VisualElement name="villager-glow" class="hud-glow hud-glow--villager"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-text-col">
                     <ui:Label text="ESCAPED" class="resource-label"/>
                     <ui:Label name="settlement-villagers-value" text="0/10" class="resource-value"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="hud-separator"/>
-            </ui:VisualElement>
-            <ui:VisualElement name="saveable-block" class="hud-block">
-                <ui:VisualElement class="hud-icon-wrap">
-                    <ui:VisualElement name="saveable-icon" class="hud-icon hud-icon--saveable" style="background-image: url(&quot;project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_9_silhouette_+_.png?fileID=2800000&amp;guid=5639e7536f629884f907d06a418a7da6&amp;type=3#T_9_silhouette_+_&quot;);"/>
-                    <ui:VisualElement class="hud-glow hud-glow--saveable"/>
-                </ui:VisualElement>
-                <ui:VisualElement class="hud-text-col">
-                    <ui:Label text="TO RESCUE" class="resource-label"/>
-                    <ui:Label name="townsfolk-saved-value" text="0 / 0" class="resource-value resource-value-positive"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
@@ -58,9 +47,24 @@
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
             <ui:VisualElement name="morale-block" class="hud-block">
+                <ui:VisualElement class="hud-icon-wrap">
+                    <ui:VisualElement name="morale-icon" class="hud-icon hud-icon--morale" style="background-image: url(&quot;project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_11_silhouette_heart_.png?fileID=2800000&amp;guid=eefd57e8b57cd814ebc86925f3a4a109&amp;type=3#T_11_silhouette_heart_&quot;);"/>
+                    <ui:VisualElement name="morale-glow" class="hud-glow hud-glow--morale"/>
+                </ui:VisualElement>
                 <ui:VisualElement class="hud-text-col">
                     <ui:Label text="MORALE" class="resource-label"/>
-                    <ui:Label name="settlement-morale-value" text="50%" class="resource-value"/>
+                    <ui:Label name="settlement-morale-value" text="50%" class="resource-value resource-value-morale"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-separator"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="score-block" class="hud-block">
+                <ui:VisualElement class="hud-icon-wrap">
+                    <ui:VisualElement name="score-icon" class="hud-icon hud-icon--score" style="background-image: url(&quot;project://database/Assets/UI/Icons/Clean%20Vector%20Icons/T_17_medal_star_.png?fileID=2800000&amp;guid=7cfcc6c1dda63e349915e75ac5579034&amp;type=3#T_17_medal_star_&quot;);"/>
+                    <ui:VisualElement name="score-glow" class="hud-glow hud-glow--score"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="hud-text-col">
+                    <ui:Label text="SCORE" class="resource-label"/>
+                    <ui:Label name="score-value" text="0" class="resource-value resource-value-score"/>
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>

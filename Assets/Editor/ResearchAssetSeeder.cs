@@ -42,9 +42,10 @@ public static class ResearchAssetSeeder
             N(ResearchTrack.Gathering, 2, "Better Tools II", 14, 0.25f),
             N(ResearchTrack.Gathering, 3, "Better Tools III", 20, 0.5f),
 
-            N(ResearchTrack.Training, 1, "Drill Yard I", 8, 5),
-            N(ResearchTrack.Training, 2, "Drill Yard II", 14, 5),
-            N(ResearchTrack.Training, 3, "Drill Yard III", 20, 5),
+            // +1 starting level for newly recruited heroes per tier.
+            N(ResearchTrack.Training, 1, "Drill Yard I", 8, 1),
+            N(ResearchTrack.Training, 2, "Drill Yard II", 14, 1),
+            N(ResearchTrack.Training, 3, "Drill Yard III", 20, 1),
 
             N(ResearchTrack.Masonry, 1, "Stonecutting I", 8, 6),
             N(ResearchTrack.Masonry, 2, "Stonecutting II", 14, 6),
@@ -55,17 +56,19 @@ public static class ResearchAssetSeeder
             N(ResearchTrack.Engineering, 2, "Field Works II", 14, 1),
             N(ResearchTrack.Engineering, 3, "Field Works III", 20, 1),
 
-            N(ResearchTrack.Storehouses, 1, "Granaries I", 8, 200),
-            N(ResearchTrack.Storehouses, 2, "Granaries II", 14, 300),
-            N(ResearchTrack.Storehouses, 3, "Granaries III", 20, 500),
+            // Added to each Town Center's Food and Materials storage (base 300 each).
+            N(ResearchTrack.Storehouses, 1, "Granaries I", 8, 100),
+            N(ResearchTrack.Storehouses, 2, "Granaries II", 14, 100),
+            N(ResearchTrack.Storehouses, 3, "Granaries III", 20, 100),
 
             N(ResearchTrack.Church, 1, "Chapel I", 8, 1, 0.025f),
             N(ResearchTrack.Church, 2, "Chapel II", 14, 1, 0.025f),
             N(ResearchTrack.Church, 3, "Chapel III", 20, 1, 0.025f),
 
-            N(ResearchTrack.Shipwright, 1, "Shipwright I", 12, 0),
-            N(ResearchTrack.Shipwright, 2, "Shipwright II", 18, 0),
-            N(ResearchTrack.Shipwright, 3, "Shipwright III", 24, 0),
+            // Unit level cap starts at 10 and rises by 10 per node.
+            N(ResearchTrack.LevelCap, 1, "Veteran Ranks I", 12, 10),
+            N(ResearchTrack.LevelCap, 2, "Veteran Ranks II", 18, 10),
+            N(ResearchTrack.LevelCap, 3, "Veteran Ranks III", 24, 10),
 
             N(ResearchTrack.BattleLength, 1, "Steadfast Resolve I", 8, 3),
             N(ResearchTrack.BattleLength, 2, "Steadfast Resolve II", 14, 3),

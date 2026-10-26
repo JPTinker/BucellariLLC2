@@ -74,10 +74,10 @@ public class VillagerAIController : MonoBehaviour
                 yield break;
             }
 
-            List<HexTile> path = HexPathfinder.FindPath(villager.currentTile, approachTile, -1);
+            List<HexTile> path = HexPathfinder.FindPath(villager.currentTile, approachTile, -1, villager);
             if (path == null || path.Count < 2) yield break;
 
-            HexTile stepDestination = FarthestReachablePoint(path, villager.movementRange);
+            HexTile stepDestination = FarthestReachablePoint(path, villager.movementRange, villager);
             if (stepDestination == villager.currentTile) yield break;
 
             if (!villager.MoveTo(stepDestination, villager.movementRange)) yield break;
@@ -99,13 +99,13 @@ public class VillagerAIController : MonoBehaviour
     }
 
     /// The furthest tile along path the villager can afford to walk to in one action.
-    private static HexTile FarthestReachablePoint(List<HexTile> path, int movementRange)
+    private static HexTile FarthestReachablePoint(List<HexTile> path, int movementRange, UnitInstance mover)
     {
         HexTile result = path[0];
         int cost = 0;
         for (int i = 1; i < path.Count; i++)
         {
-            cost += HexPathfinder.StepCost(i == 1, path[i], movementRange);
+            cost += HexPathfinder.StepCost(i == 1, path[i], movementRange, mover);
             if (cost > movementRange) break;
             result = path[i];
         }

@@ -59,6 +59,9 @@ public class CombatPhaseUIController : MonoBehaviour
     public void SetRound(int round)
     {
         if (roundLabel != null) roundLabel.text = $"{round:00}";
+        if (lastValues.TryGetValue("round", out int previousRound) && round != previousRound)
+            PlayChangeAnimation("round", roundLabel, 1, showFloat: false);
+        lastValues["round"] = round;
         // A fresh round means the "all units gone" condition can fire again.
         roundEndedSignaled = false;
     }
@@ -98,19 +101,18 @@ public class CombatPhaseUIController : MonoBehaviour
         Extract,
         Scout,
         Build,
-        EndTurn,
-        EscapeWorkers
+        EndTurn
     }
-
-    private Button escapeWorkersButton;
 
     // Build menu: replaces the action buttons in the bottom bar while a hero is choosing what to build.
     private VisualElement actionButtonsRow;
     private VisualElement buildMenuRow;
+    private VisualElement townCenterRow;
+    private VisualElement libraryRow;
     private Label actionHeadingLabel;
     private readonly Dictionary<BuildingType, Button> buildMenuButtons = new Dictionary<BuildingType, Button>();
     private static readonly BuildingType[] BuildMenuOrder =
-        { BuildingType.TownCenter, BuildingType.Church, BuildingType.Wall, BuildingType.Barracks };
+        { BuildingType.TownCenter, BuildingType.Church, BuildingType.Wall, BuildingType.Barracks, BuildingType.Library };
 
     private void Awake()
     {
@@ -146,6 +148,7 @@ public class CombatPhaseUIController : MonoBehaviour
         settlementFoodLabel = root.Q<Label>("settlement-food-value");
         settlementMaterialsLabel = root.Q<Label>("settlement-materials-value");
         settlementMoraleLabel = root.Q<Label>("settlement-morale-value");
+        scoreLabel = root.Q<Label>("score-value");
 
         // Action bar
         fortifyButton = root.Q<Button>("action-fortify");
@@ -162,23 +165,6 @@ public class CombatPhaseUIController : MonoBehaviour
         scoutButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.Scout));
         endTurnButton?.RegisterCallback<ClickEvent>(_ => RaiseAction(CombatAction.EndTurn));
 
-        // Worker escape button: built in code and placed beside End Turn, so no UXML edit is needed.
-        // Only shown when the battle actually has worker villagers.
-        if (endTurnButton != null && endTurnButton.parent != null)
-        {
-            escapeWorkersButton = new Button { name = "action-escape-workers", text = "Workers Escape" };
-            foreach (string cls in endTurnButton.GetClasses())
-                escapeWorkersButton.AddToClassList(cls);
-            escapeWorkersButton.RegisterCallback<ClickEvent>(_ =>
-            {
-                OnActionRequested?.Invoke(CombatAction.EscapeWorkers, null);
-                RefreshWorkerEscapeButton();
-            });
-            int endIndex = endTurnButton.parent.IndexOf(endTurnButton);
-            endTurnButton.parent.Insert(endIndex, escapeWorkersButton);
-            RefreshWorkerEscapeButton();
-        }
-
         // Settings (scroll speed / volume) beside End Turn; styled like the other action buttons.
         if (endTurnButton != null && endTurnButton.parent != null)
         {
@@ -186,6 +172,22 @@ public class CombatPhaseUIController : MonoBehaviour
             if (settingsButton != null)
                 foreach (string cls in endTurnButton.GetClasses())
                     settingsButton.AddToClassList(cls);
+        }
+
+        // Save sits at the top-left of the top bar. Saving is only allowed between player actions (CombatManager.CanSave).
+        var resourceBar = root.Q<VisualElement>("resource-bar");
+        if (resourceBar != null)
+        {
+            var saveButton = new Button { name = "action-save", text = "SAVE", tooltip = "Save the battle so you can continue it from the title screen." };
+            saveButton.AddToClassList("action-button");
+            saveButton.style.position = Position.Absolute;
+            saveButton.style.left = 12;
+            saveButton.style.top = 0;
+            saveButton.style.bottom = 0;
+            saveButton.style.marginTop = 8;
+            saveButton.style.marginBottom = 8;
+            resourceBar.Add(saveButton);
+            saveButton.RegisterCallback<ClickEvent>(_ => combatManager.SaveGame());
         }
 
         unitList = root.Q<ScrollView>("unit-list");
@@ -204,6 +206,7 @@ public class CombatPhaseUIController : MonoBehaviour
 
         BuildResearchHud(root);
         if (GetComponent<GameOverPanel>() == null) gameObject.AddComponent<GameOverPanel>();
+        if (GetComponent<DraftPanel>() == null) gameObject.AddComponent<DraftPanel>();
 
         // Repaint the top bar the moment workers deposit food/materials.
         GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
@@ -222,21 +225,32 @@ public class CombatPhaseUIController : MonoBehaviour
         if (gsm == null) return;
 
         GameStateManager.SettlementResources s = gsm.Settlement;
-        RefreshWorkerEscapeButton();
 
-        if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.FullRoster.Count}/{GameStateManager.MaxHeroes}";
+        int score = gsm.CurrentScore;
+        if (settlementUnitsLabel != null) settlementUnitsLabel.text = $"{gsm.FullRoster.Count}/{gsm.HeroCap}";
         if (settlementVillagersLabel != null) settlementVillagersLabel.text = $"{gsm.VillagersEscapedThisBattle}/{gsm.Balance.VillagersToWin}";
         if (settlementFoodLabel != null) settlementFoodLabel.text = s.Food.ToString();
         if (settlementMaterialsLabel != null) settlementMaterialsLabel.text = s.Materials.ToString();
         if (settlementMoraleLabel != null) settlementMoraleLabel.text = $"{s.Morale}%";
+        if (scoreLabel != null) scoreLabel.text = score.ToString("N0");
 
-        // Pulse + "+N" float when a resource goes up (skipped on the first paint).
-        if (lastFood >= 0 && s.Food > lastFood)
-            PlayGainAnimation("food", settlementFoodLabel, s.Food - lastFood);
-        if (lastMaterials >= 0 && s.Materials > lastMaterials)
-            PlayGainAnimation("materials", settlementMaterialsLabel, s.Materials - lastMaterials);
-        lastFood = s.Food;
-        lastMaterials = s.Materials;
+        // Every top-bar value pulses with a "+N" / "-N" float when it changes (skipped on the first paint).
+        AnimateIfChanged("hero", settlementUnitsLabel, gsm.FullRoster.Count);
+        AnimateIfChanged("villager", settlementVillagersLabel, gsm.VillagersEscapedThisBattle);
+        AnimateIfChanged("food", settlementFoodLabel, s.Food);
+        AnimateIfChanged("materials", settlementMaterialsLabel, s.Materials);
+        AnimateIfChanged("morale", settlementMoraleLabel, s.Morale);
+        AnimateIfChanged("score", scoreLabel, score);
+    }
+
+    private Label scoreLabel;
+    private readonly Dictionary<string, int> lastValues = new Dictionary<string, int>();
+
+    private void AnimateIfChanged(string key, Label label, int value)
+    {
+        if (lastValues.TryGetValue(key, out int previous) && value != previous)
+            PlayChangeAnimation(key, label, value - previous);
+        lastValues[key] = value;
     }
 
     // ---------------------------------------------------------------
@@ -286,6 +300,7 @@ public class CombatPhaseUIController : MonoBehaviour
         separator.AddToClassList("hud-separator");
         block.Add(separator);
 
+        researchBlock = block;
         VisualElement round = bar.Q<VisualElement>("round-block");
         if (round != null) bar.Insert(bar.IndexOf(round), block);
         else bar.Add(block);
@@ -295,10 +310,29 @@ public class CombatPhaseUIController : MonoBehaviour
         RefreshResearchHud();
     }
 
+    private VisualElement researchBlock;
+    private readonly Dictionary<string, int> lastResearchKills = new Dictionary<string, int>();
+
+    /// <summary>Adds a class for a moment so its USS transition plays, then removes it.</summary>
+    private static void Pulse(VisualElement element, string className, long durationMs)
+    {
+        if (element == null) return;
+        element.AddToClassList(className);
+        element.schedule.Execute(() => element.RemoveFromClassList(className)).StartingIn(durationMs);
+    }
+
     public void RefreshResearchHud()
     {
         if (researchSlots == null) return;
         ResearchManager research = ResearchManager.Current;
+
+        // A project that was active last time and is gone now just finished: flash the whole block.
+        var activeIds = new HashSet<string>();
+        foreach (ResearchProgress active in research.Active) activeIds.Add(active.Id);
+        var finished = new List<string>();
+        foreach (string id in lastResearchKills.Keys) if (!activeIds.Contains(id)) finished.Add(id);
+        foreach (string id in finished) lastResearchKills.Remove(id);
+        if (finished.Count > 0) Pulse(researchBlock, "research-block--complete", 900);
 
         // Finished mid-battle: toast it here (the Research tab would otherwise announce it later).
         if (research.RecentlyCompleted.Count > 0)
@@ -328,14 +362,16 @@ public class CombatPhaseUIController : MonoBehaviour
             view.Name.text = string.IsNullOrEmpty(data.DisplayName) ? data.name : data.DisplayName;
             view.Count.text = $"{done}/{data.KillsToComplete}";
             view.Fill.style.width = Length.Percent(100f * done / data.KillsToComplete);
+
+            // A kill landed on this project: pop the slot and flash its bar.
+            if (lastResearchKills.TryGetValue(progress.Id, out int previousDone) && done > previousDone)
+                Pulse(view.Root, "research-slot--pop", 250);
+            lastResearchKills[progress.Id] = done;
         }
     }
 
-    private int lastFood = -1;
-    private int lastMaterials = -1;
-
-    /// <summary>Glow + icon pop + value flash + rising "+N" on the matching top-HUD block.</summary>
-    private void PlayGainAnimation(string key, Label valueLabel, int amount)
+    /// <summary>Glow + icon pop + value flash + rising "+N" / "-N" on the matching top-HUD block. A null <paramref name="floatText"/> skips the float.</summary>
+    private void PlayChangeAnimation(string key, Label valueLabel, int delta, string floatText = null, bool showFloat = true)
     {
         if (uiDocument == null || uiDocument.rootVisualElement == null) return;
         VisualElement root = uiDocument.rootVisualElement;
@@ -344,21 +380,26 @@ public class CombatPhaseUIController : MonoBehaviour
         VisualElement glow = root.Q<VisualElement>($"{key}-glow");
         if (block == null) return;
 
+        bool gain = delta > 0;
+        string valueClass = gain ? "value-gain" : "value-loss";
         glow?.AddToClassList("hud-glow--active");
         icon?.AddToClassList("hud-icon--gain");
-        valueLabel?.AddToClassList("value-gain");
+        valueLabel?.AddToClassList(valueClass);
 
         // Let the transition back out after the pop.
         block.schedule.Execute(() =>
         {
             glow?.RemoveFromClassList("hud-glow--active");
             icon?.RemoveFromClassList("hud-icon--gain");
-            valueLabel?.RemoveFromClassList("value-gain");
+            valueLabel?.RemoveFromClassList(valueClass);
         }).StartingIn(180);
 
-        var floater = new Label($"+{amount}") { pickingMode = PickingMode.Ignore };
+        if (!showFloat) return;
+
+        var floater = new Label(floatText ?? (gain ? $"+{delta:N0}" : $"{delta:N0}")) { pickingMode = PickingMode.Ignore };
         floater.AddToClassList("gain-float");
-        floater.AddToClassList($"gain-float--{key}");
+        floater.AddToClassList(gain ? "gain-float--up" : "gain-float--down");
+        if (gain) floater.AddToClassList($"gain-float--{key}");
         block.Add(floater);
         // Add the end-state class a tick later so the transition actually runs.
         floater.schedule.Execute(() => floater.AddToClassList("gain-float--rise")).StartingIn(30);
@@ -393,7 +434,7 @@ public class CombatPhaseUIController : MonoBehaviour
         return unit != null && unit.Faction == UnitFaction.Player && !unit.IsDead && !unit.IsExtracted;
     }
 
-    private void RefreshRoster()
+    public void RefreshRoster()
     {
         if (unitList == null) return;
 
@@ -448,6 +489,8 @@ public class CombatPhaseUIController : MonoBehaviour
     {
         Debug.Log($"CombatPhaseUIController: SelectUnit called with {unit?.unitName ?? "null"}");
         selectedUnit = unit;
+        ShowTownCenterPanel(false);
+        ShowLibraryPanel(false);
         ShowBuildMenu(false);
 
         foreach (KeyValuePair<UnitInstance, UnitCardView> kvp in cardViews)
@@ -492,7 +535,8 @@ public class CombatPhaseUIController : MonoBehaviour
             fortifyButton?.SetEnabled(false);
             extractButton?.SetEnabled(false);
             scoutButton?.SetEnabled(false);
-            buildButton?.SetEnabled(false);
+            // Building is a free action, so it works with no actions left.
+            buildButton?.SetEnabled(hasSelection && MapManager.Instance != null && MapManager.Instance.GetBuildableTiles(unit).Count > 0);
             return;
         }
 
@@ -561,6 +605,110 @@ public class CombatPhaseUIController : MonoBehaviour
         buildMenuRow.Add(back);
 
         actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(actionButtonsRow) + 1, buildMenuRow);
+
+        townCenterRow = new VisualElement { name = "town-center-menu" };
+        townCenterRow.AddToClassList("action-buttons");
+        townCenterRow.style.display = DisplayStyle.None;
+        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(buildMenuRow) + 1, townCenterRow);
+
+        libraryRow = new VisualElement { name = "library-menu" };
+        libraryRow.AddToClassList("action-buttons");
+        libraryRow.style.flexWrap = Wrap.Wrap;
+        libraryRow.style.display = DisplayStyle.None;
+        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(townCenterRow) + 1, libraryRow);
+    }
+
+    /// <summary>Bottom bar for a clicked Library: one button per research that can be started now.</summary>
+    public void ShowLibraryPanel(bool show)
+    {
+        if (libraryRow == null || actionButtonsRow == null) return;
+        if (!show && libraryRow.style.display == DisplayStyle.None) return;
+
+        libraryRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
+        if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
+        if (townCenterRow != null) townCenterRow.style.display = DisplayStyle.None;
+        if (actionHeadingLabel != null)
+            actionHeadingLabel.text = show ? "LIBRARY - PICK A RESEARCH (PAID WITH KILLS)" : "AVAILABLE ACTIONS";
+        if (show) RefreshLibraryPanel();
+    }
+
+    private void RefreshLibraryPanel()
+    {
+        libraryRow.Clear();
+        GameStateManager gsm = GameStateManager.Instance;
+        if (gsm == null || gsm.AvailableResearch == null) return;
+        ResearchManager research = gsm.Research;
+
+        foreach (ResearchData node in gsm.AvailableResearch)
+        {
+            if (node == null || research.GetStatus(node) != ResearchStatus.Available) continue;
+
+            ResearchData captured = node;
+            string label = string.IsNullOrEmpty(node.DisplayName) ? node.name : node.DisplayName;
+            var button = new Button
+            {
+                text = $"{label.ToUpperInvariant()}\n{ResearchController.DescribeEffect(node)}\n{node.FoodCost} FOOD  {node.MaterialsCost} MAT  {node.KillsToComplete} KILLS"
+            };
+            button.AddToClassList("action-button");
+            button.style.height = 80;
+            button.style.whiteSpace = WhiteSpace.Normal;
+            bool ok = research.CanStart(node, out string reason);
+            button.tooltip = ok ? node.Description : reason;
+            button.SetEnabled(ok);
+            button.RegisterCallback<ClickEvent>(_ =>
+            {
+                if (research.TryStart(captured)) RefreshLibraryPanel();
+            });
+            libraryRow.Add(button);
+        }
+
+        if (libraryRow.childCount == 0)
+            libraryRow.Add(new Label("Nothing left to research right now."));
+    }
+
+    /// <summary>Bottom bar for a clicked Town Center: one button per villager that flips it between Food and Materials.</summary>
+    public void ShowTownCenterPanel(bool show)
+    {
+        if (townCenterRow == null || actionButtonsRow == null) return;
+        if (!show && townCenterRow.style.display == DisplayStyle.None) return;
+
+        townCenterRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
+        if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
+        if (libraryRow != null) libraryRow.style.display = DisplayStyle.None;
+        if (actionHeadingLabel != null)
+            actionHeadingLabel.text = show ? "TOWN CENTER - CLICK A VILLAGER TO SWAP FOOD / MATERIALS" : "AVAILABLE ACTIONS";
+        if (show) RefreshTownCenterPanel();
+    }
+
+    private void RefreshTownCenterPanel()
+    {
+        townCenterRow.Clear();
+        List<WorkerVillager> villagers = MapManager.Instance != null
+            ? MapManager.Instance.GetTownCenterVillagers() : new List<WorkerVillager>();
+
+        if (villagers.Count == 0)
+        {
+            townCenterRow.Add(new Label("No villagers yet."));
+            return;
+        }
+
+        for (int i = 0; i < villagers.Count; i++)
+        {
+            WorkerVillager villager = villagers[i];
+            var button = new Button { text = $"{villager.Unit.unitName}\n{(villager.IsFood ? "FOOD" : "MATERIALS")}" };
+            button.AddToClassList("action-button");
+            button.style.height = 60;
+            button.style.whiteSpace = WhiteSpace.Normal;
+            button.RegisterCallback<ClickEvent>(_ =>
+            {
+                if (villager == null) return;
+                villager.SetRole(!villager.IsFood);
+                RefreshTownCenterPanel();
+            });
+            townCenterRow.Add(button);
+        }
     }
 
     /// <summary>Swaps the bottom bar between the normal actions and the build menu.</summary>
@@ -609,14 +757,6 @@ public class CombatPhaseUIController : MonoBehaviour
             entry.Value.style.borderTopWidth = entry.Value.style.borderBottomWidth = width;
             entry.Value.style.borderLeftWidth = entry.Value.style.borderRightWidth = width;
         }
-    }
-
-    /// <summary>Shows the Escape button only while worker villagers are on the field and haven't been told to flee yet.</summary>
-    public void RefreshWorkerEscapeButton()
-    {
-        if (escapeWorkersButton == null) return;
-        bool show = combatManager != null && combatManager.HasActiveWorkers && !combatManager.WorkersEscaping;
-        escapeWorkersButton.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
     private void RaiseAction(CombatAction action)

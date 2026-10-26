@@ -35,6 +35,28 @@ public class WorkerVillager : MonoBehaviour
         baseMaxHealth = Unit.maxHealth;
     }
 
+    /// <summary>Gives up the claimed site and its farm / lumber mill (the worker is being carried off).</summary>
+    public void ReleaseSite()
+    {
+        if (Site != null) Site.workerSiteClaimed = false;
+        Site = null;
+        if (Structure != null) Destroy(Structure);
+        Structure = null;
+        State = WorkerState.Seeking;
+        Carried = 0;
+    }
+
+    /// <summary>Swaps between Food and Materials work: drops the claimed site and restarts the work cycle.</summary>
+    public void SetRole(bool isFood)
+    {
+        if (IsFood == isFood) return;
+        IsFood = isFood;
+        ReleaseSite();
+        Unit.unitName = $"{(isFood ? "Farmer" : "Lumberjack")}_{Unit.unitName.Substring(Unit.unitName.LastIndexOf('_') + 1)}";
+        Unit.gameObject.name = Unit.unitName;
+        Unit.NotifyStatsChanged();
+    }
+
     /// <summary>Small per-wave HP buff. Idempotent: always recomputed from the base stat, so it can be called every turn.</summary>
     public void ApplyLevelBuff(int level, float hpBonusPerLevel)
     {

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>Structures a hero can raise on a tile next to them from the Build menu.</summary>
-public enum BuildingType { Wall, TownCenter, Church, Barracks }
+public enum BuildingType { Wall, TownCenter, Church, Barracks, Library }
 
 /// <summary>
 /// Cost, durability and look of one structure. Tunable from MapManager's Inspector;
@@ -18,7 +18,7 @@ public class BuildingSpec
     public int FoodCost;
     public int MaxHealth = 20;
     public int Defense;
-    [Tooltip("Church and Barracks can only be built while a Town Center is standing.")]
+    [Tooltip("Church, Barracks and Library can only be built while a Town Center is standing.")]
     public bool RequiresTownCenter;
     [Tooltip("Placeholder cube size as a multiple of the hex size (x, height, z).")]
     public Vector3 Size = new Vector3(0.8f, 0.8f, 0.8f);
@@ -37,6 +37,8 @@ public class BuildingSpec
                 Size = new Vector3(0.7f, 1.6f, 0.7f), Color = new Color(0.92f, 0.94f, 1f) },
             new BuildingSpec { Type = BuildingType.Barracks, DisplayName = "Barracks", MaterialCost = 30, FoodCost = 20, MaxHealth = 30, Defense = 1, RequiresTownCenter = true,
                 Size = new Vector3(0.95f, 0.9f, 0.7f), Color = new Color(0.7f, 0.22f, 0.2f) },
+            new BuildingSpec { Type = BuildingType.Library, DisplayName = "Library", MaterialCost = 30, FoodCost = 10, MaxHealth = 25, Defense = 1, RequiresTownCenter = true,
+                Size = new Vector3(0.9f, 1.1f, 0.8f), Color = new Color(0.25f, 0.4f, 0.75f) },
         };
     }
 }

@@ -9,11 +9,13 @@ public class ResearchBaseConfig
     [Header("Base values (before any research)")]
     public int VillagerSpawnInterval = 6;      // rounds between stray villagers; Recruiting subtracts
     public float GatherMultiplier = 1f;        // worker yield / carry multiplier; Gathering adds
-    public int MaxUnitLevel = 5;               // Training adds
+    public int UnitLevelCap = 10;              // LevelCap adds (10 per node)
+    public int StartingHeroLevel = 1;          // level new heroes are recruited at; Training adds
     public int WallMaxHealth = 12;             // Masonry adds
     public int MaxFortificationLevel = 1;      // Engineering adds (the map only ships 3 fortification prefabs)
-    public int MaxFood = 300;                  // Storehouses adds
-    public int MaxMaterials = 300;             // Storehouses adds
+    public int StorageFoodPerTownCenter = 300;       // Storehouses adds (per Town Center)
+    public int StorageMaterialsPerTownCenter = 300;  // Storehouses adds (per Town Center)
+    public int ChurchHealAmount = 5;           // HP a hero heals for ending the round in a Church; Church adds
     public int ChurchHealCount = 2;            // benched units healed per cycle; Church adds
     public float ChurchHealFraction = 0.05f;   // of max HP; Church adds (SecondaryValue)
 
@@ -182,16 +184,48 @@ public class ResearchManager
 
     public float GatherMultiplier => Config.GatherMultiplier + Sum(ResearchTrack.Gathering);
 
-    public int MaxUnitLevel => Config.MaxUnitLevel + Mathf.RoundToInt(Sum(ResearchTrack.Training));
+    public int MaxUnitLevel => Config.UnitLevelCap + Mathf.RoundToInt(Sum(ResearchTrack.LevelCap));
+
+    public int StartingHeroLevel => Mathf.Max(1, Config.StartingHeroLevel + Mathf.RoundToInt(Sum(ResearchTrack.Training)));
 
     public int WallMaxHealth => Config.WallMaxHealth + Mathf.RoundToInt(Sum(ResearchTrack.Masonry));
 
     public int MaxFortificationLevel =>
         Mathf.Min(Config.AbsoluteMaxFortificationLevel, Config.MaxFortificationLevel + Mathf.RoundToInt(Sum(ResearchTrack.Engineering)));
 
-    public int MaxFood => Config.MaxFood + Mathf.RoundToInt(Sum(ResearchTrack.Storehouses));
+    /// <summary>Storage is held by Town Centers: each standing one adds its base amount plus the Storehouses research.</summary>
+    private static int TownCenterCount => MapManager.Instance != null ? MapManager.Instance.GetStructures(BuildingType.TownCenter).Count : 0;
 
-    public int MaxMaterials => Config.MaxMaterials + Mathf.RoundToInt(Sum(ResearchTrack.Storehouses));
+    public int MaxFood => TownCenterCount * (Config.StorageFoodPerTownCenter + Mathf.RoundToInt(Sum(ResearchTrack.Storehouses)));
+
+    public int MaxMaterials => TownCenterCount * (Config.StorageMaterialsPerTownCenter + Mathf.RoundToInt(Sum(ResearchTrack.Storehouses)));
+
+    public void WriteTo(BattleSaveData data)
+    {
+        data.CompletedResearch = new List<string>(_completed);
+        data.ActiveResearchIds = new List<string>();
+        data.ActiveResearchKills = new List<int>();
+        foreach (ResearchProgress p in _active)
+        {
+            data.ActiveResearchIds.Add(p.Id);
+            data.ActiveResearchKills.Add(p.KillsRemaining);
+        }
+    }
+
+    public void ReadFrom(BattleSaveData data)
+    {
+        _completed.Clear();
+        _active.Clear();
+        RecentlyCompleted.Clear();
+        foreach (string id in data.CompletedResearch)
+            if (!string.IsNullOrEmpty(id)) _completed.Add(id);
+        for (int i = 0; i < data.ActiveResearchIds.Count && i < data.ActiveResearchKills.Count; i++)
+            if (!string.IsNullOrEmpty(data.ActiveResearchIds[i]))
+                _active.Add(new ResearchProgress { Id = data.ActiveResearchIds[i], KillsRemaining = Mathf.Max(1, data.ActiveResearchKills[i]) });
+        OnProgressChanged?.Invoke();
+    }
+
+    public int ChurchHealAmount => Config.ChurchHealAmount + Mathf.RoundToInt(Sum(ResearchTrack.Church));
 
     public int ChurchHealCount => Config.ChurchHealCount + Mathf.RoundToInt(Sum(ResearchTrack.Church));
 

@@ -318,7 +318,7 @@ public class EnemyAIController : MonoBehaviour
 
         // --- Move somewhere ---
         Dictionary<HexTile, int> reachable =
-            EnemyBattlefieldState.GetReachable(position, unit.movementRange, search.IsBlocked);
+            EnemyBattlefieldState.GetReachable(position, unit.movementRange, search.IsBlocked, unit);
 
         List<HexTile> candidates = actionsLeft == 1
             // Last action: the move ends the turn, so every tile is just a leaf.

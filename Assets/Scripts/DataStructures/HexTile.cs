@@ -16,6 +16,8 @@ public class HexTile : MonoBehaviour
     [Header("Fog of War")] public GameObject fogInstance; public bool isRevealed;
     [Range(0.01f, 0.6f)] public float hiddenDarkness = 0.01f;
     public int foodLeftOnTile;
+    /// <summary>Index into MapManager.tileGameObjectDatabase of the prefab this tile was built from (saved so a loaded map looks identical).</summary>
+    [HideInInspector] public int prefabIndex;
     [Header("Worker Sites")]
     [Tooltip("Set by MapManager from the tile prefab name (grass-forest). Lumber mill sites.")] public bool isForest;
     [Tooltip("Set by MapManager from the tile prefab name (grass-hill). Not farmable.")] public bool isHill;
@@ -31,6 +33,8 @@ public class HexTile : MonoBehaviour
     [Header("Farming Visuals")][Range(0f, 1f)] public float depletedDarkness = 0.5f;
     public bool IsOccupied => occupyingUnit != null;
     public bool IsExtractionPoint = false;
+    /// <summary>Villagers this evacuation point can still take; it closes at 0.</summary>
+    public int ExtractionSlots;
     /// <summary>Fortification level built on this tile (0 = none). Stays when units leave; player units standing here get the fortify bonuses.</summary>
     public int FortificationLevel { get; private set; }
     private GameObject fortificationObject;
@@ -50,10 +54,35 @@ public class HexTile : MonoBehaviour
     }
     /// <summary>True on every tile adjacent to any boat; units standing here can Extract.</summary>
     public bool IsExtractable = false;
-    public bool CanEnter(UnitInstance unit) => isWalkable && !IsOccupied;
+    /// <summary>A player unit standing inside the enterable structure (Town Center, Barracks, Church, Library) that is this tile's occupyingUnit.</summary>
+    public UnitInstance garrison;
+    /// <summary>The structure on this tile is one player units may walk through and stand in.</summary>
+    public bool IsEnterableStructure => occupyingUnit != null && occupyingUnit.IsEnterable && !occupyingUnit.IsDead;
+    public bool CanEnter(UnitInstance unit) =>
+        (isWalkable && !IsOccupied) || (unit != null && unit.Faction == UnitFaction.Player && IsEnterableStructure && garrison == null);
     public bool CanEnter() => isWalkable && !IsOccupied;
-    public void SetUnit(UnitInstance unit) { occupyingUnit = unit; isWalkable = false; }
-    public void RemoveUnit() { occupyingUnit = null; isWalkable = true; }
+    public void SetUnit(UnitInstance unit)
+    {
+        if (unit != null && unit.Faction != UnitFaction.Structure && IsEnterableStructure)
+        {
+            garrison = unit;
+            return;
+        }
+        occupyingUnit = unit;
+        isWalkable = false;
+    }
+    /// <summary>Clears the given unit from this tile (null = whatever occupies it). A garrison takes over the tile if its structure goes.</summary>
+    public void RemoveUnit(UnitInstance unit = null)
+    {
+        if (garrison != null && unit == garrison)
+        {
+            garrison = null;
+            return;
+        }
+        occupyingUnit = garrison;
+        garrison = null;
+        isWalkable = occupyingUnit == null;
+    }
 
     private Vector3 restingLocalPosition;
     private Coroutine clickBounceCoroutine;
@@ -76,6 +105,7 @@ public class HexTile : MonoBehaviour
         }
 
         if (occupyingUnit != null) occupyingUnit.OnTileRevealed();
+        if (garrison != null) garrison.OnTileRevealed();
     }
     public void RemoveTargetMaterial()
     {

@@ -5,13 +5,14 @@ using UnityEngine.UIElements;
 /// <summary>
 /// Drives TitleScreen.uxml. The title scene deliberately has no
 /// GameStateManager in it: New Game just loads the battle scene, whose own
-/// FullGameManager prefab boots a fresh run. There is no save slot, so the
-/// Continue button and the new-game confirmation are hidden.
+/// FullGameManager prefab boots a fresh run. Continue (shown only when a battle
+/// save exists) flags SaveSystem.LoadOnNextStart so that scene rebuilds the saved battle instead.
 /// </summary>
 [RequireComponent(typeof(UIDocument))]
 public class TitleScreenController : MonoBehaviour
 {
     private Button _btnNewGame;
+    private Button _btnContinue;
 
     private void OnEnable()
     {
@@ -19,8 +20,19 @@ public class TitleScreenController : MonoBehaviour
 
         _btnNewGame = root.Q<Button>("btn-new-game");
 
-        HideElement(root.Q<VisualElement>("btn-continue"));
-        HideElement(root.Q<VisualElement>("save-hint"));
+        _btnContinue = root.Q<Button>("btn-continue");
+        string saveSummary = SaveSystem.Describe();
+        if (saveSummary != null)
+        {
+            Label detail = root.Q<Label>("continue-detail");
+            if (detail != null) detail.text = saveSummary;
+            if (_btnContinue != null) _btnContinue.clicked += ContinueGame;
+            HideElement(root.Q<VisualElement>("save-hint"));
+        }
+        else
+        {
+            HideElement(_btnContinue);
+        }
         HideElement(root.Q<VisualElement>("confirm-overlay"));
 
         // Settings: button goes under New Game; overlay lives on the root so it covers the screen.
@@ -36,6 +48,7 @@ public class TitleScreenController : MonoBehaviour
     private void OnDisable()
     {
         if (_btnNewGame != null) _btnNewGame.clicked -= StartNewGame;
+        if (_btnContinue != null) _btnContinue.clicked -= ContinueGame;
     }
 
     private static void HideElement(VisualElement element)
@@ -43,5 +56,15 @@ public class TitleScreenController : MonoBehaviour
         if (element != null) element.style.display = DisplayStyle.None;
     }
 
-    private void StartNewGame() => SceneManager.LoadScene(GameStateManager.GameSceneName);
+    private void StartNewGame()
+    {
+        SaveSystem.LoadOnNextStart = false;
+        SceneManager.LoadScene(GameStateManager.GameSceneName);
+    }
+
+    private void ContinueGame()
+    {
+        SaveSystem.LoadOnNextStart = true;
+        SceneManager.LoadScene(GameStateManager.GameSceneName);
+    }
 }

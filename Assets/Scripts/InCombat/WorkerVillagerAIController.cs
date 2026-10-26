@@ -11,8 +11,7 @@ using UnityEngine;
 ///   Gathering-> spend a turn working it
 ///   Depositing -> carry the load to the boat (exfil)
 ///   Returning  -> walk back to the site, then gather again
-/// When the player presses Workers Escape (CombatManager.WorkersEscaping) every
-/// worker heads straight to the boat with whatever it holds and leaves.
+/// Workers can be picked up by heroes (UnitInstance.Rescue) and taken to an evacuation point.
 /// </summary>
 public class WorkerVillagerAIController : MonoBehaviour
 {
@@ -68,10 +67,6 @@ public class WorkerVillagerAIController : MonoBehaviour
         float hpBonus = gsm != null ? gsm.Balance.WorkerHpBonusPerLevel : 0f;
         worker.ApplyLevelBuff(level, hpBonus);
 
-        // Escape overrides whatever the worker was doing.
-        if (combat != null && combat.WorkersEscaping)
-            worker.State = WorkerState.Depositing;
-
         switch (worker.State)
         {
             case WorkerState.Seeking:
@@ -87,7 +82,7 @@ public class WorkerVillagerAIController : MonoBehaviour
                 break;
 
             case WorkerState.Depositing:
-                yield return StartCoroutine(DoDepositing(unit, worker, exfil, combat));
+                yield return StartCoroutine(DoDepositing(unit, worker));
                 break;
 
             case WorkerState.Returning:
@@ -137,25 +132,19 @@ public class WorkerVillagerAIController : MonoBehaviour
         worker.State = WorkerState.Depositing;
     }
 
-    private IEnumerator DoDepositing(UnitInstance unit, WorkerVillager worker, HexTile exfil, CombatManager combat)
+    private IEnumerator DoDepositing(UnitInstance unit, WorkerVillager worker)
     {
         if (!IsAdjacentToBoat(unit))
         {
-            HexTile approach = MapManager.Instance.FindBestBoatApproach(unit);
+            HexTile approach = MapManager.Instance.FindTownCenterApproach(unit);
             if (approach != null) yield return StartCoroutine(MoveToward(unit, approach));
-            else Debug.LogWarning($"WorkerAI: {unit.unitName} has no reachable boat approach tile.");
+            else Debug.LogWarning($"WorkerAI: {unit.unitName} has no reachable Town Center approach tile.");
         }
 
         if (!IsAlive(unit) || !IsAdjacentToBoat(unit)) yield break;
 
         GameStateManager.Instance?.ProcessWorkerDeposit(worker.IsFood, worker.Carried);
         worker.Carried = 0;
-
-        if (combat != null && combat.WorkersEscaping)
-        {
-            LeaveBattlefield(unit, combat);
-            yield break;
-        }
 
         worker.State = worker.Site != null ? WorkerState.Returning : WorkerState.Seeking;
     }
@@ -167,7 +156,7 @@ public class WorkerVillagerAIController : MonoBehaviour
         if (unit.currentTile != worker.Site)
         {
             // Someone else is standing on the site (or it is cut off): give it up and pick a new one.
-            if (!worker.Site.isWalkable || HexPathfinder.FindPath(unit.currentTile, worker.Site, -1) == null)
+            if (!worker.Site.isWalkable || HexPathfinder.FindPath(unit.currentTile, worker.Site, -1, unit) == null)
             {
                 worker.Site.workerSiteClaimed = false;
                 worker.Site = null;
@@ -213,7 +202,7 @@ public class WorkerVillagerAIController : MonoBehaviour
             if (tested++ >= 30) break;
             if (tile != unit.currentTile)
             {
-                var path = HexPathfinder.FindPath(unit.currentTile, tile, -1);
+                var path = HexPathfinder.FindPath(unit.currentTile, tile, -1, unit);
                 if (path == null) continue;
             }
             tile.workerSiteClaimed = true;
@@ -233,10 +222,10 @@ public class WorkerVillagerAIController : MonoBehaviour
     {
         if (!IsAlive(unit) || destination == null) yield break;
 
-        List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, destination, -1);
+        List<HexTile> path = HexPathfinder.FindPath(unit.currentTile, destination, -1, unit);
         if (path == null || path.Count < 2) yield break;
 
-        HexTile step = FarthestReachablePoint(path, unit.movementRange);
+        HexTile step = FarthestReachablePoint(path, unit.movementRange, unit);
         if (step == unit.currentTile) yield break;
         if (!unit.MoveTo(step, unit.movementRange)) yield break;
 
@@ -250,45 +239,25 @@ public class WorkerVillagerAIController : MonoBehaviour
         }
     }
 
-    private static HexTile FarthestReachablePoint(List<HexTile> path, int movementRange)
+    private static HexTile FarthestReachablePoint(List<HexTile> path, int movementRange, UnitInstance mover)
     {
         HexTile result = path[0];
         int cost = 0;
         for (int i = 1; i < path.Count; i++)
         {
-            cost += HexPathfinder.StepCost(i == 1, path[i], movementRange);
+            cost += HexPathfinder.StepCost(i == 1, path[i], movementRange, mover);
             if (cost > movementRange) break;
             result = path[i];
         }
         return result;
     }
 
-    private static void LeaveBattlefield(UnitInstance unit, CombatManager combat)
-    {
-        unit.IsExtracted = true;
-        if (unit.currentTile != null)
-        {
-            unit.currentTile.RemoveUnit();
-            unit.currentTile = null;
-        }
-        combat.HandleWorkerDeposited(unit);
-        Destroy(unit.gameObject);
-    }
-
-    private static HexTile FindExfilTile()
-    {
-        if (MapManager.Instance == null) return null;
-        foreach (HexTile tile in MapManager.Instance.Tiles.Values)
-        {
-            if (tile != null && tile.IsExtractionPoint) return tile;
-        }
-        return null;
-    }
+    private static HexTile FindExfilTile() => MapManager.Instance != null ? MapManager.Instance.GetTownCenterTile() : null;
 
     private static bool IsAdjacentToBoat(UnitInstance unit)
     {
         return unit.currentTile != null && MapManager.Instance != null &&
-               MapManager.Instance.IsAdjacentToBoat(unit.currentTile.gridPosition);
+               MapManager.Instance.IsAdjacentToTownCenter(unit.currentTile);
     }
 
     private static bool IsAlive(UnitInstance unit) => EnemyBattlefieldState.IsOnField(unit);

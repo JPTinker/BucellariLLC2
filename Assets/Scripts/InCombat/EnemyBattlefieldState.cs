@@ -103,13 +103,13 @@ public class EnemyBattlefieldState
     /// Tiles reachable from start within movementRange (excluding start), with their
     /// path cost. isBlocked decides which tiles can't be entered or passed through,
     /// so the planner can account for tiles it has vacated or targets it has killed.
-    public static Dictionary<HexTile, int> GetReachable(HexTile start, int movementRange, Func<HexTile, bool> isBlocked)
+    public static Dictionary<HexTile, int> GetReachable(HexTile start, int movementRange, Func<HexTile, bool> isBlocked, UnitInstance mover = null)
     {
         Dictionary<HexTile, int> reachable = Dijkstra(
             new[] { start },
             movementRange,
             tile => IsWalkableTerrain(tile) && !isBlocked(tile),
-            (from, to) => HexPathfinder.StepCost(from == start, to, movementRange));
+            (from, to) => HexPathfinder.StepCost(from == start, to, movementRange, mover));
 
         reachable.Remove(start);
         return reachable;

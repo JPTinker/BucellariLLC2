@@ -118,8 +118,8 @@ MonoBehaviour:
     FoodCostPerVanguardUnit: 20
     FoodCostPerVillagerSent: 10
     WorkerFoodPerGather: 10
-    WorkerMaterialsPerGather: 15
-    WorkerCarryCap: 60
+    WorkerMaterialsPerGather: 30
+    WorkerCarryCap: 120
     WorkerHpBonusPerLevel: 0.1
     WorkerYieldBonusPerLevel: 0.1
     ShipUnitCapacityGain: 2
