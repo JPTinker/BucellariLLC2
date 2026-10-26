@@ -1069,7 +1069,7 @@ MonoBehaviour:
   - Rogue
   - Warrior
   enemyGroupSize: 3
-  enemySpawnCount: 8
+  enemySpawnCount: 4
   hpScalingPerWave: 0.1
   attackScalingPerWave: 0.1
   defenseScalingPerWave: 0.15
@@ -1179,6 +1179,7 @@ MonoBehaviour:
   reinforcementTargetCount: 8
   enemiesPerExpansion: 2
   enemiesPerPlayerUnit: 1
+  roundsPerExtraEnemy: 5
   minRoundsBetweenWaves: 4
   draftInterval: 3
   draftOptionCount: 3
@@ -1347,8 +1348,12 @@ PrefabInstance:
       value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: ResearchBase.ChurchHealAmount
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: ResearchBase.GatherMultiplier
-      value: 2
+      value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 7801607055821855217, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: m_Name

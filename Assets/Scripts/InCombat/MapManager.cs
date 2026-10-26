@@ -86,7 +86,7 @@ public partial class MapManager : MonoBehaviour
     [Tooltip("How many enemies land together per cluster. Each enemy still gets its own tile - no stacking.")]
     public int enemyGroupSize = 3;
     [Tooltip("Total number of enemies spawned at the start of combat.")]
-    public int enemySpawnCount = 8;
+    public int enemySpawnCount = 4;
 
     [Header("Enemy Wave Scaling")]
     [Tooltip("Each reinforcement wave adds this fraction of base max HP (0.15 = +15% per wave).")]
@@ -456,7 +456,9 @@ public partial class MapManager : MonoBehaviour
         PlaySpawnEffects(tile.transform.position);
         if (type == BuildingType.TownCenter)
         {
-            SpawnTownCenterVillager(tile); // the first villager arrives with the building
+            // two villagers arrive with the building
+            SpawnTownCenterVillager(tile);
+            SpawnTownCenterVillager(tile);
         }
         return building;
     }
@@ -523,7 +525,7 @@ public partial class MapManager : MonoBehaviour
         return building;
     }
 
-    /// <summary>A new Town Center starts with one villager on the Food role; WorkerVillager.SetRole swaps it.</summary>
+    /// <summary>Spawns one villager next to a Town Center on the Food role (a new Town Center gets two); WorkerVillager.SetRole swaps it.</summary>
     private void SpawnTownCenterVillager(HexTile townCenter)
     {
         UnitData data = workerArchetype != null ? workerArchetype
@@ -1180,7 +1182,7 @@ public partial class MapManager : MonoBehaviour
     }
 
     /// <summary>Highest fortification level the player may build; raised by the Engineering research track.</summary>
-    public static int MaxFortificationLevel = 3;//=> ResearchManager.Current.MaxFortificationLevel;
+    public static int MaxFortificationLevel => ResearchManager.Current.MaxFortificationLevel;
 
     /// <summary>Builds the next fortification level on a tile (permanent for the battle). Returns false at max level.</summary>
     public bool BuildFortification(HexTile tile)

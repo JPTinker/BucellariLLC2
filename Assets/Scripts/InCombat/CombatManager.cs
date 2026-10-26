@@ -23,6 +23,8 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private int enemiesPerExpansion = 1;
     [Tooltip("Extra enemies (added to both the reinforcement threshold and target) for every living player unit, so more units in the field means faster, bigger waves.")]
     [SerializeField] private int enemiesPerPlayerUnit = 1;
+    [Tooltip("The enemy cap (threshold and target) grows by one for every this many rounds played.")]
+    [SerializeField] private int roundsPerExtraEnemy = 5;
     [Tooltip("Reinforcement waves can arrive at most once per this many rounds.")]
     [SerializeField] private int minRoundsBetweenWaves = 7;
     private int lastWaveRound;
@@ -359,6 +361,12 @@ public class CombatManager : MonoBehaviour
             combatUIManager.ShowLibraryPanel(true);
             return;
         }
+        if (tile.occupyingUnit != null && tile.occupyingUnit.IsWall && !highlightedTiles.Contains(tile))
+        {
+            ClearSelection();
+            combatUIManager.ShowWallPanel(true, tile.occupyingUnit);
+            return;
+        }
         if (garrisoned != null && garrisoned == selectedUnit) { ClearSelection(); return; }
         if (selectedUnit == null)
         {
@@ -690,7 +698,7 @@ public class CombatManager : MonoBehaviour
 
         enemyUnits.RemoveAll(unit => unit == null || unit.IsDead);
         int livingPlayers = playerUnits.FindAll(u => u != null && !u.IsDead).Count;
-        int playerBonus = livingPlayers * enemiesPerPlayerUnit;
+        int playerBonus = livingPlayers * enemiesPerPlayerUnit + (roundsPerExtraEnemy > 0 ? currentRound / roundsPerExtraEnemy : 0);
         if (enemyUnits.Count >= reinforcementThreshold + playerBonus) return;
         if (currentRound - lastWaveRound < minRoundsBetweenWaves) return;
         lastWaveRound = currentRound;

@@ -109,6 +109,7 @@ public class CombatPhaseUIController : MonoBehaviour
     private VisualElement buildMenuRow;
     private VisualElement townCenterRow;
     private VisualElement libraryRow;
+    private VisualElement wallRow;
     private Label actionHeadingLabel;
     private readonly Dictionary<BuildingType, Button> buildMenuButtons = new Dictionary<BuildingType, Button>();
     private static readonly BuildingType[] BuildMenuOrder =
@@ -491,6 +492,7 @@ public class CombatPhaseUIController : MonoBehaviour
         selectedUnit = unit;
         ShowTownCenterPanel(false);
         ShowLibraryPanel(false);
+        ShowWallPanel(false);
         ShowBuildMenu(false);
 
         foreach (KeyValuePair<UnitInstance, UnitCardView> kvp in cardViews)
@@ -616,6 +618,39 @@ public class CombatPhaseUIController : MonoBehaviour
         libraryRow.style.flexWrap = Wrap.Wrap;
         libraryRow.style.display = DisplayStyle.None;
         actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(townCenterRow) + 1, libraryRow);
+
+        wallRow = new VisualElement { name = "wall-menu" };
+        wallRow.AddToClassList("action-buttons");
+        wallRow.style.display = DisplayStyle.None;
+        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(libraryRow) + 1, wallRow);
+    }
+
+    /// <summary>Bottom bar for a clicked Wall: a single button that tears it down (no refund).</summary>
+    public void ShowWallPanel(bool show, UnitInstance wall = null)
+    {
+        if (wallRow == null || actionButtonsRow == null) return;
+        if (!show && wallRow.style.display == DisplayStyle.None) return;
+
+        wallRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+        actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
+        if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
+        if (townCenterRow != null) townCenterRow.style.display = DisplayStyle.None;
+        if (libraryRow != null) libraryRow.style.display = DisplayStyle.None;
+        if (actionHeadingLabel != null)
+            actionHeadingLabel.text = show ? "WALL" : "AVAILABLE ACTIONS";
+        wallRow.Clear();
+        if (!show || wall == null) return;
+
+        var destroy = new Button { text = "DESTROY WALL\nNO REFUND" };
+        destroy.AddToClassList("action-button");
+        destroy.style.height = 60;
+        destroy.style.whiteSpace = WhiteSpace.Normal;
+        destroy.RegisterCallback<ClickEvent>(_ =>
+        {
+            if (wall != null) wall.Demolish();
+            ShowWallPanel(false);
+        });
+        wallRow.Add(destroy);
     }
 
     /// <summary>Bottom bar for a clicked Library: one button per research that can be started now.</summary>
@@ -628,6 +663,7 @@ public class CombatPhaseUIController : MonoBehaviour
         actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
         if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
         if (townCenterRow != null) townCenterRow.style.display = DisplayStyle.None;
+        if (wallRow != null) wallRow.style.display = DisplayStyle.None;
         if (actionHeadingLabel != null)
             actionHeadingLabel.text = show ? "LIBRARY - PICK A RESEARCH (PAID WITH KILLS)" : "AVAILABLE ACTIONS";
         if (show) RefreshLibraryPanel();
@@ -677,6 +713,7 @@ public class CombatPhaseUIController : MonoBehaviour
         actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
         if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
         if (libraryRow != null) libraryRow.style.display = DisplayStyle.None;
+        if (wallRow != null) wallRow.style.display = DisplayStyle.None;
         if (actionHeadingLabel != null)
             actionHeadingLabel.text = show ? "TOWN CENTER - CLICK A VILLAGER TO SWAP FOOD / MATERIALS" : "AVAILABLE ACTIONS";
         if (show) RefreshTownCenterPanel();

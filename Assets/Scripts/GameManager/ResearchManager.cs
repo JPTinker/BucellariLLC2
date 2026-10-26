@@ -36,7 +36,7 @@ public enum ResearchStatus { Locked, Available, Active, Completed }
 /// <summary>
 /// Owns research state (completed nodes + the active slots) and exposes the
 /// derived stats the rest of the game reads. Projects are paid for in battle:
-/// every kill a player unit lands counts toward all active projects. Plain class owned by
+/// each kill a player unit lands counts toward the oldest active project only. Plain class owned by
 /// GameStateManager. Consumers should read <see cref="Current"/> so the BattlePhase still works when it is
 /// opened directly without a GameStateManager (falls back to base values).
 /// </summary>
@@ -125,18 +125,16 @@ public class ResearchManager
         return true;
     }
 
-    /// <summary>Credits one kill to every active project and completes the finished ones. Called when a player unit kills an enemy.</summary>
+    /// <summary>Credits one kill to the oldest active project only (a kill never advances more than one), completing it if finished. Called when a player unit kills an enemy.</summary>
     public void RegisterKill()
     {
         if (_active.Count == 0) return;
 
-        for (int i = _active.Count - 1; i >= 0; i--)
+        ResearchProgress progress = _active[0];
+        progress.KillsRemaining--;
+        if (progress.KillsRemaining <= 0)
         {
-            ResearchProgress progress = _active[i];
-            progress.KillsRemaining--;
-            if (progress.KillsRemaining > 0) continue;
-
-            _active.RemoveAt(i);
+            _active.RemoveAt(0);
             ResearchData data = Find(progress.Id);
             if (data != null) Complete(data);
         }

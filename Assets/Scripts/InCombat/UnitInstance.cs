@@ -800,6 +800,15 @@ public class UnitInstance : MonoBehaviour
             _animator.SetBool(parameter, false);
     }
 
+    /// <summary>Player-ordered teardown of a wall: no morale penalty and no refund.</summary>
+    public void Demolish()
+    {
+        if (IsDead) return;
+        IsWall = false;
+        currentHealth = 0;
+        Die();
+    }
+
     /// The unit leaves the grid immediately; destroyDelay only keeps the body
     /// around long enough for an incoming projectile to visibly hit it.
     private void Die(float destroyDelay = 0f)

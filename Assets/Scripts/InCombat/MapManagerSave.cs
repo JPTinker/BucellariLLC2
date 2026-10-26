@@ -299,6 +299,7 @@ public partial class MapManager
         enemy.Faction = UnitFaction.Enemy;
         enemy.PlaceOnTile(tile);
         ApplySavedStats(enemy, saved);
+        enemy.playSpawnAnimation();
     }
 
     private void RestoreVillager(UnitStateSave saved)
@@ -311,6 +312,7 @@ public partial class MapManager
         villager.Faction = UnitFaction.Villager;
         villager.PlaceOnTile(tile);
         ApplySavedStats(villager, saved);
+        villager.playSpawnAnimation();
     }
 
     private void RestoreWorker(UnitStateSave saved)
@@ -329,6 +331,7 @@ public partial class MapManager
         state.Carried = saved.Carried;
         worker.PlaceOnTile(tile);
         ApplySavedStats(worker, saved);
+        worker.playSpawnAnimation();
 
         if (!saved.HasSite) return;
         HexTile site = GetTile(new Vector2Int(saved.SiteX, saved.SiteY));
@@ -363,6 +366,7 @@ public partial class MapManager
         hero.PlaceOnTile(tile);
         hero.currentHealth = Mathf.Min(saved.CurrentHealth, hero.maxHealth);
         hero.actionsRemaining = saved.ActionsRemaining;
+        hero.playSpawnAnimation();
 
         foreach (CarriedSave carried in saved.CarriedVillagers)
         {
@@ -381,6 +385,7 @@ public partial class MapManager
                 villager.IsWorker = true;
                 villagerObject.AddComponent<WorkerVillager>().Setup(carried.IsFood);
             }
+            villager.playSpawnAnimation();
             hero.AttachCarried(villager, data, carried.Slot);
         }
 

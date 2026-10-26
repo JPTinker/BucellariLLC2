@@ -34,10 +34,10 @@ MonoBehaviour:
   ColorScheme4: {fileID: 0}
   RandomizeColorScheme: 1
   MaxHP: 100
-  BaseAttack: 3
+  BaseAttack: 2
   AttackRange: 2
   MoveSpeed: 3
-  MaxMovementPoints: 2
+  MaxMovementPoints: 3
   VisibilityRange: 3
   defensePower: 4
   FlankingBonus: 0.2
