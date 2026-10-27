@@ -82,6 +82,13 @@ public class GameOverPanel : MonoBehaviour
     {
         if (_overlay == null) return;
 
+        // A win goes to the victory scene (dancing heroes + confetti); only the loss uses this card.
+        if (r.Won)
+        {
+            StartCoroutine(LoadVictoryScene());
+            return;
+        }
+
         _title.text = r.Won ? "YOU ESCAPED" : "MORALE BROKEN";
         _title.style.color = r.Won ? Cyan : Red;
         _subtitle.text = r.Won
@@ -97,6 +104,12 @@ public class GameOverPanel : MonoBehaviour
 
         _score.text = $"SCORE  {r.Score:N0}";
         _overlay.style.display = DisplayStyle.Flex;
+    }
+
+    private System.Collections.IEnumerator LoadVictoryScene()
+    {
+        yield return new WaitForSecondsRealtime(0.8f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene(GameStateManager.VictorySceneName);
     }
 
     private void AddRow(string label, string value)

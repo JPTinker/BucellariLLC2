@@ -118,6 +118,7 @@ public class BattleSaveData
     // CombatManager
     public int Round;
     public int LastWaveRound;
+    public int LastEvacTurn;
     public int EnemyWaveLevel;
     public int MapExpansions;
     public int BarracksRounds;

@@ -83,6 +83,9 @@ public class CameraController : MonoBehaviour
         // User controls are suspended while the camera is focusing on a spawning unit.
         if (isFocusing) return;
 
+        // The Library's full-screen tech tree is up: scrolling and keys belong to it, not the map.
+        if (CombatManager.Instance != null && CombatManager.Instance.TechTreeOpen) return;
+
         HandleKeyboardMovement();
         HandleMouseZoom();
         // Mobile / Touch Controls (also compiled in-editor so it can be tested via the Device Simulator)

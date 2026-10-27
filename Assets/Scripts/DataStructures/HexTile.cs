@@ -22,11 +22,11 @@ public class HexTile : MonoBehaviour
     [Tooltip("Set by MapManager from the tile prefab name (grass-forest). Lumber mill sites.")] public bool isForest;
     [Tooltip("Set by MapManager from the tile prefab name (grass-hill). Not farmable.")] public bool isHill;
     [Tooltip("A worker has claimed this tile for a farm / lumber mill.")] public bool workerSiteClaimed;
-    [Tooltip("Next to a Town Center: permanently unbuildable (no walls, fortifications, buildings, farms or mills).")] public bool IsReserved;
+    [Tooltip("Next to a Town Center: no walls, fortifications or hero-built buildings. Farms and lumber mills are still allowed.")] public bool IsReserved;
     /// <summary>Flat, open grass: valid farm ground.</summary>
     public bool IsFarmable => terrainType == TerrainType.Grass && !isForest && !isHill && !workerSiteClaimed && isWalkable;
     /// <summary>Forested grass: valid lumber mill ground.</summary>
-    public bool IsLumberable => isForest && !workerSiteClaimed && !IsReserved && isWalkable;
+    public bool IsLumberable => isForest && !workerSiteClaimed && isWalkable;
     [Header("Click Feedback")]
     [SerializeField, Min(0f)] private float clickBounceHeight = 0.25f;
     [SerializeField, Min(0.01f)] private float clickBounceDuration = 0.3f;

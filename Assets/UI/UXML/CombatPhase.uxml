@@ -68,6 +68,12 @@
                 </ui:VisualElement>
                 <ui:VisualElement class="hud-separator"/>
             </ui:VisualElement>
+            <ui:VisualElement name="turn-block" class="hud-block hud-block--round">
+                <ui:VisualElement class="hud-text-col">
+                    <ui:Label text="TURN" class="resource-label"/>
+                    <ui:Label name="turn-value" text="01" class="round-value"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
             <ui:VisualElement name="round-block" class="hud-block hud-block--round">
                 <ui:VisualElement class="hud-text-col">
                     <ui:Label text="ROUND" class="resource-label"/>

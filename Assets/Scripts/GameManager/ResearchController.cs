@@ -19,6 +19,36 @@ public class ResearchController : MonoBehaviour
     private Label _message;
     private ScrollView _tracks;
 
+    // The combat HUD does not load the Decision stylesheets, so the tree styles itself inline.
+    private static readonly Color TextColor = new Color(0.88f, 0.98f, 1f);
+    private static readonly Color MutedColor = new Color(0.62f, 0.74f, 0.8f);
+    private static readonly Color AccentColor = new Color(0f, 0.95f, 1f);
+    private static readonly Color PositiveColor = new Color(0.45f, 1f, 0.6f);
+    private static readonly Color PanelColor = new Color(0.08f, 0.14f, 0.2f, 1f);
+
+    private static Label MakeLabel(string text, int size, Color color, bool bold = false)
+    {
+        var label = new Label(text);
+        label.style.fontSize = size;
+        label.style.color = color;
+        label.style.whiteSpace = WhiteSpace.Normal;
+        if (bold) label.style.unityFontStyleAndWeight = FontStyle.Bold;
+        return label;
+    }
+
+    private static void StylePanel(VisualElement panel)
+    {
+        panel.style.backgroundColor = PanelColor;
+        panel.style.paddingTop = panel.style.paddingBottom = 8;
+        panel.style.paddingLeft = panel.style.paddingRight = 10;
+        panel.style.borderTopLeftRadius = panel.style.borderTopRightRadius =
+            panel.style.borderBottomLeftRadius = panel.style.borderBottomRightRadius = 6;
+        panel.style.borderTopWidth = panel.style.borderBottomWidth =
+            panel.style.borderLeftWidth = panel.style.borderRightWidth = 1;
+        panel.style.borderTopColor = panel.style.borderBottomColor =
+            panel.style.borderLeftColor = panel.style.borderRightColor = new Color(0f, 0.95f, 1f, 0.35f);
+    }
+
     /// <summary>Creates the (empty) tab root. Call once; the shell adds it to the content slot.</summary>
     public VisualElement Build()
     {
@@ -27,17 +57,10 @@ public class ResearchController : MonoBehaviour
         _root.style.paddingLeft = _root.style.paddingRight = 12;
         _root.style.paddingTop = _root.style.paddingBottom = 8;
 
-        var title = new Label("RESEARCH");
-        title.AddToClassList("label-caps");
-        title.AddToClassList("section-title");
-        _root.Add(title);
-
-        _resourcesLabel = new Label();
-        _resourcesLabel.AddToClassList("body-text");
+        _resourcesLabel = MakeLabel("", 15, TextColor);
         _root.Add(_resourcesLabel);
 
-        _slotsLabel = new Label();
-        _slotsLabel.AddToClassList("label-caps");
+        _slotsLabel = MakeLabel("", 14, AccentColor, true);
         _root.Add(_slotsLabel);
 
         _activeStrip = new VisualElement();
@@ -45,9 +68,7 @@ public class ResearchController : MonoBehaviour
         _activeStrip.style.flexWrap = Wrap.Wrap;
         _root.Add(_activeStrip);
 
-        _message = new Label();
-        _message.AddToClassList("body-text");
-        _message.AddToClassList("text-muted");
+        _message = MakeLabel("", 14, MutedColor);
         _root.Add(_message);
 
         _tracks = new ScrollView(ScrollViewMode.Vertical);
@@ -83,9 +104,8 @@ public class ResearchController : MonoBehaviour
         {
             ResearchData data = gsm.AvailableResearch != null ? gsm.AvailableResearch.Find(r => r != null && r.name == progress.Id) : null;
             string label = data != null ? data.DisplayName : progress.Id;
-            var chip = new Label($"{label} ({research.KillsDone(progress, data)}/{(data != null ? data.KillsToComplete : progress.KillsRemaining)} kills)");
-            chip.AddToClassList("label-caps");
-            chip.AddToClassList("tag");
+            var chip = MakeLabel($"{label} ({research.KillsDone(progress, data)}/{(data != null ? data.KillsToComplete : progress.KillsRemaining)} kills)", 13, AccentColor, true);
+            StylePanel(chip);
             chip.style.marginRight = 6;
             _activeStrip.Add(chip);
         }
@@ -110,13 +130,10 @@ public class ResearchController : MonoBehaviour
     private VisualElement BuildTrackRow(GameStateManager gsm, ResearchManager research, ResearchTrack track, List<ResearchData> nodes)
     {
         var panel = new VisualElement();
-        panel.AddToClassList("panel");
+        StylePanel(panel);
         panel.style.marginBottom = 8;
 
-        var header = new Label(TrackTitle(track, research));
-        header.AddToClassList("label-caps");
-        header.AddToClassList("card-title");
-        panel.Add(header);
+        panel.Add(MakeLabel(TrackTitle(track, research), 16, AccentColor, true));
 
         var row = new VisualElement();
         row.style.flexDirection = FlexDirection.Row;
@@ -131,44 +148,33 @@ public class ResearchController : MonoBehaviour
         ResearchStatus status = research.GetStatus(node);
 
         var card = new VisualElement();
-        card.AddToClassList("panel");
+        StylePanel(card);
         card.style.width = 190;
         card.style.marginRight = 6;
         card.style.marginTop = 4;
         card.tooltip = node.Description;
         card.style.opacity = status == ResearchStatus.Locked ? 0.5f : 1f;
 
-        var name = new Label(string.IsNullOrEmpty(node.DisplayName) ? node.name : node.DisplayName);
-        name.AddToClassList("label-caps");
-        card.Add(name);
-
-        var effect = new Label(DescribeEffect(node));
-        effect.AddToClassList("body-text");
-        effect.AddToClassList("text-muted");
-        effect.style.whiteSpace = WhiteSpace.Normal;
-        card.Add(effect);
-
-        var cost = new Label($"{node.FoodCost} Food / {node.MaterialsCost} Materials / {node.KillsToComplete} kills");
-        cost.AddToClassList("body-text");
-        cost.style.whiteSpace = WhiteSpace.Normal;
-        card.Add(cost);
+        card.Add(MakeLabel(string.IsNullOrEmpty(node.DisplayName) ? node.name : node.DisplayName, 14, TextColor, true));
+        card.Add(MakeLabel(DescribeEffect(node), 13, MutedColor));
+        card.Add(MakeLabel($"{node.FoodCost} Food / {node.MaterialsCost} Materials / {node.KillsToComplete} kills", 13, TextColor));
 
         switch (status)
         {
             case ResearchStatus.Completed:
-                card.Add(StatusLabel("RESEARCHED", "text-positive"));
+                card.Add(StatusLabel("RESEARCHED", PositiveColor));
                 break;
             case ResearchStatus.Active:
                 ResearchProgress progress = research.GetActive(node);
-                card.Add(StatusLabel($"IN PROGRESS ({progress.KillsRemaining} kills left)", null));
+                card.Add(StatusLabel($"IN PROGRESS ({progress.KillsRemaining} kills left)", AccentColor));
                 break;
             case ResearchStatus.Locked:
-                card.Add(StatusLabel($"Requires {node.Prerequisite.DisplayName}", "text-muted"));
+                card.Add(StatusLabel($"Requires {node.Prerequisite.DisplayName}", MutedColor));
                 break;
             default:
                 bool canStart = research.CanStart(node, out string reason);
                 var start = new Button(() => OnStartClicked(node)) { text = "RESEARCH" };
-                start.AddToClassList("btn");
+                start.style.marginTop = 4;
                 start.SetEnabled(canStart);
                 if (!canStart && reason != null) start.tooltip = reason;
                 card.Add(start);
@@ -177,13 +183,7 @@ public class ResearchController : MonoBehaviour
         return card;
     }
 
-    private static Label StatusLabel(string text, string cls)
-    {
-        var label = new Label(text);
-        label.AddToClassList("label-caps");
-        if (cls != null) label.AddToClassList(cls);
-        return label;
-    }
+    private static Label StatusLabel(string text, Color color) => MakeLabel(text, 13, color, true);
 
     private void OnStartClicked(ResearchData node)
     {

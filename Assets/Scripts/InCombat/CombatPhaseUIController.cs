@@ -71,9 +71,12 @@ public class CombatPhaseUIController : MonoBehaviour
         if (townsfolkSavedLabel != null) townsfolkSavedLabel.text = $"{saved} / {total}";
     }
 
-    public void SetTurnLabel(string text)
+    public void SetTurn(int turn)
     {
-        if (turnLabel != null) turnLabel.text = text;
+        if (turnLabel != null) turnLabel.text = $"{turn:00}";
+        if (lastValues.TryGetValue("turn", out int previousTurn) && turn != previousTurn)
+            PlayChangeAnimation("turn", turnLabel, 1, showFloat: false);
+        lastValues["turn"] = turn;
     }
 
     // ---------------------------------------------------------------
@@ -108,8 +111,11 @@ public class CombatPhaseUIController : MonoBehaviour
     private VisualElement actionButtonsRow;
     private VisualElement buildMenuRow;
     private VisualElement townCenterRow;
-    private VisualElement libraryRow;
     private VisualElement wallRow;
+    private VisualElement techTreeOverlay;
+    private ResearchController techTreeController;
+    /// <summary>Raised when the tech tree overlay is closed, so CombatManager can unlock input.</summary>
+    public event System.Action OnTechTreeClosed;
     private Label actionHeadingLabel;
     private readonly Dictionary<BuildingType, Button> buildMenuButtons = new Dictionary<BuildingType, Button>();
     private static readonly BuildingType[] BuildMenuOrder =
@@ -123,6 +129,7 @@ public class CombatPhaseUIController : MonoBehaviour
     private void OnDisable()
     {
         ResearchManager.OnProgressChanged -= RefreshResearchHud;
+        ResearchManager.OnProgressChanged -= RefreshTechTree;
         GameStateManager.OnSettlementChanged -= RefreshSettlementLedger;
         if (MapManager.Instance != null)
             MapManager.Instance.VillagerCountChanged -= HandleVillagerCountChanged;
@@ -141,7 +148,7 @@ public class CombatPhaseUIController : MonoBehaviour
         unitCountLabel = root.Q<Label>("unit-count-value");
         goldLabel = root.Q<Label>("gold-value");
         roundLabel = root.Q<Label>("round-value");
-        turnLabel = root.Q<Label>("turn-label");
+        turnLabel = root.Q<Label>("turn-value");
 
         // Settlement ledger
         settlementUnitsLabel = root.Q<Label>("settlement-units-value");
@@ -202,7 +209,8 @@ public class CombatPhaseUIController : MonoBehaviour
         if (MapManager.Instance != null)
             MapManager.Instance.VillagerCountChanged += HandleVillagerCountChanged;
         RefreshTownsfolkDisplay();
-        SetRound(combatManager.currentRound);
+        SetTurn(combatManager.currentRound);
+        SetRound(combatManager.EnemyWaveLevel);
         RefreshSettlementLedger();
 
         BuildResearchHud(root);
@@ -491,7 +499,6 @@ public class CombatPhaseUIController : MonoBehaviour
         Debug.Log($"CombatPhaseUIController: SelectUnit called with {unit?.unitName ?? "null"}");
         selectedUnit = unit;
         ShowTownCenterPanel(false);
-        ShowLibraryPanel(false);
         ShowWallPanel(false);
         ShowBuildMenu(false);
 
@@ -613,16 +620,10 @@ public class CombatPhaseUIController : MonoBehaviour
         townCenterRow.style.display = DisplayStyle.None;
         actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(buildMenuRow) + 1, townCenterRow);
 
-        libraryRow = new VisualElement { name = "library-menu" };
-        libraryRow.AddToClassList("action-buttons");
-        libraryRow.style.flexWrap = Wrap.Wrap;
-        libraryRow.style.display = DisplayStyle.None;
-        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(townCenterRow) + 1, libraryRow);
-
         wallRow = new VisualElement { name = "wall-menu" };
         wallRow.AddToClassList("action-buttons");
         wallRow.style.display = DisplayStyle.None;
-        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(libraryRow) + 1, wallRow);
+        actionButtonsRow.parent.Insert(actionButtonsRow.parent.IndexOf(townCenterRow) + 1, wallRow);
     }
 
     /// <summary>Bottom bar for a clicked Wall: a single button that tears it down (no refund).</summary>
@@ -635,7 +636,6 @@ public class CombatPhaseUIController : MonoBehaviour
         actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
         if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
         if (townCenterRow != null) townCenterRow.style.display = DisplayStyle.None;
-        if (libraryRow != null) libraryRow.style.display = DisplayStyle.None;
         if (actionHeadingLabel != null)
             actionHeadingLabel.text = show ? "WALL" : "AVAILABLE ACTIONS";
         wallRow.Clear();
@@ -653,54 +653,63 @@ public class CombatPhaseUIController : MonoBehaviour
         wallRow.Add(destroy);
     }
 
-    /// <summary>Bottom bar for a clicked Library: one button per research that can be started now.</summary>
-    public void ShowLibraryPanel(bool show)
+    /// <summary>Full-screen tech tree opened by clicking a Library. Blocks the map until Exit is pressed.</summary>
+    public void ShowTechTree(bool show)
     {
-        if (libraryRow == null || actionButtonsRow == null) return;
-        if (!show && libraryRow.style.display == DisplayStyle.None) return;
-
-        libraryRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-        actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
-        if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
-        if (townCenterRow != null) townCenterRow.style.display = DisplayStyle.None;
-        if (wallRow != null) wallRow.style.display = DisplayStyle.None;
-        if (actionHeadingLabel != null)
-            actionHeadingLabel.text = show ? "LIBRARY - PICK A RESEARCH (PAID WITH KILLS)" : "AVAILABLE ACTIONS";
-        if (show) RefreshLibraryPanel();
-    }
-
-    private void RefreshLibraryPanel()
-    {
-        libraryRow.Clear();
-        GameStateManager gsm = GameStateManager.Instance;
-        if (gsm == null || gsm.AvailableResearch == null) return;
-        ResearchManager research = gsm.Research;
-
-        foreach (ResearchData node in gsm.AvailableResearch)
+        if (!show)
         {
-            if (node == null || research.GetStatus(node) != ResearchStatus.Available) continue;
-
-            ResearchData captured = node;
-            string label = string.IsNullOrEmpty(node.DisplayName) ? node.name : node.DisplayName;
-            var button = new Button
-            {
-                text = $"{label.ToUpperInvariant()}\n{ResearchController.DescribeEffect(node)}\n{node.FoodCost} FOOD  {node.MaterialsCost} MAT  {node.KillsToComplete} KILLS"
-            };
-            button.AddToClassList("action-button");
-            button.style.height = 80;
-            button.style.whiteSpace = WhiteSpace.Normal;
-            bool ok = research.CanStart(node, out string reason);
-            button.tooltip = ok ? node.Description : reason;
-            button.SetEnabled(ok);
-            button.RegisterCallback<ClickEvent>(_ =>
-            {
-                if (research.TryStart(captured)) RefreshLibraryPanel();
-            });
-            libraryRow.Add(button);
+            if (techTreeOverlay != null) techTreeOverlay.style.display = DisplayStyle.None;
+            ResearchManager.OnProgressChanged -= RefreshTechTree;
+            OnTechTreeClosed?.Invoke();
+            return;
         }
 
-        if (libraryRow.childCount == 0)
-            libraryRow.Add(new Label("Nothing left to research right now."));
+        if (techTreeOverlay == null) BuildTechTree();
+        if (techTreeOverlay == null) return;
+
+        techTreeOverlay.style.display = DisplayStyle.Flex;
+        techTreeOverlay.BringToFront();
+        ResearchManager.OnProgressChanged -= RefreshTechTree;
+        ResearchManager.OnProgressChanged += RefreshTechTree;
+        RefreshTechTree();
+    }
+
+    private void RefreshTechTree() => techTreeController?.Refresh();
+
+    private void BuildTechTree()
+    {
+        if (uiDocument == null || uiDocument.rootVisualElement == null) return;
+        techTreeController = GetComponent<ResearchController>() ?? gameObject.AddComponent<ResearchController>();
+
+        techTreeOverlay = new VisualElement { name = "tech-tree-overlay", pickingMode = PickingMode.Position };
+        techTreeOverlay.style.position = Position.Absolute;
+        techTreeOverlay.style.left = techTreeOverlay.style.top = techTreeOverlay.style.right = techTreeOverlay.style.bottom = 0;
+        techTreeOverlay.style.backgroundColor = new Color(0.05f, 0.06f, 0.09f, 0.97f);
+        techTreeOverlay.style.display = DisplayStyle.None;
+
+        var topBar = new VisualElement();
+        topBar.style.flexDirection = FlexDirection.Row;
+        topBar.style.justifyContent = Justify.SpaceBetween;
+        topBar.style.alignItems = Align.Center;
+        topBar.style.paddingLeft = topBar.style.paddingRight = 24;
+        topBar.style.paddingTop = 12;
+
+        var title = new Label("LIBRARY - TECH TREE (RESEARCH IS PAID WITH KILLS)");
+        title.style.fontSize = 22;
+        title.style.color = Color.white;
+        topBar.Add(title);
+
+        var exit = new Button(() => ShowTechTree(false)) { text = "EXIT" };
+        exit.style.width = 120;
+        exit.style.height = 40;
+        topBar.Add(exit);
+        techTreeOverlay.Add(topBar);
+
+        VisualElement tree = techTreeController.Build();
+        tree.style.flexGrow = 1;
+        techTreeOverlay.Add(tree);
+
+        uiDocument.rootVisualElement.Add(techTreeOverlay);
     }
 
     /// <summary>Bottom bar for a clicked Town Center: one button per villager that flips it between Food and Materials.</summary>
@@ -712,7 +721,6 @@ public class CombatPhaseUIController : MonoBehaviour
         townCenterRow.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         actionButtonsRow.style.display = show ? DisplayStyle.None : DisplayStyle.Flex;
         if (buildMenuRow != null) buildMenuRow.style.display = DisplayStyle.None;
-        if (libraryRow != null) libraryRow.style.display = DisplayStyle.None;
         if (wallRow != null) wallRow.style.display = DisplayStyle.None;
         if (actionHeadingLabel != null)
             actionHeadingLabel.text = show ? "TOWN CENTER - CLICK A VILLAGER TO SWAP FOOD / MATERIALS" : "AVAILABLE ACTIONS";

@@ -99,6 +99,7 @@ public class GameStateManager : MonoBehaviour
 
     public const string TitleSceneName = "TitleScreen";
     public const string GameSceneName = "BattlePhase";
+    public const string VictorySceneName = "AfterAction";
 
     [Header("Available Unit Templates")]
     public List<UnitData> AvailablePlayerArchetypes; // Drag the hero UnitData assets here

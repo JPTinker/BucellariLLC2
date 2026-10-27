@@ -31,7 +31,10 @@ public class CombatManager : MonoBehaviour
     // 0 = opening wave; incremented on each reinforcement wave to scale new enemies.
     private int enemyWaveLevel;
     private int mapExpansions;
-    private const int EvacuationPointExpansionInterval = 3;
+    // Once this many reinforcement waves have spawned, an extraction point opens every EvacuationTurnInterval turns.
+    private const int EvacuationFirstWave = 4;
+    private const int EvacuationTurnInterval = 10;
+    private int lastEvacTurn;
     private readonly List<UnitInstance> playerUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> enemyUnits = new List<UnitInstance>();
     private readonly List<UnitInstance> villagerUnits = new List<UnitInstance>();
@@ -56,6 +59,10 @@ public class CombatManager : MonoBehaviour
     private BuildingType? pendingBuilding;
     private bool nonPlayerTurnInProgress;
     private bool draftOpen;
+    private bool techTreeOpen;
+    private void HandleTechTreeClosed() => techTreeOpen = false;
+    /// <summary>True while the Library's full-screen tech tree is up; the camera ignores keyboard input then.</summary>
+    public bool TechTreeOpen => techTreeOpen;
     private int barracksRounds;
     [Tooltip("With a Barracks standing, the player is offered a hero draft every this many rounds.")]
     [SerializeField] private int draftInterval = 3;
@@ -115,7 +122,7 @@ public class CombatManager : MonoBehaviour
 
     /// <summary>Saving is only allowed between player actions: nothing animating, no enemy phase, no open draft.</summary>
     public bool CanSave =>
-        !levelEnded && !nonPlayerTurnInProgress && !draftOpen && !playerUnits.Exists(u => u != null && u.IsMoving);
+        !levelEnded && !nonPlayerTurnInProgress && !draftOpen && !techTreeOpen && !playerUnits.Exists(u => u != null && u.IsMoving);
 
     public void WriteSave(BattleSaveData data)
     {
@@ -124,6 +131,7 @@ public class CombatManager : MonoBehaviour
         data.EnemyWaveLevel = enemyWaveLevel;
         data.MapExpansions = mapExpansions;
         data.BarracksRounds = barracksRounds;
+        data.LastEvacTurn = lastEvacTurn;
     }
 
     private void ApplySave(BattleSaveData data)
@@ -133,7 +141,9 @@ public class CombatManager : MonoBehaviour
         enemyWaveLevel = data.EnemyWaveLevel;
         mapExpansions = data.MapExpansions;
         barracksRounds = data.BarracksRounds;
-        combatUIManager?.SetRound(currentRound);
+        lastEvacTurn = data.LastEvacTurn;
+        combatUIManager?.SetTurn(currentRound);
+        combatUIManager?.SetRound(enemyWaveLevel);
     }
 
     /// <summary>Called by the HUD's Save button.</summary>
@@ -336,7 +346,7 @@ public class CombatManager : MonoBehaviour
     public void SelectedTile(HexTile tile)
     {
         //Debug.Log($"CombatManager: SelectedTile called with {tile?.name ?? "null"}");
-        if (tile == null || levelEnded || nonPlayerTurnInProgress || draftOpen) return;
+        if (tile == null || levelEnded || nonPlayerTurnInProgress || draftOpen || techTreeOpen) return;
         if (buildMode) { HandleBuildClick(tile); return; }
         // A hero standing inside a structure is picked first; clicking it again falls through to the building's own panel.
         UnitInstance garrisoned = tile.garrison;
@@ -358,7 +368,10 @@ public class CombatManager : MonoBehaviour
             MapManager.Instance.GetStructures(BuildingType.Library).Contains(tile.occupyingUnit))
         {
             ClearSelection();
-            combatUIManager.ShowLibraryPanel(true);
+            techTreeOpen = true;
+            combatUIManager.OnTechTreeClosed -= HandleTechTreeClosed;
+            combatUIManager.OnTechTreeClosed += HandleTechTreeClosed;
+            combatUIManager.ShowTechTree(true);
             return;
         }
         if (tile.occupyingUnit != null && tile.occupyingUnit.IsWall && !highlightedTiles.Contains(tile))
@@ -601,10 +614,11 @@ public class CombatManager : MonoBehaviour
             unit.ClearRoundAttackers();
         currentRound++;
         if (GameStateManager.Instance != null) GameStateManager.Instance.RoundsElapsed = currentRound;
-        combatUIManager?.SetRound(currentRound);
+        combatUIManager?.SetTurn(currentRound);
         combatUIManager?.RefreshSettlementLedger(); // the score drops each round
         combatUIManager?.RefreshTownsfolkDisplay();
         OnRoundAdvanced?.Invoke(currentRound);
+        TickExtractionPoint();
         HealHeroesInChurches();
         foreach (UnitInstance unit in playerUnits)
         {
@@ -708,12 +722,8 @@ public class CombatManager : MonoBehaviour
         bool mapGrew = MapManager.Instance.ExpandMap();
         if (mapGrew) mapExpansions++;
 
-        // Every third time the map grows, an evacuation point opens on the water.
-        HexTile evacPoint = mapGrew && mapExpansions % EvacuationPointExpansionInterval == 0
-            ? MapManager.Instance.CreateEvacuationPoint() : null;
-        bool evacOpened = evacPoint != null;
-        if (evacOpened && CameraController.Instance != null)
-            CameraController.Instance.PanToPoint(evacPoint.transform.position);
+        combatUIManager?.SetRound(enemyWaveLevel);
+        if (enemyWaveLevel == EvacuationFirstWave) lastEvacTurn = currentRound; // the 10-turn clock starts at the 4th wave
 
         int targetCount = reinforcementTargetCount + mapExpansions * enemiesPerExpansion + playerBonus;
         int toSpawn = targetCount - enemyUnits.Count;
@@ -725,21 +735,31 @@ public class CombatManager : MonoBehaviour
         {
             string message = $"{reinforcements.Count} enemy reinforcements have arrived - enemies are stronger (Lv {enemyWaveLevel})";
             if (mapGrew) message += "\nThe battlefield has expanded";
-            if (evacOpened) message += "\nAn evacuation point has opened";
             notificationManager.ShowNotification(message);
         }
         else if (mapGrew)
         {
-            notificationManager.ShowNotification(evacOpened
-                ? "The battlefield has expanded\nAn evacuation point has opened"
-                : "The battlefield has expanded");
+            notificationManager.ShowNotification("The battlefield has expanded");
         }
+    }
+
+    // After the 4th wave, a new extraction point opens every EvacuationTurnInterval turns.
+    private void TickExtractionPoint()
+    {
+        if (levelEnded || MapManager.Instance == null || enemyWaveLevel < EvacuationFirstWave) return;
+        if (currentRound - lastEvacTurn < EvacuationTurnInterval) return;
+
+        HexTile evacPoint = MapManager.Instance.CreateEvacuationPoint();
+        if (evacPoint == null) return;
+        lastEvacTurn = currentRound;
+        if (CameraController.Instance != null) CameraController.Instance.PanToPoint(evacPoint.transform.position);
+        notificationManager?.ShowNotification("An extraction point has opened");
     }
 
     private void PreviewDestination(HexTile destination)
     {
         pendingDestination = destination;
-        previewPath.Clear();
+        ClearPreviewPath();
         List<HexTile> path = HexPathfinder.FindPath(selectedUnit.currentTile, destination, selectedUnit.movementRange, selectedUnit);
         if (path == null) { pendingDestination = null; return; }
         previewPath.AddRange(path);
@@ -757,6 +777,14 @@ public class CombatManager : MonoBehaviour
         foreach (HexTile tile in previewPath) tile.Highlight(TileHighlightType.Path);
     }
 
+    // A route can pass through a tile held by another unit; such tiles are not in highlightedTiles, so reset them here.
+    private void ClearPreviewPath()
+    {
+        foreach (HexTile tile in previewPath)
+            if (tile != null && !highlightedTiles.Contains(tile)) tile.ClearHighlight();
+        previewPath.Clear();
+    }
+
     private void ClearSelection()
     {
         combatUIManager.SelectUnit(null);
@@ -764,7 +792,7 @@ public class CombatManager : MonoBehaviour
         buildMode = false;
         pendingBuilding = null;
         pendingDestination = null;
-        previewPath.Clear();
+        ClearPreviewPath();
         reachableTiles.Clear();
         foreach (HexTile tile in highlightedTiles) if (tile != null) tile.ClearHighlight();
         highlightedTiles.Clear();
