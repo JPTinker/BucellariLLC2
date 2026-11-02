@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public class VillagerAIController : MonoBehaviour
 {
-    [SerializeField] private float actionDelay = 0.1f;
+    [SerializeField] private float actionDelay = 0.03f;
     [Tooltip("Safety cap on waiting for a move animation to finish.")]
     [SerializeField] private float moveTimeout = 5f;
 

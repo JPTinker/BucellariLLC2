@@ -96,13 +96,13 @@ public partial class MapManager : MonoBehaviour
     [Tooltip("Each level adds this fraction of base defense (rounded, so +1 defense shows up after a few levels).")]
     [SerializeField] private float defenseScalingPerWave = 0.15f;
     [Tooltip("Multiplier on every per-wave scaling rate above; below 1 slows how fast enemies grow.")]
-    [SerializeField] private float waveScalingPace = 0.4f;
+    [SerializeField] private float waveScalingPace = 0.9f;
     [Tooltip("Levels needed per +1 movement range (0 disables).")]
-    [SerializeField] private int levelsPerMovementBonus = 6;
+    [SerializeField] private int levelsPerMovementBonus = 5;
     [Tooltip("Levels needed per +1 attack range (0 disables). Capped at +1 so ranged enemies don't outrange everything.")]
-    [SerializeField] private int levelsForRangeBonus = 15;
+    [SerializeField] private int levelsForRangeBonus = 10;
     [Tooltip("Level at which enemies gain an extra action per turn (0 disables).")]
-    [SerializeField] private int levelForExtraAction = 15;
+    [SerializeField] private int levelForExtraAction = 12;
     [Tooltip("Extra enemy levels (same scaling as waves) for an enemy spawning right next to the exfil zone. Falls off linearly to 0 at the far corner of the map.")]
     [SerializeField] private float maxExfilProximityLevels = 3f;
 

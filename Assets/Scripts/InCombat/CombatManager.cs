@@ -14,21 +14,25 @@ public class CombatManager : MonoBehaviour
     [SerializeField] private VillagerAIController villagerAI;
 
     [Header("Enemy Reinforcements")]
-    [Tooltip("When living enemies drop below this count, reinforcements are spawned.")]
-    [SerializeField] private float enemyTurnDelay = 2f;
-    [SerializeField] private int reinforcementThreshold = 10;
-    [Tooltip("Reinforcements top the enemy count back up to this total.")]
-    [SerializeField] private int reinforcementTargetCount = 8;
-    [Tooltip("Extra enemies added to the target count for every time the map has grown.")]
+    [SerializeField] private float enemyTurnDelay = 0.5f;
+    [Tooltip("Enemies trickle in: a small group arrives every this many rounds.")]
+    [SerializeField] private int spawnIntervalRounds = 2;
+    [Tooltip("Group size is 1 plus one per this many enemy levels, up to Max Spawn Group Size.")]
+    [SerializeField] private int levelsPerExtraSpawn = 3;
+    [SerializeField] private int maxSpawnGroupSize = 3;
+    [Tooltip("No more enemies spawn while this many (plus the bonuses below) are alive.")]
+    [SerializeField] private int maxLivingEnemies = 8;
+    [Tooltip("Extra enemy cap for every time the map has grown.")]
     [SerializeField] private int enemiesPerExpansion = 1;
-    [Tooltip("Extra enemies (added to both the reinforcement threshold and target) for every living player unit, so more units in the field means faster, bigger waves.")]
+    [Tooltip("Extra enemy cap for every living player unit.")]
     [SerializeField] private int enemiesPerPlayerUnit = 1;
-    [Tooltip("The enemy cap (threshold and target) grows by one for every this many rounds played.")]
+    [Tooltip("The enemy cap grows by one for every this many rounds played.")]
     [SerializeField] private int roundsPerExtraEnemy = 5;
-    [Tooltip("Reinforcement waves can arrive at most once per this many rounds.")]
-    [SerializeField] private int minRoundsBetweenWaves = 7;
-    private int lastWaveRound;
-    // 0 = opening wave; incremented on each reinforcement wave to scale new enemies.
+    [Tooltip("Enemies gain a level (stronger stats, new archetypes, map growth) every this many rounds.")]
+    [SerializeField] private int roundsPerLevel = 3;
+    private int lastSpawnRound;
+    private int lastLevelRound;
+    // 0 = opening wave; incremented every roundsPerLevel rounds to scale new enemies.
     private int enemyWaveLevel;
     private int mapExpansions;
     // Once this many reinforcement waves have spawned, an extraction point opens every EvacuationTurnInterval turns.
@@ -127,7 +131,8 @@ public class CombatManager : MonoBehaviour
     public void WriteSave(BattleSaveData data)
     {
         data.Round = currentRound;
-        data.LastWaveRound = lastWaveRound;
+        data.LastWaveRound = lastSpawnRound;
+        data.LastLevelRound = lastLevelRound;
         data.EnemyWaveLevel = enemyWaveLevel;
         data.MapExpansions = mapExpansions;
         data.BarracksRounds = barracksRounds;
@@ -137,7 +142,8 @@ public class CombatManager : MonoBehaviour
     private void ApplySave(BattleSaveData data)
     {
         currentRound = Mathf.Max(1, data.Round);
-        lastWaveRound = data.LastWaveRound;
+        lastSpawnRound = data.LastWaveRound;
+        lastLevelRound = data.LastLevelRound;
         enemyWaveLevel = data.EnemyWaveLevel;
         mapExpansions = data.MapExpansions;
         barracksRounds = data.BarracksRounds;
@@ -615,7 +621,7 @@ public class CombatManager : MonoBehaviour
         currentRound++;
         if (GameStateManager.Instance != null) GameStateManager.Instance.RoundsElapsed = currentRound;
         combatUIManager?.SetTurn(currentRound);
-        combatUIManager?.RefreshSettlementLedger(); // the score drops each round
+        combatUIManager?.RefreshSettlementLedger(); // also refreshes the Evac cooldown
         combatUIManager?.RefreshTownsfolkDisplay();
         OnRoundAdvanced?.Invoke(currentRound);
         TickExtractionPoint();
@@ -710,50 +716,81 @@ public class CombatManager : MonoBehaviour
     {
         if (levelEnded || MapManager.Instance == null) return;
 
-        enemyUnits.RemoveAll(unit => unit == null || unit.IsDead);
-        int livingPlayers = playerUnits.FindAll(u => u != null && !u.IsDead).Count;
-        int playerBonus = livingPlayers * enemiesPerPlayerUnit + (roundsPerExtraEnemy > 0 ? currentRound / roundsPerExtraEnemy : 0);
-        if (enemyUnits.Count >= reinforcementThreshold + playerBonus) return;
-        if (currentRound - lastWaveRound < minRoundsBetweenWaves) return;
-        lastWaveRound = currentRound;
+        // Time-driven escalation: the map grows and new enemies are stronger.
+        bool mapGrew = false;
+        if (currentRound - lastLevelRound >= roundsPerLevel)
+        {
+            lastLevelRound = currentRound;
+            enemyWaveLevel++;
+            mapGrew = MapManager.Instance.ExpandMap();
+            if (mapGrew) mapExpansions++;
+            combatUIManager?.SetRound(enemyWaveLevel);
+            if (enemyWaveLevel == EvacuationFirstWave) lastEvacTurn = currentRound; // the evacuation clock starts at this level
+        }
 
-        // Each respawn is one escalation step: the map grows and the new wave is stronger.
-        enemyWaveLevel++;
-        bool mapGrew = MapManager.Instance.ExpandMap();
-        if (mapGrew) mapExpansions++;
-
-        combatUIManager?.SetRound(enemyWaveLevel);
-        if (enemyWaveLevel == EvacuationFirstWave) lastEvacTurn = currentRound; // the 10-turn clock starts at the 4th wave
-
-        int targetCount = reinforcementTargetCount + mapExpansions * enemiesPerExpansion + playerBonus;
-        int toSpawn = targetCount - enemyUnits.Count;
-        List<UnitInstance> reinforcements = MapManager.Instance.SpawnEnemyWave(toSpawn, enemyWaveLevel);
-        TrackAll(reinforcements);
+        // Continuous trickle: a small group every few rounds, held back by the living-enemy cap.
+        int reinforcementCount = 0;
+        if (currentRound - lastSpawnRound >= spawnIntervalRounds)
+        {
+            enemyUnits.RemoveAll(unit => unit == null || unit.IsDead);
+            int livingPlayers = playerUnits.FindAll(u => u != null && !u.IsDead).Count;
+            int cap = maxLivingEnemies + mapExpansions * enemiesPerExpansion + livingPlayers * enemiesPerPlayerUnit
+                + (roundsPerExtraEnemy > 0 ? currentRound / roundsPerExtraEnemy : 0);
+            int groupSize = Mathf.Min(maxSpawnGroupSize, 1 + (levelsPerExtraSpawn > 0 ? enemyWaveLevel / levelsPerExtraSpawn : 0));
+            int toSpawn = Mathf.Min(groupSize, cap - enemyUnits.Count);
+            if (toSpawn > 0)
+            {
+                lastSpawnRound = currentRound;
+                List<UnitInstance> reinforcements = MapManager.Instance.SpawnEnemyWave(toSpawn, enemyWaveLevel);
+                TrackAll(reinforcements);
+                reinforcementCount = reinforcements.Count;
+            }
+        }
 
         // NotificationManager shows one message at a time (a new call replaces the last), so send a single combined message.
-        if (reinforcements.Count > 0)
+        if (reinforcementCount > 0 || mapGrew)
         {
-            string message = $"{reinforcements.Count} enemy reinforcements have arrived - enemies are stronger (Lv {enemyWaveLevel})";
-            if (mapGrew) message += "\nThe battlefield has expanded";
+            string message = reinforcementCount > 0 ? $"{reinforcementCount} more enemies arrive (Lv {enemyWaveLevel})" : "";
+            if (mapGrew) message += (message.Length > 0 ? "\n" : "") + "The battlefield has expanded";
             notificationManager.ShowNotification(message);
-        }
-        else if (mapGrew)
-        {
-            notificationManager.ShowNotification("The battlefield has expanded");
         }
     }
 
-    // After the 4th wave, a new extraction point opens every EvacuationTurnInterval turns.
+    // After the EvacuationFirstWave-th level, a new extraction point opens every EvacuationTurnInterval turns.
     private void TickExtractionPoint()
     {
         if (levelEnded || MapManager.Instance == null || enemyWaveLevel < EvacuationFirstWave) return;
         if (currentRound - lastEvacTurn < EvacuationTurnInterval) return;
 
+        OpenExtractionPoint();
+    }
+
+    private bool OpenExtractionPoint()
+    {
         HexTile evacPoint = MapManager.Instance.CreateEvacuationPoint();
-        if (evacPoint == null) return;
+        if (evacPoint == null) return false;
         lastEvacTurn = currentRound;
+        lastEvacCallRound = currentRound;
         if (CameraController.Instance != null) CameraController.Instance.PanToPoint(evacPoint.transform.position);
         notificationManager?.ShowNotification("An extraction point has opened");
+        return true;
+    }
+
+    // Rounds before the Call Evacuation button works again (counted from any extraction point opening).
+    private const int EvacCallCooldownRounds = 8;
+    private int lastEvacCallRound = -EvacCallCooldownRounds;
+
+    public int EvacCooldownRemaining => Mathf.Max(0, EvacCallCooldownRounds - (currentRound - lastEvacCallRound));
+
+    public bool CanCallEvacuation =>
+        !levelEnded && !nonPlayerTurnInProgress && !draftOpen && !techTreeOpen && MapManager.Instance != null && EvacCooldownRemaining == 0;
+
+    /// <summary>Called by the HUD's Evac button: opens an extraction point now instead of waiting for the timer.</summary>
+    public void CallEvacuation()
+    {
+        if (!CanCallEvacuation) return;
+        if (!OpenExtractionPoint())
+            notificationManager?.ShowNotification("No place on the water to evacuate from");
     }
 
     private void PreviewDestination(HexTile destination)
@@ -839,7 +876,7 @@ public class CombatManager : MonoBehaviour
         {
             if (unit.Faction == UnitFaction.Villager) gsm.RegisterVillagerDeath();
             if (unit.Faction == UnitFaction.Player) gsm.RegisterCasualty(unit.PersistentUnit);
-            else if (unit.Faction == UnitFaction.Enemy) gsm.RegisterEnemyKilled();
+            else if (unit.Faction == UnitFaction.Enemy) gsm.RegisterEnemyKilled(enemyWaveLevel);
         }
         if (unit == selectedUnit) ClearSelection();
         CheckTurnEnd();

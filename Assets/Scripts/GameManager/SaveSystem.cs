@@ -101,6 +101,7 @@ public class BattleSaveData
     public int VillagersLost;
     public int VillagersEscaped;
     public int RoundsElapsed;
+    public int Score;
     public List<UnitSaveData> Roster = new List<UnitSaveData>();
     public List<string> CompletedResearch = new List<string>();
     public List<string> ActiveResearchIds = new List<string>();
@@ -118,6 +119,7 @@ public class BattleSaveData
     // CombatManager
     public int Round;
     public int LastWaveRound;
+    public int LastLevelRound;
     public int LastEvacTurn;
     public int EnemyWaveLevel;
     public int MapExpansions;

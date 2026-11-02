@@ -12,16 +12,16 @@ using UnityEngine;
 /// </summary>
 public class EnemyAIController : MonoBehaviour
 {
-    [SerializeField] private float actionDelay = 0.1f;
+    [SerializeField] private float actionDelay = 0.03f;
     [Tooltip("Safety cap on waiting for a move animation to finish.")]
     [SerializeField] private float moveTimeout = 5f;
     [SerializeField] private bool logDecisions = true;
 
     [Header("Attack Presentation")]
     [Tooltip("Seconds the camera takes to pan to an attack before it lands.")]
-    [SerializeField] private float attackPanDuration = 0.5f;
+    [SerializeField] private float attackPanDuration = 0.25f;
     [Tooltip("Extra pause after an enemy attack, before the next enemy action.")]
-    [SerializeField] private float postAttackDelay = 0.8f;
+    [SerializeField] private float postAttackDelay = 0.25f;
 
     [Header("Lookahead")]
     [Tooltip("Future enemy turns scored from a unit's end position, on top of the current turn.")]
@@ -157,23 +157,34 @@ public class EnemyAIController : MonoBehaviour
         // A unit whose plan got interrupted (e.g. a path closed) gets one replan.
         HashSet<UnitInstance> retried = new HashSet<UnitInstance>();
 
+        // Plans are kept between iterations and only redone when something they relied on changed.
+        Dictionary<UnitInstance, TurnPlan> plans = new Dictionary<UnitInstance, TurnPlan>();
+
         while (true)
         {
             pending.RemoveAll(unit => !IsActiveEnemy(unit) || unit.actionsRemaining <= 0);
             if (pending.Count == 0) break;
 
-            EnemyBattlefieldState battlefield = EnemyBattlefieldState.Build(allyPassCost);
-            if (battlefield.Targets.Count == 0) break;
-
+            EnemyBattlefieldState battlefield = null;
+            bool noTargets = false;
             TurnPlan chosen = null;
             foreach (UnitInstance enemy in pending)
             {
-                TurnPlan plan = PlanTurn(enemy, battlefield);
+                if (!plans.TryGetValue(enemy, out TurnPlan plan) || !IsPlanStillValid(plan))
+                {
+                    battlefield ??= EnemyBattlefieldState.Build(allyPassCost);
+                    if (battlefield.Targets.Count == 0) { noTargets = true; break; }
+                    plan = PlanTurn(enemy, battlefield);
+                    plans[enemy] = plan;
+                }
+
                 if (chosen == null || plan.ExecutesBefore(chosen))
                     chosen = plan;
             }
+            if (noTargets) break;
 
             pending.Remove(chosen.Unit);
+            plans.Remove(chosen.Unit);
 
             if (logDecisions)
             {
@@ -184,9 +195,49 @@ public class EnemyAIController : MonoBehaviour
             bool completed = true;
             yield return StartCoroutine(ExecutePlan(chosen, result => completed = result));
 
+            InvalidatePlansAfter(chosen, plans);
+
             if (!completed && IsActiveEnemy(chosen.Unit) && chosen.Unit.actionsRemaining > 0 && retried.Add(chosen.Unit))
                 pending.Add(chosen.Unit);
         }
+    }
+
+    /// A cached plan holds while every tile it moves to is still free and every unit it attacks is alive.
+    private static bool IsPlanStillValid(TurnPlan plan)
+    {
+        foreach (PlannedAction action in plan.Actions)
+        {
+            if (action.Target != null)
+            {
+                if (action.Target.IsDead) return false;
+            }
+            else
+            {
+                UnitInstance occupant = action.Destination.occupyingUnit;
+                if (occupant != null && occupant != plan.Unit) return false;
+            }
+        }
+        return true;
+    }
+
+    /// After a plan runs, drop the cached plans it made stale: all of them if it killed something
+    /// (the target list changed), otherwise only those that aimed at a unit it just damaged.
+    private static void InvalidatePlansAfter(TurnPlan executed, Dictionary<UnitInstance, TurnPlan> plans)
+    {
+        List<UnitInstance> hit = null;
+        foreach (PlannedAction action in executed.Actions)
+        {
+            if (action.Target == null) continue;
+            if (action.Target.IsDead) { plans.Clear(); return; }
+            (hit ??= new List<UnitInstance>()).Add(action.Target);
+        }
+        if (hit == null) return;
+
+        List<UnitInstance> stale = new List<UnitInstance>();
+        foreach (KeyValuePair<UnitInstance, TurnPlan> entry in plans)
+            foreach (PlannedAction action in entry.Value.Actions)
+                if (action.Target != null && hit.Contains(action.Target)) { stale.Add(entry.Key); break; }
+        foreach (UnitInstance unit in stale) plans.Remove(unit);
     }
 
     //---------------------------------------
@@ -228,11 +279,17 @@ public class EnemyAIController : MonoBehaviour
                 }
 
                 SpendAction(unit);
-                yield return new WaitForSeconds(actionDelay + postAttackDelay);
+                // Nothing to watch in the fog, so don't pause for it.
+                if (unit.IsRevealed || action.Target.IsRevealed)
+                    yield return new WaitForSeconds(actionDelay + postAttackDelay);
             }
             else
             {
-                if (!unit.MoveTo(action.Destination, unit.movementRange))
+                // Moves nobody can see snap to the destination instead of animating.
+                unit.SnapMovement = !unit.IsRevealed && !action.Destination.isRevealed;
+                bool moved = unit.MoveTo(action.Destination, unit.movementRange);
+                unit.SnapMovement = false;
+                if (!moved)
                 {
                     onFinished(false);
                     yield break;

@@ -196,6 +196,22 @@ public class CombatPhaseUIController : MonoBehaviour
             saveButton.style.marginBottom = 8;
             resourceBar.Add(saveButton);
             saveButton.RegisterCallback<ClickEvent>(_ => combatManager.SaveGame());
+
+            // Evacuation: opens an extraction point on demand; on a cooldown after any point opens.
+            evacButton = new Button { name = "action-call-evac", tooltip = "Call for an evacuation: opens an extraction point on the water." };
+            evacButton.AddToClassList("action-button");
+            evacButton.style.position = Position.Absolute;
+            evacButton.style.left = 96;
+            evacButton.style.top = 0;
+            evacButton.style.bottom = 0;
+            evacButton.style.marginTop = 8;
+            evacButton.style.marginBottom = 8;
+            resourceBar.Add(evacButton);
+            evacButton.RegisterCallback<ClickEvent>(_ =>
+            {
+                combatManager.CallEvacuation();
+                RefreshEvacButton();
+            });
         }
 
         unitList = root.Q<ScrollView>("unit-list");
@@ -250,8 +266,19 @@ public class CombatPhaseUIController : MonoBehaviour
         AnimateIfChanged("materials", settlementMaterialsLabel, s.Materials);
         AnimateIfChanged("morale", settlementMoraleLabel, s.Morale);
         AnimateIfChanged("score", scoreLabel, score);
+        RefreshEvacButton();
     }
 
+    /// <summary>Shows the cooldown on the Call Evacuation button and disables it while it can't be used.</summary>
+    public void RefreshEvacButton()
+    {
+        if (evacButton == null || combatManager == null) return;
+        int wait = combatManager.EvacCooldownRemaining;
+        evacButton.text = wait > 0 ? $"EVAC ({wait})" : "EVAC";
+        evacButton.SetEnabled(combatManager.CanCallEvacuation);
+    }
+
+    private Button evacButton;
     private Label scoreLabel;
     private readonly Dictionary<string, int> lastValues = new Dictionary<string, int>();
 

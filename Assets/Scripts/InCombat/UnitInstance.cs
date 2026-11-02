@@ -379,8 +379,13 @@ public class UnitInstance : MonoBehaviour
             OnTileHidden();
     }
 
+    /// <summary>Set just before <see cref="MoveTo"/> to skip the walk animation (enemy moves hidden in the fog).</summary>
+    public bool SnapMovement;
+
     private IEnumerator MoveAlongPathRoutine(List<HexTile> path)
     {
+        bool snap = SnapMovement;
+
         // Leaving the tile drops the fortify bonuses; the fortification itself stays on the tile.
         if (IsFortified)
         {
@@ -409,12 +414,12 @@ public class UnitInstance : MonoBehaviour
                 transform.rotation = Quaternion.LookRotation(moveDirection);
             }
 
-            // Interpolate position over time (adjust speed multiplier as needed, e.g., 6f)
-            float moveSpeed = 6f;
+            // Interpolate position over time; AI units move faster to keep their phases short.
+            float moveSpeed = Faction == UnitFaction.Player ? 6f : 10f;
             float journeyLength = Vector3.Distance(startPos, targetPos);
             float startTime = Time.time;
 
-            if (journeyLength > 0.001f)
+            if (journeyLength > 0.001f && !snap)
             {
                 float fractionTraveled = 0f;
                 while (fractionTraveled < 1f)
@@ -428,6 +433,9 @@ public class UnitInstance : MonoBehaviour
 
             transform.position = targetPos;
         }
+
+        // A snapped move would otherwise finish before MoveTo stores the coroutine, leaving IsMoving stuck on.
+        if (snap) yield return null;
 
         // Finalize arrival on the destination tile
         HexTile destinationTile = path[path.Count - 1];

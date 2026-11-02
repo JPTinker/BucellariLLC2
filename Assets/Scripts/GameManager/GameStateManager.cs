@@ -48,11 +48,11 @@ public class GameStateManager : MonoBehaviour
 
         [Header("Win / score")]
         public int VillagersToWin = 10;
-        public int ScoreBase = 10000;
-        public int ScorePerRound = -50;
-        public int ScorePerEnemyKilled = 100;
-        public int ScorePerHeroLost = -250;
-        public int ScorePerVillagerLost = -100;
+        [Tooltip("Score for a kill at enemy wave level 0.")]
+        public int KillScoreStart = 10;
+        [Tooltip("Score lost per enemy wave level, down to KillScoreMin.")]
+        public int KillScoreDropPerLevel = 1;
+        public int KillScoreMin = 1;
     }
 
     /// <summary>Everything the Win/Lose panel shows once the run ends.</summary>
@@ -248,6 +248,7 @@ public class GameStateManager : MonoBehaviour
         data.VillagersLost = VillagersLostThisBattle;
         data.VillagersEscaped = VillagersEscapedThisBattle;
         data.RoundsElapsed = RoundsElapsed;
+        data.Score = CurrentScore;
         data.Roster = new List<UnitSaveData>();
         foreach (Unit unit in FullRoster) data.Roster.Add(UnitSaveData.From(unit));
         Research.WriteTo(data);
@@ -264,6 +265,7 @@ public class GameStateManager : MonoBehaviour
         VillagersLostThisBattle = data.VillagersLost;
         VillagersEscapedThisBattle = data.VillagersEscaped;
         RoundsElapsed = data.RoundsElapsed;
+        CurrentScore = data.Score;
 
         FullRoster.Clear();
         foreach (UnitSaveData saved in data.Roster)
@@ -302,24 +304,13 @@ public class GameStateManager : MonoBehaviour
             HeroesLost = HeroesLostThisBattle,
             VillagersLost = VillagersLostThisBattle,
             VillagersEscaped = VillagersEscapedThisBattle,
-            Score = ComputeScore()
+            Score = CurrentScore
         };
         OnGameOver?.Invoke(LastResult);
     }
 
-    /// <summary>Live score shown in the top bar (same formula as the final score).</summary>
-    public int CurrentScore => ComputeScore();
-
-    private int ComputeScore()
-    {
-        var b = Balance;
-        int score = b.ScoreBase
-            + b.ScorePerRound * RoundsElapsed
-            + b.ScorePerEnemyKilled * EnemiesKilledThisBattle
-            + b.ScorePerHeroLost * HeroesLostThisBattle
-            + b.ScorePerVillagerLost * VillagersLostThisBattle;
-        return Mathf.Max(0, score);
-    }
+    /// <summary>Running score shown in the top bar and used as the final score. Only ever increases.</summary>
+    public int CurrentScore { get; private set; }
 
     /// <summary>Starts a fresh run. This manager is discarded so the reloaded scene builds a clean one.</summary>
     public void RestartGame() => LoadFresh(GameSceneName);
@@ -470,9 +461,11 @@ public class GameStateManager : MonoBehaviour
     }
 
     /// <summary>Call from CombatManager when an enemy unit is killed.</summary>
-    public void RegisterEnemyKilled()
+    public void RegisterEnemyKilled(int waveLevel)
     {
         EnemiesKilledThisBattle++;
+        var b = Balance;
+        CurrentScore += Mathf.Max(b.KillScoreMin, b.KillScoreStart - b.KillScoreDropPerLevel * waveLevel);
         AdjustMorale(Balance.EnemyKillMoraleBonus);
     }
 

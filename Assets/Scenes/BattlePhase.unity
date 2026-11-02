@@ -1073,10 +1073,10 @@ MonoBehaviour:
   hpScalingPerWave: 0.1
   attackScalingPerWave: 0.1
   defenseScalingPerWave: 0.15
-  waveScalingPace: 0.6
-  levelsPerMovementBonus: 6
-  levelsForRangeBonus: 15
-  levelForExtraAction: 15
+  waveScalingPace: 0.9
+  levelsPerMovementBonus: 5
+  levelsForRangeBonus: 10
+  levelForExtraAction: 12
   maxExfilProximityLevels: 3
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}
@@ -1174,13 +1174,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
   enemyAI: {fileID: 2007730828}
   villagerAI: {fileID: 2007730829}
-  enemyTurnDelay: 2
-  reinforcementThreshold: 4
-  reinforcementTargetCount: 8
-  enemiesPerExpansion: 2
+  enemyTurnDelay: 0.5
+  spawnIntervalRounds: 2
+  levelsPerExtraSpawn: 3
+  maxSpawnGroupSize: 3
+  maxLivingEnemies: 8
+  enemiesPerExpansion: 1
   enemiesPerPlayerUnit: 1
   roundsPerExtraEnemy: 5
-  minRoundsBetweenWaves: 4
+  roundsPerLevel: 3
   draftInterval: 3
   draftOptionCount: 3
   combatUIManager: {fileID: 1221553267}
@@ -1200,8 +1202,8 @@ MonoBehaviour:
   actionDelay: 0.05
   moveTimeout: 5
   logDecisions: 1
-  attackPanDuration: 0.5
-  postAttackDelay: 0.8
+  attackPanDuration: 0.25
+  postAttackDelay: 0.25
   lookaheadTurns: 2
   futureDiscount: 0.6
   moveCandidatesPerStep: 6
@@ -1228,7 +1230,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e19b37eeeb945f44adb4f6cf511f5f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VillagerAIController
-  actionDelay: 0.1
+  actionDelay: 0.03
   moveTimeout: 5
 --- !u!1 &2116198337
 GameObject:
