@@ -207,9 +207,10 @@ public class EnemyAIController : MonoBehaviour
     {
         foreach (PlannedAction action in plan.Actions)
         {
-            if (action.Target != null)
+            if (action.Destination == null)
             {
-                if (action.Target.IsDead) return false;
+                // Attack: a target that was destroyed (Unity-null) or killed invalidates the plan.
+                if (action.Target == null || action.Target.IsDead) return false;
             }
             else
             {

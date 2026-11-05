@@ -15,6 +15,7 @@ public class ResearchBaseConfig
     public int MaxFortificationLevel = 1;      // Engineering adds (the map only ships 3 fortification prefabs)
     public int StorageFoodPerTownCenter = 300;       // Storehouses adds (per Town Center)
     public int StorageMaterialsPerTownCenter = 300;  // Storehouses adds (per Town Center)
+    public int BaseMoraleCap = 50;             // Morale research adds (17+17+16 = 100 with all three)
     public int ChurchHealAmount = 5;           // HP a hero heals for ending the round in a Church; Church adds
     public int ChurchHealCount = 2;            // benched units healed per cycle; Church adds
     public float ChurchHealFraction = 0.05f;   // of max HP; Church adds (SecondaryValue)
@@ -222,6 +223,8 @@ public class ResearchManager
                 _active.Add(new ResearchProgress { Id = data.ActiveResearchIds[i], KillsRemaining = Mathf.Max(1, data.ActiveResearchKills[i]) });
         OnProgressChanged?.Invoke();
     }
+
+    public int MoraleCap => Mathf.Clamp(Config.BaseMoraleCap + Mathf.RoundToInt(Sum(ResearchTrack.Morale)), 1, 100);
 
     public int ChurchHealAmount => Config.ChurchHealAmount + Mathf.RoundToInt(Sum(ResearchTrack.Church));
 

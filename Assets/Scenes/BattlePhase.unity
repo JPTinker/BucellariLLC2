@@ -1175,13 +1175,14 @@ MonoBehaviour:
   enemyAI: {fileID: 2007730828}
   villagerAI: {fileID: 2007730829}
   enemyTurnDelay: 0.5
-  spawnIntervalRounds: 2
-  levelsPerExtraSpawn: 3
-  maxSpawnGroupSize: 3
-  maxLivingEnemies: 8
+  spawnIntervalRounds: 1
+  baseSpawnGroupSize: 2
+  levelsPerExtraSpawn: 2
+  maxSpawnGroupSize: 5
+  maxLivingEnemies: 14
   enemiesPerExpansion: 1
   enemiesPerPlayerUnit: 1
-  roundsPerExtraEnemy: 5
+  roundsPerExtraEnemy: 3
   roundsPerLevel: 3
   draftInterval: 3
   draftOptionCount: 3
@@ -1350,6 +1351,10 @@ PrefabInstance:
       value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: AvailableResearch.Array.size
+      value: 26
+      objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: ResearchBase.ChurchHealAmount
       value: 10
       objectReference: {fileID: 0}
@@ -1357,6 +1362,54 @@ PrefabInstance:
       propertyPath: ResearchBase.GatherMultiplier
       value: 1.5
       objectReference: {fileID: 0}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[14]'
+      value: 
+      objectReference: {fileID: 11400000, guid: c4d0a4da03ba5c24ba63dfef6f8efb73, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[15]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 9501036bc051a544b954c4f680003d2c, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[16]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 6cf50298b2792f8479af2b228c2186e2, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[17]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 45f416844b3ea7343a445997bf66395f, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[18]'
+      value: 
+      objectReference: {fileID: 11400000, guid: acbf39e0e3fbf3d4889891e971475d85, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[19]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 50ad3c789a72357478d0d324d828bb8d, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[20]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 9f454ca49c12ad74ba676d0248e6c1b0, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[21]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 65491d79f8b50684f9b925333102b40a, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[22]'
+      value: 
+      objectReference: {fileID: 11400000, guid: da41b5394871e2e4395552852bb28083, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[23]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 448f2240b3e1d914284e0ce2ff6ad97f, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[24]'
+      value: 
+      objectReference: {fileID: 11400000, guid: a9452226171ab7e4d903bb5afa268962, type: 2}
+    - target: {fileID: 1479030381845282811, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
+      propertyPath: 'AvailableResearch.Array.data[25]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 7b92f44aabbaa00428a505443f081c83, type: 2}
     - target: {fileID: 7801607055821855217, guid: d02232db360f61040a6d59b1d4d547d0, type: 3}
       propertyPath: m_Name
       value: FullGameManager

@@ -70,9 +70,9 @@ public static class ResearchAssetSeeder
             N(ResearchTrack.LevelCap, 2, "Veteran Ranks II", 18, 10),
             N(ResearchTrack.LevelCap, 3, "Veteran Ranks III", 24, 10),
 
-            N(ResearchTrack.BattleLength, 1, "Steadfast Resolve I", 8, 3),
-            N(ResearchTrack.BattleLength, 2, "Steadfast Resolve II", 14, 3),
-            N(ResearchTrack.BattleLength, 3, "Steadfast Resolve III", 20, 4),
+            N(ResearchTrack.Morale, 1, "Steadfast Resolve I", 17, 3),
+            N(ResearchTrack.Morale, 2, "Steadfast Resolve II", 17, 3),
+            N(ResearchTrack.Morale, 3, "Steadfast Resolve III", 16, 4),
         };
 
         var created = new List<ResearchData>();

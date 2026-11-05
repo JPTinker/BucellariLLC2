@@ -172,7 +172,8 @@ public class WorkerVillagerAIController : MonoBehaviour
 
     // ---------------- helpers ----------------
 
-    /// Picks the best unclaimed site (scored by walking distance + distance to the boat, so farms stay near it) and claims it.
+    /// Picks the best unclaimed site and claims it: a tile adjacent to the Town Center if one works, else 2 away,
+    /// else the nearest by walking distance + distance to the Town Center.
     private static HexTile ClaimSite(UnitInstance unit, WorkerVillager worker, HexTile exfil)
     {
         if (MapManager.Instance == null || unit.currentTile == null) return null;
@@ -212,8 +213,13 @@ public class WorkerVillagerAIController : MonoBehaviour
 
     private static int Score(HexTile tile, UnitInstance unit, HexTile exfil)
     {
-        return HexCoordinates.GetDistance(tile.gridPosition, unit.currentTile.gridPosition)
-             + HexCoordinates.GetDistance(tile.gridPosition, exfil.gridPosition);
+        // Strongly prefer a tile right next to the Town Center, then one 2 away, then anything else
+        // (nearest the worker and the Town Center). Tiers are far apart so walking distance only breaks ties.
+        int tcDist = HexCoordinates.GetDistance(tile.gridPosition, exfil.gridPosition);
+        int tier = tcDist <= 1 ? 0 : tcDist == 2 ? 1 : 2;
+        return tier * 1000
+             + HexCoordinates.GetDistance(tile.gridPosition, unit.currentTile.gridPosition)
+             + tcDist;
     }
 
     /// One walk toward the destination: as far as the worker's movement range allows this turn.

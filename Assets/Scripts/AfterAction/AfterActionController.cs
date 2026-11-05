@@ -17,6 +17,14 @@ public class AfterActionController : MonoBehaviour
     [SerializeField] private Vector3 cameraLookAt = new Vector3(0f, -0.1f, 0f);
     [SerializeField] private float cameraFov = 38f;
     [SerializeField] private float unitSpacing = 2.1f;
+    [SerializeField] private int unitsPerRow = 5;
+    [Tooltip("How far each row sits behind the one in front.")]
+    [SerializeField] private float rowDepth = 1.8f;
+    [Tooltip("How much higher each row further back stands.")]
+    [SerializeField] private float rowRise = 0.4f;
+    [SerializeField] private float jumpHeight = 0.9f;
+    [SerializeField] private float jumpDuration = 0.55f;
+    [SerializeField] private Vector2 jumpPause = new Vector2(0.1f, 1.6f);
     [SerializeField] private float runInDistance = 12f;
     [SerializeField] private float runSpeed = 7f;
     [SerializeField] private Color padColor = new Color(0f, 0.95f, 1f);
@@ -33,6 +41,8 @@ public class AfterActionController : MonoBehaviour
         public GameObject Go;
         public Animator Anim;
         public Vector3 Pad;
+        public float NextJump;
+        public float JumpStart = -1f;
     }
     private readonly List<Actor> _actors = new List<Actor>();
 
@@ -99,6 +109,7 @@ public class AfterActionController : MonoBehaviour
         yield return UIAnim.PunchIn(_title.parent, 0.45f);
         yield return RunIn();
 
+        StartCoroutine(JumpLoop());
         yield return UIAnim.PunchIn(_card, 0.32f);
         yield return UIAnim.Flash(_flash, 0.6f, 0.4f);
 
@@ -161,7 +172,12 @@ public class AfterActionController : MonoBehaviour
         for (int i = 0; i < n; i++)
         {
             Unit unit = heroes[i];
-            var actor = new Actor { Pad = new Vector3((i - (n - 1) * 0.5f) * unitSpacing, 0f, 0f) };
+            // Rows of unitsPerRow, centered; later rows stand further back and slightly higher.
+            int perRow = Mathf.Max(1, unitsPerRow);
+            int row = i / perRow;
+            int inRow = Mathf.Min(perRow, n - row * perRow);
+            int col = i % perRow;
+            var actor = new Actor { Pad = new Vector3((col - (inRow - 1) * 0.5f) * unitSpacing, row * rowRise, row * rowDepth) };
 
             var pad = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             pad.name = "ExfilPad";
@@ -215,6 +231,35 @@ public class AfterActionController : MonoBehaviour
             a.Go.transform.position = a.Pad;
             SetBool(a.Anim, "Walk", false);
             SetBool(a.Anim, "Evacuate", true); // drives the Cheering state in Character.controller
+        }
+    }
+
+    // The team hops at random, each on its own timer, for as long as the screen is up.
+    private IEnumerator JumpLoop()
+    {
+        foreach (Actor a in _actors) a.NextJump = Time.unscaledTime + Random.Range(0f, jumpPause.y);
+        while (true)
+        {
+            foreach (Actor a in _actors)
+            {
+                if (a.Go == null) continue;
+                float now = Time.unscaledTime;
+                if (a.JumpStart < 0f)
+                {
+                    if (now < a.NextJump) continue;
+                    a.JumpStart = now;
+                }
+                float t = (now - a.JumpStart) / jumpDuration;
+                if (t >= 1f)
+                {
+                    a.Go.transform.position = a.Pad;
+                    a.JumpStart = -1f;
+                    a.NextJump = now + Random.Range(jumpPause.x, jumpPause.y);
+                    continue;
+                }
+                a.Go.transform.position = a.Pad + Vector3.up * (Mathf.Sin(t * Mathf.PI) * jumpHeight);
+            }
+            yield return null;
         }
     }
 

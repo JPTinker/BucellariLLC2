@@ -213,7 +213,7 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Storehouses: return $"STOREHOUSES  (cap {r.MaxFood} Food / {r.MaxMaterials} Materials)";
             case ResearchTrack.Church: return $"CHURCH  (heroes resting in a Church heal {r.ChurchHealAmount} HP per round)";
             case ResearchTrack.LevelCap: return $"LEVEL CAP  (units level up to {r.MaxUnitLevel})";
-            //case ResearchTrack.BattleLength: return $"MORALE  (battles last {r.MaxBattleRounds} rounds)";
+            case ResearchTrack.Morale: return $"MORALE  (morale cap {r.MoraleCap})";
             default: return track.ToString().ToUpperInvariant();
         }
     }
@@ -230,7 +230,7 @@ public class ResearchController : MonoBehaviour
             case ResearchTrack.Storehouses: return $"+{Mathf.RoundToInt(node.Value)} Food and Materials storage per Town Center";
             case ResearchTrack.Church: return $"+{Mathf.RoundToInt(node.Value)} HP healed per round in a Church";
             case ResearchTrack.LevelCap: return $"+{Mathf.RoundToInt(node.Value)} maximum unit level";
-            case ResearchTrack.BattleLength: return $"+{Mathf.RoundToInt(node.Value)} battle rounds";
+            case ResearchTrack.Morale: return $"+{Mathf.RoundToInt(node.Value)} max morale";
             default: return "";
         }
     }

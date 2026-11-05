@@ -19,7 +19,7 @@ MonoBehaviour:
   Tier: 1
   Prerequisite: {fileID: 0}
   FoodCost: 50
-  MaterialsCost: 100
+  MaterialsCost: 50
   KillsToComplete: 8
   Value: 1
   SecondaryValue: 0

@@ -417,11 +417,11 @@ public class GameStateManager : MonoBehaviour
 
     // --- MORALE ---
 
-    /// <summary>Changes morale (clamped 0..100) and ends the run in defeat when it reaches 0.</summary>
+    /// <summary>Changes morale (clamped 0..the research-raised cap, max 100) and ends the run in defeat when it reaches 0.</summary>
     public void AdjustMorale(int delta)
     {
         if (GameEnded) return;
-        Settlement.Morale = Mathf.Clamp(Settlement.Morale + delta, 0, 100);
+        Settlement.Morale = Mathf.Clamp(Settlement.Morale + delta, 0, ResearchManager.Current.MoraleCap);
         OnSettlementChanged?.Invoke();
         if (Settlement.Morale <= 0) EndGame(false);
     }

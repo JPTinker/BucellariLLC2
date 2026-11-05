@@ -16,12 +16,14 @@ public class CombatManager : MonoBehaviour
     [Header("Enemy Reinforcements")]
     [SerializeField] private float enemyTurnDelay = 0.5f;
     [Tooltip("Enemies trickle in: a small group arrives every this many rounds.")]
-    [SerializeField] private int spawnIntervalRounds = 2;
-    [Tooltip("Group size is 1 plus one per this many enemy levels, up to Max Spawn Group Size.")]
-    [SerializeField] private int levelsPerExtraSpawn = 3;
-    [SerializeField] private int maxSpawnGroupSize = 3;
+    [SerializeField] private int spawnIntervalRounds = 1;
+    [Tooltip("Enemies in the first group.")]
+    [SerializeField] private int baseSpawnGroupSize = 2;
+    [Tooltip("Group size grows by one per this many enemy levels, up to Max Spawn Group Size.")]
+    [SerializeField] private int levelsPerExtraSpawn = 2;
+    [SerializeField] private int maxSpawnGroupSize = 5;
     [Tooltip("No more enemies spawn while this many (plus the bonuses below) are alive.")]
-    [SerializeField] private int maxLivingEnemies = 8;
+    [SerializeField] private int maxLivingEnemies = 14;
     [Tooltip("Extra enemy cap for every time the map has grown.")]
     [SerializeField] private int enemiesPerExpansion = 1;
     [Tooltip("Extra enemy cap for every living player unit.")]
@@ -736,7 +738,7 @@ public class CombatManager : MonoBehaviour
             int livingPlayers = playerUnits.FindAll(u => u != null && !u.IsDead).Count;
             int cap = maxLivingEnemies + mapExpansions * enemiesPerExpansion + livingPlayers * enemiesPerPlayerUnit
                 + (roundsPerExtraEnemy > 0 ? currentRound / roundsPerExtraEnemy : 0);
-            int groupSize = Mathf.Min(maxSpawnGroupSize, 1 + (levelsPerExtraSpawn > 0 ? enemyWaveLevel / levelsPerExtraSpawn : 0));
+            int groupSize = Mathf.Min(maxSpawnGroupSize, baseSpawnGroupSize + (levelsPerExtraSpawn > 0 ? enemyWaveLevel / levelsPerExtraSpawn : 0));
             int toSpawn = Mathf.Min(groupSize, cap - enemyUnits.Count);
             if (toSpawn > 0)
             {

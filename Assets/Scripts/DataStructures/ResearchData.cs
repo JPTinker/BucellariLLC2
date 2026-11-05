@@ -11,7 +11,7 @@ public enum ResearchTrack
     Storehouses,   // each Town Center stores more Food / Materials
     Church,        // more benched units healed per cycle, and a higher heal %
     LevelCap,      // raises the maximum unit level (base 10, +Value per node)
-    BattleLength   // longer battles (+rounds before everyone is forced to retreat)
+    Morale         // raises the morale cap (base 50, +Value per node, up to 100)
 }
 
 /// <summary>
