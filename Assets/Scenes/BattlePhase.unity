@@ -1074,9 +1074,8 @@ MonoBehaviour:
   attackScalingPerWave: 0.1
   defenseScalingPerWave: 0.15
   waveScalingPace: 0.9
-  levelsPerMovementBonus: 5
-  levelsForRangeBonus: 10
-  levelForExtraAction: 12
+  levelsPerStatBonus: 10
+  statBonusAmount: 5
   maxExfilProximityLevels: 3
   villagerArchetypes:
   - {fileID: 11400000, guid: 91c82e463eca9b74b89410bbd4d3ac8b, type: 2}

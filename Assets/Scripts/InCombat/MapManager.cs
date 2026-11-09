@@ -97,12 +97,10 @@ public partial class MapManager : MonoBehaviour
     [SerializeField] private float defenseScalingPerWave = 0.15f;
     [Tooltip("Multiplier on every per-wave scaling rate above; below 1 slows how fast enemies grow.")]
     [SerializeField] private float waveScalingPace = 0.9f;
-    [Tooltip("Levels needed per +1 movement range (0 disables).")]
-    [SerializeField] private int levelsPerMovementBonus = 5;
-    [Tooltip("Levels needed per +1 attack range (0 disables). Capped at +1 so ranged enemies don't outrange everything.")]
-    [SerializeField] private int levelsForRangeBonus = 10;
-    [Tooltip("Level at which enemies gain an extra action per turn (0 disables).")]
-    [SerializeField] private int levelForExtraAction = 12;
+    [Tooltip("Every this many levels enemies gain the flat bonus below to HP, Attack and Defense (0 disables).")]
+    [SerializeField] private int levelsPerStatBonus = 10;
+    [Tooltip("Flat bonus to HP, Attack and Defense per tier of levelsPerStatBonus.")]
+    [SerializeField] private int statBonusAmount = 5;
     [Tooltip("Extra enemy levels (same scaling as waves) for an enemy spawning right next to the exfil zone. Falls off linearly to 0 at the far corner of the map.")]
     [SerializeField] private float maxExfilProximityLevels = 3f;
 
@@ -342,14 +340,16 @@ public partial class MapManager : MonoBehaviour
         enemy.currentHealth = enemy.maxHealth;
         enemy.attackPower = Mathf.RoundToInt(enemy.attackPower * (1f + waveLevel * attackScalingPerWave * pace));
         enemy.defensePower += Mathf.RoundToInt(enemy.defensePower * waveLevel * defenseScalingPerWave * pace);
-        if (levelsPerMovementBonus > 0)
-            enemy.movementRange += waveLevel / levelsPerMovementBonus;
-        if (levelsForRangeBonus > 0 && waveLevel >= levelsForRangeBonus)
-            enemy.attackRange += 1;
-        if (levelForExtraAction > 0 && waveLevel >= levelForExtraAction)
+        if (levelsPerStatBonus > 0)
         {
-            enemy.maxActionsPerTurn += 1;
-            enemy.actionsRemaining = enemy.maxActionsPerTurn;
+            int bonus = (waveLevel / levelsPerStatBonus) * statBonusAmount;
+            if (bonus > 0)
+            {
+                enemy.maxHealth += bonus;
+                enemy.currentHealth = enemy.maxHealth;
+                enemy.attackPower += bonus;
+                enemy.defensePower += bonus;
+            }
         }
         enemy.NotifyStatsChanged();
     }
