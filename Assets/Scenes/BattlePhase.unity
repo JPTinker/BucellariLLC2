@@ -1175,9 +1175,9 @@ MonoBehaviour:
   villagerAI: {fileID: 2007730829}
   enemyTurnDelay: 0.5
   spawnIntervalRounds: 1
-  baseSpawnGroupSize: 2
+  baseSpawnGroupSize: 3
   levelsPerExtraSpawn: 2
-  maxSpawnGroupSize: 5
+  maxSpawnGroupSize: 8
   maxLivingEnemies: 14
   enemiesPerExpansion: 1
   enemiesPerPlayerUnit: 1
